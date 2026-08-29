@@ -34,13 +34,28 @@ export interface AuthResult {
   needsEmailConfirmation?: boolean;
 }
 
+/** Which call produced the error — changes what an unmapped status code may safely imply. */
+type AuthContext = 'signin' | 'signup' | 'reset' | 'update' | 'resend';
+
 /**
  * Maps a Supabase auth error onto one of our translation keys.
  *
- * Matching is on `error_code` (stable) with a status-code fallback, never on
- * the human-readable message, which Supabase is free to reword.
+ * Matching is on `error_code` (stable) first, never on the human-readable
+ * message, which Supabase is free to reword.
+ *
+ * A bare HTTP status with no recognized code is only ever guessed at for
+ * `signin` — "invalid credentials" is a sane read of an unlabelled 400 there,
+ * because that is the one call where a bad email/password pair is the normal
+ * failure mode. It is not a sane guess anywhere else: applying it to signUp or
+ * sendPasswordReset produced exactly that nonsense — "email and password do
+ * not match an account" on account *creation*, and on a reset flow that never
+ * even collects a password. Every other context falls through to a neutral
+ * failure message instead of asserting a specific wrong cause.
  */
-function toErrorKey(error: unknown): { key: TranslationKey; vars?: Record<string, string | number> } {
+export function toErrorKey(
+  error: unknown,
+  context: AuthContext
+): { key: TranslationKey; vars?: Record<string, string | number> } {
   const code =
     error && typeof error === 'object' && 'code' in error
       ? String((error as { code: unknown }).code)
@@ -55,6 +70,7 @@ function toErrorKey(error: unknown): { key: TranslationKey; vars?: Record<string
       return { key: 'auth.err.weakPassword', vars: { min: PASSWORD_MIN_LENGTH } };
     case 'user_already_exists':
     case 'email_exists':
+    case 'identity_already_exists':
       return { key: 'auth.err.emailExists' };
     case 'email_not_confirmed':
       return { key: 'auth.err.emailNotConfirmed' };
@@ -62,24 +78,35 @@ function toErrorKey(error: unknown): { key: TranslationKey; vars?: Record<string
       return { key: 'auth.err.invalidCredentials' };
     case 'email_address_invalid':
     case 'validation_failed':
+    case 'bad_json':
       return { key: 'auth.err.invalidEmail' };
     case 'over_email_send_rate_limit':
     case 'over_request_rate_limit':
+    case 'over_sms_send_rate_limit':
       return { key: 'auth.err.rateLimited' };
     case 'signup_disabled':
+    case 'email_provider_disabled':
       return { key: 'auth.err.signupDisabled' };
   }
 
   if (status === 429) return { key: 'auth.err.rateLimited' };
-  if (status === 400 || status === 401) return { key: 'auth.err.invalidCredentials' };
+  if (context === 'signin' && (status === 400 || status === 401)) {
+    return { key: 'auth.err.invalidCredentials' };
+  }
 
-  // Log the original so a failure we have not mapped yet is still debuggable.
-  console.error('[auth] unmapped error', error);
+  // Log the fields that matter for debugging, not just the error object —
+  // AuthError instances often print as "{}" via console.error's default
+  // formatting once minified.
+  console.error('[auth]', context, 'unmapped error', {
+    code,
+    status,
+    message: error instanceof Error ? error.message : String(error),
+  });
   return { key: 'auth.failed' };
 }
 
-function failure(error: unknown): AuthResult {
-  const { key, vars } = toErrorKey(error);
+function failure(error: unknown, context: AuthContext): AuthResult {
+  const { key, vars } = toErrorKey(error, context);
   return { ok: false, errorKey: key, errorVars: vars };
 }
 
@@ -105,7 +132,7 @@ export async function signUp(email: string, password: string): Promise<AuthResul
       },
     });
 
-    if (error) return failure(error);
+    if (error) return failure(error, 'signup');
 
     // Supabase returns a user with no session when confirmation is required.
     // It also returns a user with an empty identities array when the address is
@@ -134,7 +161,7 @@ export async function signIn(email: string, password: string): Promise<AuthResul
   try {
     const supabase = createClient();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return failure(error);
+    if (error) return failure(error, 'signin');
     return { ok: true, hasSession: Boolean(data.session), userId: data.user?.id };
   } catch (error) {
     console.error('[auth] signIn threw', error);
@@ -165,7 +192,7 @@ export async function resendConfirmation(email: string): Promise<AuthResult> {
         emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/` : undefined,
       },
     });
-    if (error) return failure(error);
+    if (error) return failure(error, 'resend');
     return { ok: true };
   } catch (error) {
     console.error('[auth] resendConfirmation threw', error);
@@ -187,7 +214,7 @@ export async function sendPasswordReset(email: string): Promise<AuthResult> {
       redirectTo:
         typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined,
     });
-    if (error) return failure(error);
+    if (error) return failure(error, 'reset');
     return { ok: true };
   } catch (error) {
     console.error('[auth] sendPasswordReset threw', error);
@@ -203,7 +230,7 @@ export async function updatePassword(newPassword: string): Promise<AuthResult> {
   try {
     const supabase = createClient();
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) return failure(error);
+    if (error) return failure(error, 'update');
     return { ok: true };
   } catch (error) {
     console.error('[auth] updatePassword threw', error);

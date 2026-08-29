@@ -990,7 +990,9 @@ a {
 
 .preview-card-photo {
   position: relative;
-  aspect-ratio: 3 / 2;
+  /* 4:5 — a phone held upright, the way people actually shoot these, not the
+     3:2 landscape ratio a camera or desktop crop defaults to. */
+  aspect-ratio: 4 / 5;
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--photo-backdrop);

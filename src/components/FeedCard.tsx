@@ -133,7 +133,9 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
             overflow: 'hidden',
             background: 'var(--photo-backdrop)',
             border: '1px solid var(--border-subtle)',
-            aspectRatio: '3 / 2',
+            // 4:5, matching how phones actually shoot — see the comment on
+            // .preview-card-photo in globals.css.
+            aspectRatio: '4 / 5',
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- user proof photos
