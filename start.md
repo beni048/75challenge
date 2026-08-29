@@ -50,7 +50,13 @@ Required fields:
 
 ### Fresh Accounts Start Empty
 - A newly created account **always starts on Day 1 with zero logged days**. Never seed a new challenge with pre-filled or demo check-ins.
-- `current_day` is **derived from `start_date`**, never stored as a mutable counter.
+- `current_day` is **derived from `start_date`**, never stored as a mutable counter — the column does not exist in the database.
+
+### Where Data Lives
+- **Supabase Auth** owns credentials. The auth user's `id` **is** the challenge's primary key (`public.users.id`), so there is never a lookup step.
+- **Supabase Postgres** owns the challenge: rules, daily logs, reactions, unfollows. This is the single source of truth, which is what lets a participant log in on any device and find their streak.
+- **`localStorage`** holds only two things: per-device preferences (theme, locale) and a short-lived `75_pending_signup` payload that survives an email-confirmation round trip. It is never the source of truth for challenge data.
+- All database access goes through `src/lib/db/`. Components never call Supabase directly.
 
 ### Squad Referral Links
 - URL pattern: `/join?ref=username`
@@ -82,6 +88,11 @@ Pre-loaded rules:
 
 ### Self-Paced Trust & Check-Ins
 - Users check off their own daily progress asynchronously. We trust participants to manage their habits — there is no monitoring, no verification, and no artificial cutoff hour of any kind (no midnight lockout, no 3 AM rollover). A check-in belongs to whatever calendar date the user says it does.
+
+### Completed Days Are Locked
+- Once a day is submitted as completed it is **final**. The profile replaces the check-in form with a "day locked in — come back tomorrow" card (`DayLockedCard`).
+- A day cannot be reopened, edited, or un-completed. The model runs on self-reported trust; letting people rewrite a finished day would turn the streak into a draft.
+- The same lock applies to a day recorded as `shielded`, and to a rest day where no rule is scheduled.
 
 ### Self-Reported Failure & Streak Shield Mechanic
 - Each user receives exactly **1 Streak Shield** per 75-day attempt.
@@ -116,9 +127,10 @@ Each feed post displays:
 - Counters are derived from real data on screen — never invented percentages or vanity metrics.
 - No "Positive-Only Hype" badge on the feed; the guarantee is explained on the landing page instead.
 
-### Cold-Start Fallback (< 2 Users)
-- If total registered active users **< 2**: feed injects **curated static preview posts** alongside real activity.
-- Once registered users **≥ 2**: static previews are hidden; only live DB activity renders.
+### Sample Preview Posts
+- Curated preview posts are appended **only while nobody has checked in today**. The moment one real participant posts for the day, the samples disappear — sample content sitting next to genuine activity makes the feed feel fake.
+- When previews are showing, the feed says so explicitly (`feed.previewNotice`). Never present sample content as though it were real activity.
+- Preview posts are not database rows; reactions on them are no-ops.
 
 ---
 
@@ -172,70 +184,34 @@ Multi-tap reaction buttons with animations:
 
 ## 9. Database Schema
 
-```sql
--- Users Table
-CREATE TABLE users (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  username TEXT UNIQUE NOT NULL,
-  display_name TEXT NOT NULL,
-  start_date DATE NOT NULL,
-  target_end_date DATE NOT NULL,
-  current_day INT DEFAULT 1,
-  shields_remaining INT DEFAULT 1,
-  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'failed', 'completed')),
-  referred_by_id UUID REFERENCES users(id),
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+> **Source of truth: `supabase/migrations/0001_initial_schema.sql`.** That file is
+> what actually runs. Apply it to the dev project first, then production
+> (github.md §4). The summary below is orientation only — if it disagrees with
+> the migration, the migration wins.
 
--- Rules Table
-CREATE TABLE rules (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-  title TEXT NOT NULL,
-  schedule_type TEXT CHECK (schedule_type IN ('daily', 'workdays', 'custom')) NOT NULL,
-  custom_days INT[] DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+| Table | Holds | Notes |
+|---|---|---|
+| `users` | One row per participant | PK **is** `auth.users.id`. No `current_day` column — it is derived from `start_date`. |
+| `rules` | A participant's rule set | `position` preserves their ordering. Replaced wholesale on edit. |
+| `daily_logs` | One row per participant per day | `unique (user_id, log_date)`. Statuses: `completed`, `shielded`, `failed`. |
+| `log_rule_checks` | Which rules were ticked on a given day | Cascades from the log and the rule. |
+| `reactions` | Multi-tap hype counts | `unique (log_id, sender_id, reaction_type)`; type is constrained to the four positive reactions, so a downvote is unrepresentable. |
+| `user_unfollows` | Per-viewer feed hiding | Private to the follower. |
 
--- Daily Logs Table
-CREATE TABLE daily_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-  log_date DATE NOT NULL,
-  status TEXT CHECK (status IN ('completed', 'shielded', 'failed')) NOT NULL,
-  photo_url TEXT,
-  caption TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id, log_date)
-);
+### Row Level Security
+RLS is the **entire** authorization model — the browser only ever holds the anon
+key, so there is no trusted server layer in front of it. Key policies:
 
--- Log Rule Checks Table
-CREATE TABLE log_rule_checks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  log_id UUID REFERENCES daily_logs(id) ON DELETE CASCADE NOT NULL,
-  rule_id UUID REFERENCES rules(id) ON DELETE CASCADE NOT NULL,
-  is_completed BOOLEAN DEFAULT FALSE
-);
+- Nothing is readable by anonymous visitors: the feed requires login.
+- `daily_logs` select is `status in ('completed','shielded') or auth.uid() = user_id`. Other people's failed days are unreachable, enforcing the positive-only guarantee in the database rather than only in the client.
+- Every write policy is `auth.uid() = <owner column>`.
+- Storage objects live under `<user-id>/…`; the policy checks that first path segment.
 
--- Reactions Table
-CREATE TABLE reactions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  log_id UUID REFERENCES daily_logs(id) ON DELETE CASCADE NOT NULL,
-  sender_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-  reaction_type TEXT CHECK (reaction_type IN ('fire', 'beast', 'launch', 'hype')) NOT NULL,
-  reaction_count INT DEFAULT 1,
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(log_id, sender_id, reaction_type)
-);
-
--- User Unfollows Table
-CREATE TABLE user_unfollows (
-  follower_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-  unfollowed_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  PRIMARY KEY (follower_id, unfollowed_id)
-);
-```
+### Storage
+Bucket `proof-photos`, public read. Photos are compressed to WebP < 200 KB in the
+browser *before* upload to stay inside the 1 GB free tier. **Only the durable
+Storage URL is ever persisted on a log** — a `blob:` preview URL dies with the
+page and renders broken after a reload.
 
 ---
 
@@ -309,6 +285,9 @@ CREATE TABLE user_unfollows (
 | `SiteFooter` | Sticky footer, never overlapping content |
 | `ModalPortal` | Portals overlays to `document.body` and locks body scroll |
 | `FeedStream` | Shared community feed (used by `/` when signed in, and `/feed`) |
+| `ChallengeProvider` | Auth session → challenge. The single source of "who am I" |
+| `DayLockedCard` | Replaces the check-in form once the day is settled |
+| `Toast` / `ConfirmDialog` | Translated, non-blocking feedback. Never use `alert`/`confirm` |
 
 ---
 
@@ -328,6 +307,11 @@ CREATE TABLE user_unfollows (
 12. **Every user-facing string exists in English AND German** (see §11).
 13. **Every colour goes through a CSS token** so both themes work (see §12).
 14. **Overlays render through `ModalPortal`** so nothing paints over them (see §12).
+15. **A completed day is locked** — final, not editable (see §4).
+16. **The database is the source of truth**, not `localStorage` (see §2).
+17. **Never persist a `blob:` URL.** Upload to Storage and store the returned URL (see §9).
+18. **No `alert()` or `confirm()`** — use the toast/confirm components so messages are translated and non-blocking.
+19. **Sample feed posts vanish once someone posts today**, and are labelled as samples while shown (see §5).
 
 ---
 

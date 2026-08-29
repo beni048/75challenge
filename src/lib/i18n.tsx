@@ -255,6 +255,40 @@ const en = {
   'story.export': 'Save 9:16 Story to Share',
   'story.exporting': 'Generating Story...',
 
+  // Day locking — a completed day is final and cannot be re-edited
+  'day.doneTitle': "Today's day is locked in",
+  'day.doneBody':
+    'You completed every rule for {date}. Nothing more to do — come back tomorrow to keep the streak going.',
+  'day.shieldedTitle': 'This day is protected',
+  'day.shieldedBody': 'You used your Streak Shield for {date}. Come back tomorrow.',
+  'day.restDayTitle': 'No rules scheduled today',
+  'day.restDayBody': 'Enjoy the rest day — your streak is safe.',
+
+  // Async / status messaging
+  'common.loading': 'Loading...',
+  'common.cancel': 'Cancel',
+  'common.retry': 'Try again',
+  'common.saving': 'Saving...',
+  'status.saveFailed': 'Could not save. Please try again.',
+  'status.loadFailed': 'Could not load your challenge. Please refresh.',
+  'status.offline': 'You appear to be offline. Changes were not saved.',
+
+  // Sign-up completion
+  'signup.confirmEmail':
+    'Almost there — confirm your email address, then log in to start Day 1.',
+  'signup.accountExists': 'An account with this email already exists. Try logging in instead.',
+
+  // Feed previews
+  'feed.previewNotice':
+    'Nobody has checked in yet today, so these sample posts show what the feed looks like.',
+  'feed.empty': 'No check-ins yet. Be the first today.',
+  'feed.loginRequired': 'Log in to see the community feed.',
+
+  // Other people's profiles
+  'profile.viewing': "{name}'s challenge",
+  'profile.notFound': 'No participant found with that username.',
+  'profile.ownChallenge': 'Go to my challenge',
+
   // Login
   'login.title': 'Welcome back',
   'login.subtitle': 'Log in to pick up your challenge where you left off.',
@@ -538,6 +572,36 @@ const de: Record<TranslationKey, string> = {
   'story.defaultQuote': 'Disziplin ist Freiheit.',
   'story.export': '9:16-Story zum Teilen sichern',
   'story.exporting': 'Story wird erstellt...',
+
+  'day.doneTitle': 'Dein Tag ist eingetragen',
+  'day.doneBody':
+    'Du hast am {date} alle Regeln erfüllt. Mehr gibt es heute nicht zu tun — komm morgen wieder und halte die Serie am Leben.',
+  'day.shieldedTitle': 'Dieser Tag ist geschützt',
+  'day.shieldedBody': 'Du hast für den {date} dein Streak-Schild eingesetzt. Komm morgen wieder.',
+  'day.restDayTitle': 'Heute sind keine Regeln geplant',
+  'day.restDayBody': 'Geniess den Ruhetag – deine Serie bleibt bestehen.',
+
+  'common.loading': 'Wird geladen...',
+  'common.cancel': 'Abbrechen',
+  'common.retry': 'Erneut versuchen',
+  'common.saving': 'Wird gespeichert...',
+  'status.saveFailed': 'Konnte nicht gespeichert werden. Bitte versuche es erneut.',
+  'status.loadFailed': 'Deine Challenge konnte nicht geladen werden. Bitte lade die Seite neu.',
+  'status.offline': 'Du scheinst offline zu sein. Änderungen wurden nicht gespeichert.',
+
+  'signup.confirmEmail':
+    'Fast geschafft – bestätige deine E-Mail-Adresse und melde dich an, um mit Tag 1 zu starten.',
+  'signup.accountExists':
+    'Mit dieser E-Mail-Adresse existiert bereits ein Konto. Melde dich stattdessen an.',
+
+  'feed.previewNotice':
+    'Heute hat noch niemand eingecheckt – diese Beispielbeiträge zeigen, wie der Feed aussieht.',
+  'feed.empty': 'Noch keine Check-ins. Sei heute die erste Person.',
+  'feed.loginRequired': 'Melde dich an, um den Community-Feed zu sehen.',
+
+  'profile.viewing': 'Challenge von {name}',
+  'profile.notFound': 'Kein Teilnehmender mit diesem Benutzernamen gefunden.',
+  'profile.ownChallenge': 'Zu meiner Challenge',
 
   'login.title': 'Willkommen zurück',
   'login.subtitle': 'Melde dich an und mach dort weiter, wo du aufgehört hast.',

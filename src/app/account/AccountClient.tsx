@@ -1,15 +1,16 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import RuleCustomizer from '@/components/RuleCustomizer';
 import { Rule } from '@/lib/streak-engine';
 import { useI18n } from '@/lib/i18n';
-import { useSession } from '@/components/useSession';
-import { clearSession, resetToDayOne } from '@/lib/session';
-import { signOut, updatePassword, sendPasswordReset, hasSupabaseSession } from '@/lib/auth';
-import { AlertCircle, CheckCircle2, Lock, ArrowRight, LogOut, RotateCcw } from 'lucide-react';
+import { useChallenge } from '@/components/ChallengeProvider';
+import { useToast, ConfirmDialog } from '@/components/Toast';
+import { replaceRules, updateProfile, restartChallenge } from '@/lib/db/profile';
+import { signOut, updatePassword, sendPasswordReset } from '@/lib/auth';
+import { Lock, ArrowRight, LogOut, RotateCcw } from 'lucide-react';
 
 type Tab = 'rules' | 'profile' | 'security';
 
@@ -23,31 +24,32 @@ export default function AccountClient() {
   const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { session, ready, saveSession } = useSession();
+  const toast = useToast();
+  const { session, challenge, loading, refresh } = useChallenge();
 
+  // The active tab is derived from the URL, not copied into state. Copying it
+  // meant that navigating from the header to ?tab=security while already on
+  // /account changed the URL but left the old tab showing.
   const requestedTab = searchParams.get('tab');
-  const [tab, setTab] = useState<Tab>(isTab(requestedTab) ? requestedTab : 'rules');
+  const tab: Tab = isTab(requestedTab) ? requestedTab : 'rules';
+
+  const selectTab = (value: Tab) => {
+    router.replace(`/account?tab=${value}`, { scroll: false });
+  };
 
   // Form drafts stay null until the user actually edits a field, so the stored
-  // session shows through without copying it into state on mount.
+  // challenge shows through without copying it into state on mount.
   const [editedRules, setEditedRules] = useState<Rule[] | null>(null);
   const [editedName, setEditedName] = useState<string | null>(null);
-  const [editedEmail, setEditedEmail] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [savingPassword, setSavingPassword] = useState(false);
-  const [canChangeInApp, setCanChangeInApp] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [confirmRestart, setConfirmRestart] = useState(false);
 
-  useEffect(() => {
-    hasSupabaseSession().then(setCanChangeInApp);
-  }, []);
+  if (loading) return <div style={{ minHeight: '60vh' }} />;
 
-  if (!ready) return <div style={{ minHeight: '60vh' }} />;
-
-  if (!session) {
+  if (!session || !challenge) {
     return (
       <div className="container" style={{ padding: '4rem 1.5rem', maxWidth: '520px', textAlign: 'center' }}>
         <div className="glass-card" style={{ padding: '2rem' }}>
@@ -65,90 +67,116 @@ export default function AccountClient() {
     );
   }
 
-  const draftRules = editedRules ?? session.rules;
-  const displayName = editedName ?? session.display_name;
-  const email = editedEmail ?? session.email;
+  const draftRules =
+    editedRules ??
+    challenge.rules.map((rule) => ({
+      id: rule.id,
+      title: rule.title,
+      schedule_type: rule.schedule_type,
+      custom_days: rule.custom_days,
+    }));
+  const displayName = editedName ?? challenge.displayName;
 
-  const flash = (text: string) => {
-    setError(null);
-    setMessage(text);
-  };
-
-  const handleSaveRules = () => {
+  const handleSaveRules = async () => {
     if (draftRules.length < 2) {
-      setMessage(null);
-      setError(t('rules.minWarning'));
+      toast.error(t('rules.minWarning'));
       return;
     }
-    saveSession({ ...session, rules: draftRules });
+
+    setBusy(true);
+    const result = await replaceRules(challenge.id, draftRules);
+    setBusy(false);
+
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
     setEditedRules(null);
-    flash(t('account.rulesSaved'));
+    await refresh();
+    toast.success(t('account.rulesSaved'));
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     if (!displayName.trim()) {
-      setMessage(null);
-      setError(t('auth.nameRequired'));
+      toast.error(t('auth.nameRequired'));
       return;
     }
-    saveSession({ ...session, display_name: displayName.trim(), email: email.trim() });
+
+    setBusy(true);
+    const result = await updateProfile(challenge.id, { displayName: displayName.trim() });
+    setBusy(false);
+
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
     setEditedName(null);
-    setEditedEmail(null);
-    flash(t('account.profileSaved'));
+    await refresh();
+    toast.success(t('account.profileSaved'));
   };
 
   const handleUpdatePassword = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setMessage(null);
-    setError(null);
 
     if (password.length < 5) {
-      setError(t('auth.passwordShort'));
+      toast.error(t('auth.passwordShort'));
       return;
     }
     if (password !== confirmPassword) {
-      setError(t('reset.mismatch'));
+      toast.error(t('reset.mismatch'));
       return;
     }
 
-    setSavingPassword(true);
+    setBusy(true);
     const result = await updatePassword(password);
-    setSavingPassword(false);
+    setBusy(false);
 
     if (!result.ok) {
-      setError(result.message || t('auth.failed'));
+      toast.error(result.message ?? t('auth.failed'));
       return;
     }
     setPassword('');
     setConfirmPassword('');
-    flash(t('account.updated'));
+    toast.success(t('account.updated'));
   };
 
   const handleSendReset = async () => {
-    setMessage(null);
-    setError(null);
-    const result = await sendPasswordReset(session.email);
+    const email = session.user.email;
+    if (!email) return;
+
+    const result = await sendPasswordReset(email);
     if (!result.ok) {
-      setError(result.message || t('auth.failed'));
+      toast.error(result.message ?? t('auth.failed'));
       return;
     }
-    flash(t('account.resetSent', { email: session.email }));
+    toast.success(t('account.resetSent', { email }));
   };
 
   const handleLogout = async () => {
     await signOut();
-    clearSession();
     router.push('/');
   };
 
-  const handleResetChallenge = () => {
-    if (!confirm(t('account.dangerConfirm'))) return;
-    saveSession(resetToDayOne(session));
-    flash(t('profile.resetAlert'));
+  const handleRestart = async () => {
+    setConfirmRestart(false);
+    setBusy(true);
+    const result = await restartChallenge(challenge.id);
+    setBusy(false);
+
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    await refresh();
+    toast.info(t('profile.resetAlert'));
   };
 
   const tabLabel = (value: Tab) =>
-    value === 'rules' ? t('account.tabRules') : value === 'profile' ? t('account.tabProfile') : t('account.tabSecurity');
+    value === 'rules'
+      ? t('account.tabRules')
+      : value === 'profile'
+        ? t('account.tabProfile')
+        : t('account.tabSecurity');
 
   return (
     <div className="container" style={{ padding: '2.5rem 1.5rem', maxWidth: '740px' }}>
@@ -161,11 +189,8 @@ export default function AccountClient() {
         {TABS.map((value) => (
           <button
             key={value}
-            onClick={() => {
-              setTab(value);
-              setMessage(null);
-              setError(null);
-            }}
+            onClick={() => selectTab(value)}
+            aria-current={tab === value ? 'page' : undefined}
             className={`btn btn-sm ${tab === value ? 'btn-primary' : 'btn-secondary'}`}
           >
             {tabLabel(value)}
@@ -173,24 +198,16 @@ export default function AccountClient() {
         ))}
       </div>
 
-      {message && (
-        <div className="notice notice-success" style={{ marginBottom: '1rem' }} role="status">
-          <CheckCircle2 size={18} />
-          <span>{message}</span>
-        </div>
-      )}
-      {error && (
-        <div className="notice notice-error" style={{ marginBottom: '1rem' }} role="alert">
-          <AlertCircle size={18} />
-          <span>{error}</span>
-        </div>
-      )}
-
       {tab === 'rules' && (
         <div className="glass-card" style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <RuleCustomizer rules={draftRules} onChange={setEditedRules} />
-          <button onClick={handleSaveRules} className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
-            {t('account.saveRules')}
+          <button
+            onClick={handleSaveRules}
+            className="btn btn-primary"
+            style={{ alignSelf: 'flex-start' }}
+            disabled={busy}
+          >
+            {busy ? t('common.saving') : t('account.saveRules')}
           </button>
         </div>
       )}
@@ -214,27 +231,30 @@ export default function AccountClient() {
             <label className="input-label" htmlFor="account-username">
               {t('account.username')}
             </label>
-            <input id="account-username" type="text" className="input-field" value={session.username} readOnly disabled />
+            <input id="account-username" type="text" className="input-field" value={challenge.username} readOnly disabled />
           </div>
 
           <div className="input-group">
             <label className="input-label" htmlFor="account-email">
               {t('account.email')}
             </label>
+            {/* Email belongs to the auth account, not the challenge, and
+                changing it needs its own verification flow — read-only here. */}
             <input
               id="account-email"
               type="email"
               className="input-field"
-              value={email}
-              onChange={(e) => setEditedEmail(e.target.value)}
+              value={session.user.email ?? ''}
+              readOnly
+              disabled
             />
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <button onClick={handleSaveProfile} className="btn btn-primary">
-              {t('account.saveProfile')}
+            <button onClick={handleSaveProfile} className="btn btn-primary" disabled={busy}>
+              {busy ? t('common.saving') : t('account.saveProfile')}
             </button>
-            <Link href={`/user/${session.username}`} className="btn btn-secondary">
+            <Link href={`/user/${challenge.username}`} className="btn btn-secondary">
               {t('account.goToChallenge')}
             </Link>
           </div>
@@ -245,13 +265,6 @@ export default function AccountClient() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div className="glass-card" style={{ padding: '1.75rem' }}>
             <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>{t('account.changePassword')}</h3>
-
-            {canChangeInApp === false && (
-              <div className="notice notice-info" style={{ marginBottom: '1rem' }}>
-                <AlertCircle size={18} />
-                <span>{t('account.needSession')}</span>
-              </div>
-            )}
 
             <form onSubmit={handleUpdatePassword}>
               <div className="input-group">
@@ -299,8 +312,8 @@ export default function AccountClient() {
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <button type="submit" className="btn btn-primary" disabled={savingPassword}>
-                  {savingPassword ? t('reset.submitting') : t('account.updateSubmit')}
+                <button type="submit" className="btn btn-primary" disabled={busy}>
+                  {busy ? t('reset.submitting') : t('account.updateSubmit')}
                 </button>
                 <button type="button" onClick={handleSendReset} className="btn btn-secondary">
                   {t('account.sendReset')}
@@ -315,7 +328,7 @@ export default function AccountClient() {
               {t('account.dangerDesc')}
             </p>
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <button onClick={handleResetChallenge} className="btn btn-danger">
+              <button onClick={() => setConfirmRestart(true)} className="btn btn-danger" disabled={busy}>
                 <RotateCcw size={16} /> {t('account.dangerCta')}
               </button>
               <button onClick={handleLogout} className="btn btn-secondary">
@@ -325,6 +338,16 @@ export default function AccountClient() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmRestart}
+        title={t('account.dangerTitle')}
+        body={t('account.dangerConfirm')}
+        confirmLabel={t('account.dangerCta')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={handleRestart}
+        onCancel={() => setConfirmRestart(false)}
+      />
     </div>
   );
 }

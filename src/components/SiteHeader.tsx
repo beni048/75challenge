@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Flame, Moon, Sun, User as UserIcon, ListChecks, KeyRound, LogOut } from 'lucide-react';
 import { useI18n, LOCALES, LOCALE_LABELS } from '@/lib/i18n';
 import { useTheme } from '@/lib/theme';
-import { useSession } from './useSession';
-import { clearSession } from '@/lib/session';
+import { useChallenge } from './ChallengeProvider';
 import { signOut } from '@/lib/auth';
 
 function ThemeToggle() {
@@ -77,7 +76,6 @@ function AccountMenu({ username, displayName }: { username: string; displayName:
   const handleLogout = async () => {
     setOpen(false);
     await signOut();
-    clearSession();
     router.push('/');
   };
 
@@ -138,7 +136,7 @@ function AccountMenu({ username, displayName }: { username: string; displayName:
 
 export default function SiteHeader() {
   const { t } = useI18n();
-  const { session, ready } = useSession();
+  const { session, challenge, loading } = useChallenge();
 
   return (
     <header className="navbar">
@@ -152,11 +150,17 @@ export default function SiteHeader() {
           <LanguageSwitch />
           <ThemeToggle />
 
-          {/* Held back until the session has been read, so the nav does not flash
-              the logged-out buttons at a signed-in user. */}
-          {ready &&
-            (session ? (
-              <AccountMenu username={session.username} displayName={session.display_name} />
+          {/* Held back until auth resolves, so the nav does not flash the
+              logged-out buttons at a signed-in participant. */}
+          {!loading &&
+            (session && challenge ? (
+              <AccountMenu username={challenge.username} displayName={challenge.displayName} />
+            ) : session ? (
+              // Signed in but no challenge yet (e.g. confirmed the email but
+              // never finished onboarding).
+              <Link href="/join" className="btn btn-primary btn-sm" id="nav-finish-setup">
+                {t('nav.join')}
+              </Link>
             ) : (
               <>
                 <Link href="/login" className="btn btn-secondary btn-sm" id="nav-login">

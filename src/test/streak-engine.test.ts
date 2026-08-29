@@ -112,5 +112,70 @@ describe('Streak & Shield Engine', () => {
       expect(result.status).toBe('failed');
       expect(result.needsShieldPrompt).toBe(false);
     });
+
+    it('fails when more days are missed than there are shields to cover them', () => {
+      // Regression: the engine used to read `shields_remaining` without ever
+      // consuming it, so any number of missed days kept re-prompting and the
+      // challenge never transitioned to 'failed'.
+      const logsWithTwoMisses: DailyLog[] = [
+        // 2026-09-01, 2026-09-02 and 2026-09-03 are all missing.
+      ];
+
+      const evalDate = new Date(2026, 8, 4, 12, 0, 0);
+      const result = evaluateUserChallenge(baseUser, rules, logsWithTwoMisses, evalDate);
+
+      expect(result.missedDates).toEqual(['2026-09-01', '2026-09-02', '2026-09-03']);
+      expect(result.status).toBe('failed');
+      expect(result.needsShieldPrompt).toBe(false);
+    });
+
+    it('counts an already-shielded day as keeping the streak alive', () => {
+      const logs: DailyLog[] = [
+        { log_date: '2026-09-01', status: 'completed' },
+        { log_date: '2026-09-02', status: 'shielded' },
+        { log_date: '2026-09-03', status: 'completed' },
+      ];
+
+      // The shield was already spent, hence 0 remaining.
+      const evalDate = new Date(2026, 8, 4, 12, 0, 0);
+      const result = evaluateUserChallenge(
+        { ...baseUser, shields_remaining: 0 },
+        rules,
+        logs,
+        evalDate
+      );
+
+      expect(result.status).toBe('active');
+      expect(result.missedDates).toEqual([]);
+      expect(result.completedDaysCount).toBe(3);
+    });
+
+    it('never judges today — only days that are already over', () => {
+      const logs: DailyLog[] = [
+        { log_date: '2026-09-01', status: 'completed' },
+        { log_date: '2026-09-02', status: 'completed' },
+        { log_date: '2026-09-03', status: 'completed' },
+        // Nothing logged for 2026-09-04 yet, and that is fine.
+      ];
+
+      const evalDate = new Date(2026, 8, 4, 12, 0, 0);
+      const result = evaluateUserChallenge(baseUser, rules, logs, evalDate);
+
+      expect(result.missedDates).toEqual([]);
+      expect(result.needsShieldPrompt).toBe(false);
+      expect(result.currentDay).toBe(4);
+    });
+
+    it('does not count a rest day as missed', () => {
+      const workdayOnly: Rule[] = [{ id: 'r1', title: 'Workday rule', schedule_type: 'workdays' }];
+
+      // 2026-09-05 is a Saturday, 2026-09-06 a Sunday — no rules scheduled.
+      const weekendUser: UserChallengeProfile = { ...baseUser, start_date: '2026-09-05' };
+      const evalDate = new Date(2026, 8, 7, 12, 0, 0);
+      const result = evaluateUserChallenge(weekendUser, workdayOnly, [], evalDate);
+
+      expect(result.missedDates).toEqual([]);
+      expect(result.status).toBe('active');
+    });
   });
 });

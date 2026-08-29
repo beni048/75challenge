@@ -107,5 +107,13 @@ document.documentElement.style.colorScheme=t;
 var l=localStorage.getItem('75_locale');
 if(l!=='en'&&l!=='de'){l=(navigator.language||'en').toLowerCase().indexOf('de')===0?'de':'en';}
 document.documentElement.lang=l;
-document.documentElement.dataset.session=localStorage.getItem('75_user_session')?'in':'out';
+// Supabase persists its session under "sb-<project-ref>-auth-token". Detecting
+// it here lets CSS hide the marketing landing page before first paint for a
+// signed-in visitor, so they never see it flash before the feed mounts.
+var signedIn=false;
+for(var i=0;i<localStorage.length;i++){
+var k=localStorage.key(i);
+if(k&&k.indexOf('sb-')===0&&k.indexOf('-auth-token')>0){signedIn=true;break;}
+}
+document.documentElement.dataset.session=signedIn?'in':'out';
 }catch(e){document.documentElement.dataset.theme='dark';}})();`;

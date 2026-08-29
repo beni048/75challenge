@@ -10,8 +10,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Flame, Users, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
-import { createSession, saveSession } from '@/lib/session';
+import { savePendingSignup } from '@/lib/pending-signup';
+import { createChallenge } from '@/lib/db/profile';
 import { signUp } from '@/lib/auth';
+import { useToast } from './Toast';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -30,6 +32,7 @@ export default function OnboardingModal({
 }: OnboardingModalProps) {
   const router = useRouter();
   const { t } = useI18n();
+  const toast = useToast();
   const [startDate, setStartDate] = useState(formatDate(new Date()));
   const [activeStep, setActiveStep] = useState<'rules' | 'auth'>('rules');
   const [loading, setLoading] = useState(false);
@@ -43,33 +46,61 @@ export default function OnboardingModal({
     password: string;
   }) => {
     if (configuredRules.length < 2) {
-      alert(t('onboarding.minRulesAlert'));
+      toast.error(t('onboarding.minRulesAlert'));
       return;
     }
 
     setLoading(true);
     try {
-      // Register the credentials. The challenge itself is stored locally, so a
-      // failure here (offline, service not configured) must not block the join.
-      await signUp(authData.email, authData.password);
+      const result = await signUp(authData.email, authData.password);
 
-      const username = authData.displayName.toLowerCase().replace(/[^a-z0-9]/g, '_');
-      const session = createSession({
-        username,
+      if (!result.ok) {
+        setLoading(false);
+        toast.error(result.message ?? t('onboarding.signupFailed'));
+        return;
+      }
+
+      // The chosen rules and start date are parked locally either way, so they
+      // survive an email-confirmation round trip.
+      savePendingSignup({
         displayName: authData.displayName,
-        email: authData.email,
         startDate,
         rules: configuredRules,
-        referredBy,
+        referredByUsername: referredBy ?? null,
       });
 
-      saveSession(session);
-      router.push(`/user/${session.username}`);
+      if (!result.hasSession || !result.userId) {
+        // The project requires email confirmation: the challenge row cannot be
+        // written until the user is authenticated. ChallengeProvider creates it
+        // on their first signed-in visit.
+        setLoading(false);
+        onClose();
+        toast.info(t('signup.confirmEmail'));
+        router.push('/login');
+        return;
+      }
+
+      const created = await createChallenge({
+        userId: result.userId,
+        displayName: authData.displayName,
+        startDate,
+        rules: configuredRules,
+        referredByUsername: referredBy ?? null,
+      });
+
+      setLoading(false);
+
+      if (created.error || !created.data) {
+        toast.error(created.error ?? t('onboarding.signupFailed'));
+        return;
+      }
+
+      onClose();
+      router.push(`/user/${created.data.username}`);
     } catch (err) {
       console.error('Signup error:', err);
-      alert(t('onboarding.signupFailed'));
-    } finally {
       setLoading(false);
+      toast.error(t('onboarding.signupFailed'));
     }
   };
 

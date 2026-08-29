@@ -33,7 +33,8 @@ src/test/
 ├── setup.ts                 # Global test environment, JSDOM & Canvas mocks
 ├── date-utils.test.ts       # Date formatting, 75-day calculations, year-end notice
 ├── streak-engine.test.ts    # Rule scheduling, 1 Streak Shield mechanics, reset evaluations
-├── session.test.ts          # Local challenge session: Day-1 start, logs, shield, reset
+├── db.test.ts               # Pure db helpers: username slugs, preview-post rule
+├── supabase-config.test.ts  # Project-URL normalization (the /rest/v1 footgun)
 ├── i18n.test.ts             # EN/DE parity: no missing keys, matching placeholders
 ├── feed.test.ts             # Positive-only feed filters (completed/shielded), cold-start mock schemas
 └── components.test.tsx      # Unit tests for UI components (RuleCustomizer, HypeButton, HelpFeedback)
@@ -47,13 +48,24 @@ src/test/
 1. **Calendar-Date Logging**:
    - Check-ins belong to their plain local calendar date. There is **no** cutoff-hour rollover to test — if you find a test asserting a 3 AM boundary, it is stale and should be removed.
 2. **Fresh-Account Invariant**:
-   - A newly created session must be on Day 1 with `logs === []`. Assert this explicitly; it is the bug most likely to regress.
-   - A stored session missing a `logs` field must load as an empty history, never as completed days.
-3. **State Machine Transitions**:
+   - A newly created challenge must be on Day 1 with no logs. Assert this explicitly; it is the bug most likely to regress.
+3. **Shield Accounting**:
+   - `evaluateUserChallenge` must transition to `'failed'` when missed days outnumber remaining shields. This regressed once because the shield count was read but never consumed — keep the regression test.
+   - Today is never judged; only days that are already over.
+4. **State Machine Transitions**:
    - Verify that missing 1 past day prompts the Shield when `shields_remaining > 0`.
    - Verify that missing a 2nd past day (or when `shields_remaining === 0`) immediately transitions `status` to `'failed'`.
-4. **Strict Positive-Only Filtering**:
+5. **Strict Positive-Only Filtering**:
    - Ensure test cases assert that daily logs with status `'failed'` or incomplete checkmarks are excluded from the community feed.
+   - Note this is enforced twice: by the query filter *and* by RLS. Client-side tests cover the former; the policy is the real guarantee.
+
+### What is NOT unit-tested
+Anything requiring a live Supabase connection (`src/lib/db/*` network paths,
+auth flows, Storage uploads) has no unit test — mocking the client end-to-end
+would test the mock, not the code. Verify those by hand on
+`dev.75challenge.quest` before promoting. Pure helpers extracted from those
+modules (`toUsernameSlug`, `shouldShowPreviews`, `normalizeSupabaseUrl`) **are**
+tested, so extract logic worth asserting rather than leaving it inline.
 
 ### Localization Tests (mandatory)
 `src/test/i18n.test.ts` is a guard, not a formality. It must keep asserting that:

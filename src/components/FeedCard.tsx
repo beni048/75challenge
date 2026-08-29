@@ -9,7 +9,8 @@ import { useI18n } from '@/lib/i18n';
 
 interface FeedCardProps {
   post: FeedPost;
-  onUnfollow?: (userId: string) => void;
+  /** `undo` is true when the viewer is re-following after hiding someone. */
+  onUnfollow?: (userId: string, undo: boolean) => void;
   onReact?: (postId: string, type: ReactionType) => void;
 }
 
@@ -20,9 +21,8 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
   const handleToggleUnfollow = () => {
     const nextState = !isUnfollowed;
     setIsUnfollowed(nextState);
-    if (onUnfollow) {
-      onUnfollow(post.user_id);
-    }
+    // nextState === true means "now hidden", so undo is the inverse.
+    onUnfollow?.(post.user_id, !nextState);
   };
 
   if (isUnfollowed) {

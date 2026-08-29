@@ -3,9 +3,9 @@
 /**
  * Credential handling via Supabase Auth.
  *
- * The challenge data itself lives in localStorage (see `src/lib/session.ts`);
- * Supabase is used only for the account: sign-up, sign-in, changing a password
- * while signed in, and the email-verified password reset.
+ * This module owns credentials only — sign-up, sign-in, changing a password
+ * while signed in, and the email-verified password reset. The challenge itself
+ * lives in the database (see `src/lib/db/`), keyed by the auth user's id.
  *
  * Every call degrades gracefully: if Supabase is unreachable or not configured,
  * `ok` comes back false with a human-readable `message` instead of throwing, so
@@ -19,6 +19,8 @@ export interface AuthResult {
   message?: string;
   /** True when a Supabase session exists (needed for in-app password changes). */
   hasSession?: boolean;
+  /** The auth user id, which is also the challenge's primary key. */
+  userId?: string;
 }
 
 function describe(error: unknown): string {
@@ -35,12 +37,13 @@ export async function signUp(email: string, password: string): Promise<AuthResul
       email,
       password,
       options: {
-        emailRedirectTo:
-          typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined,
+        // Confirming a sign-up email should land on the app, not on the
+        // password-reset screen.
+        emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/` : undefined,
       },
     });
     if (error) return { ok: false, message: describe(error) };
-    return { ok: true, hasSession: Boolean(data.session) };
+    return { ok: true, hasSession: Boolean(data.session), userId: data.user?.id };
   } catch (error) {
     return { ok: false, message: describe(error) };
   }
@@ -51,7 +54,7 @@ export async function signIn(email: string, password: string): Promise<AuthResul
     const supabase = createClient();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { ok: false, message: describe(error) };
-    return { ok: true, hasSession: Boolean(data.session) };
+    return { ok: true, hasSession: Boolean(data.session), userId: data.user?.id };
   } catch (error) {
     return { ok: false, message: describe(error) };
   }

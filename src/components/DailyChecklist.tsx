@@ -1,36 +1,58 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Rule, DailyLog } from '@/lib/streak-engine';
+import React, { useEffect, useRef, useState } from 'react';
+import { Rule } from '@/lib/streak-engine';
 import { compressImageToWebP } from '@/lib/image-compressor';
-import { getEffectiveLogDate } from '@/lib/date-utils';
 import { Check, Upload, Sparkles, AlertTriangle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useI18n } from '@/lib/i18n';
 
+export interface DailyCheckInSubmission {
+  status: 'completed';
+  caption: string | null;
+  /**
+   * The compressed image itself, not a URL. The page uploads it to Storage and
+   * persists the durable URL it gets back — a `blob:` preview URL would be dead
+   * by the next page load.
+   */
+  photoBlob: Blob | null;
+  ruleChecks: { ruleId: string; isCompleted: boolean }[];
+}
+
 interface DailyChecklistProps {
   rules: Rule[];
-  logDate?: string;
-  existingLog?: DailyLog;
-  onSaveLog: (log: DailyLog) => void;
+  logDate: string;
+  saving?: boolean;
+  onSaveLog: (submission: DailyCheckInSubmission) => void;
   onReportFailure?: (logDate: string) => void;
 }
 
 export default function DailyChecklist({
   rules,
-  logDate = getEffectiveLogDate(),
-  existingLog,
+  logDate,
+  saving = false,
   onSaveLog,
   onReportFailure,
 }: DailyChecklistProps) {
   const { t } = useI18n();
-  const [completedRuleIds, setCompletedRuleIds] = useState<string[]>(
-    existingLog?.rule_checks?.filter((c) => c.is_completed).map((c) => c.rule_id) || []
-  );
-  const [caption, setCaption] = useState(existingLog?.caption || '');
-  const [photoPreview, setPhotoPreview] = useState<string | null>(existingLog?.photo_url || null);
+  const [completedRuleIds, setCompletedRuleIds] = useState<string[]>([]);
+  const [caption, setCaption] = useState('');
+  const [photo, setPhoto] = useState<{ blob: Blob; previewUrl: string } | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressionStats, setCompressionStats] = useState<string | null>(null);
+
+  // Object URLs are a manually-managed resource: without this the browser holds
+  // the decoded image in memory for the lifetime of the document.
+  const previewUrlRef = useRef<string | null>(null);
+  useEffect(() => {
+    previewUrlRef.current = photo?.previewUrl ?? null;
+  }, [photo]);
+  useEffect(
+    () => () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    },
+    []
+  );
 
   const toggleRule = (ruleId: string) => {
     setCompletedRuleIds((prev) =>
@@ -45,7 +67,9 @@ export default function DailyChecklist({
     setIsCompressing(true);
     try {
       const result = await compressImageToWebP(file);
-      setPhotoPreview(result.previewUrl);
+      // Release the previous preview before replacing it.
+      if (photo?.previewUrl) URL.revokeObjectURL(photo.previewUrl);
+      setPhoto({ blob: result.blob, previewUrl: result.previewUrl });
       setCompressionStats(
         t('checklist.compressionStats', {
           before: result.originalSizeKB,
@@ -54,7 +78,7 @@ export default function DailyChecklist({
       );
     } catch (err) {
       console.error('Image compression error:', err);
-      alert(t('checklist.compressionFailed'));
+      setCompressionStats(null);
     } finally {
       setIsCompressing(false);
     }
@@ -64,11 +88,12 @@ export default function DailyChecklist({
 
   const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (saving) return;
 
-    // An incomplete day is never recorded silently — the user decides whether it
-    // counts as missed, and the shield prompt takes over from there.
+    // Submitting is only ever "I finished today". An unfinished day is reported
+    // through the separate missed-day button, which opens the shield prompt —
+    // we never quietly record a partial day.
     if (!allRulesDone) {
-      if (!confirm(t('checklist.confirmIncomplete'))) return;
       onReportFailure?.(logDate);
       return;
     }
@@ -81,14 +106,10 @@ export default function DailyChecklist({
     });
 
     onSaveLog({
-      log_date: logDate,
       status: 'completed',
-      photo_url: photoPreview,
       caption: caption.trim() || null,
-      rule_checks: rules.map((r) => ({
-        rule_id: r.id,
-        is_completed: completedRuleIds.includes(r.id),
-      })),
+      photoBlob: photo?.blob ?? null,
+      ruleChecks: rules.map((r) => ({ ruleId: r.id, isCompleted: true })),
     });
   };
 
@@ -177,13 +198,13 @@ export default function DailyChecklist({
             style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
           >
             <Upload size={16} />
-            <span>{photoPreview ? t('checklist.photoChange') : t('checklist.photoUpload')}</span>
+            <span>{photo ? t('checklist.photoChange') : t('checklist.photoUpload')}</span>
             <input
               type="file"
               accept="image/*"
               style={{ display: 'none' }}
               onChange={handlePhotoSelect}
-              disabled={isCompressing}
+              disabled={isCompressing || saving}
             />
           </label>
 
@@ -198,11 +219,11 @@ export default function DailyChecklist({
           )}
         </div>
 
-        {photoPreview && (
+        {photo && (
           <div style={{ marginTop: '0.75rem', borderRadius: 'var(--radius-md)', overflow: 'hidden', maxWidth: '240px' }}>
             {/* eslint-disable-next-line @next/next/no-img-element -- local preview
                 of a just-compressed blob: URL; nothing for next/image to optimize. */}
-            <img src={photoPreview} alt={t('checklist.photoAlt')} style={{ width: '100%', height: 'auto', display: 'block' }} />
+            <img src={photo.previewUrl} alt={t('checklist.photoAlt')} style={{ width: '100%', height: 'auto', display: 'block' }} />
           </div>
         )}
       </div>
@@ -223,9 +244,14 @@ export default function DailyChecklist({
       </div>
 
       <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-        <button type="submit" className="btn btn-primary" style={{ flex: '1 1 200px', padding: '0.9rem 1.5rem', fontWeight: 700 }}>
+        <button
+          type="submit"
+          className="btn btn-primary"
+          style={{ flex: '1 1 200px', padding: '0.9rem 1.5rem', fontWeight: 700 }}
+          disabled={!allRulesDone || saving}
+        >
           <Sparkles size={18} />
-          {allRulesDone ? t('checklist.submitComplete') : t('checklist.submitPartial')}
+          {saving ? t('common.saving') : t('checklist.submitComplete')}
         </button>
 
         {onReportFailure && (
@@ -234,6 +260,7 @@ export default function DailyChecklist({
             onClick={() => onReportFailure(logDate)}
             className="btn btn-danger"
             style={{ padding: '0.9rem 1.2rem' }}
+            disabled={saving}
           >
             <AlertTriangle size={16} /> {t('checklist.reportMissed')}
           </button>

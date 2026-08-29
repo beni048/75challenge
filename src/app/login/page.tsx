@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { Mail, Lock, AlertCircle, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { signIn, sendPasswordReset } from '@/lib/auth';
-import { loadSession } from '@/lib/session';
 
 type Mode = 'login' | 'forgot';
 
@@ -40,10 +39,11 @@ export default function LoginPage() {
       return;
     }
 
-    // The challenge itself lives on this device. If it is here, go straight to
-    // it; otherwise the account has no local challenge yet and needs onboarding.
-    const session = loadSession();
-    router.push(session ? `/user/${session.username}` : '/join');
+    // ChallengeProvider picks up the new session and loads (or creates) the
+    // challenge; the home page then renders the feed. Sending everyone to "/"
+    // keeps this page from having to know which of those happened.
+    router.push('/');
+    router.refresh();
   };
 
   const handleForgot = async (e: React.SubmitEvent<HTMLFormElement>) => {

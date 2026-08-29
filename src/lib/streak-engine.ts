@@ -69,13 +69,27 @@ export interface StreakEvaluationResult {
   currentDay: number;
   shieldsRemaining: number;
   status: 'active' | 'failed' | 'completed';
+  /** True when the user should be asked to spend their shield or restart. */
   needsShieldPrompt: boolean;
+  /** The earliest day awaiting a decision — what the prompt is about. */
   missedDate?: string;
+  /** Every past day that is neither completed nor shielded, oldest first. */
+  missedDates: string[];
   completedDaysCount: number;
 }
 
 /**
- * Evaluates the full challenge status up to yesterday's effective date.
+ * Evaluates a challenge as of `now`, looking only at days that are already over.
+ *
+ * "Missed" means a past day that carries no log, or a log explicitly marked
+ * failed. Today is never judged — the user still has time to check in.
+ *
+ * Shield accounting: a day already recorded as `shielded` has *already* spent a
+ * shield, which is reflected in `user.shields_remaining`. So the question here
+ * is only whether the shields still in hand can cover the days awaiting a
+ * decision. One unresolved day with a shield left → prompt. More unresolved days
+ * than shields → the challenge is failed and has to restart from Day 1
+ * (start.md §14, rules 5 and 6).
  */
 export function evaluateUserChallenge(
   user: UserChallengeProfile,
@@ -87,50 +101,47 @@ export function evaluateUserChallenge(
   const start = parseDate(user.start_date);
   const today = parseDate(effectiveToday);
 
-  // Map logs by date for fast lookup
   const logsByDate = new Map<string, DailyLog>();
   logs.forEach((log) => logsByDate.set(log.log_date, log));
 
-  const shields = user.shields_remaining;
-  let status = user.status;
+  const shieldsRemaining = user.shields_remaining;
   let completedDaysCount = 0;
-  let needsShieldPrompt = false;
-  let missedDate: string | undefined = undefined;
+  const missedDates: string[] = [];
 
-  // Calculate day index from start_date
-  const diffTime = today.getTime() - start.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  // Whole days elapsed since the start date. Day 1 is the start date itself, so
+  // this is also the number of days that are already over.
+  const diffDays = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
   const currentDay = Math.max(1, Math.min(diffDays + 1, 75));
 
-  // Check all past days up to yesterday
   for (let i = 0; i < diffDays; i++) {
     const d = new Date(start);
     d.setDate(d.getDate() + i);
     const dateStr = formatDate(d);
 
-    const log = logsByDate.get(dateStr);
-    const requiredRules = getRequiredRulesForDate(rules, dateStr);
-
-    if (requiredRules.length === 0) {
-      // No rules on this day, count as satisfied
+    // A rest day (no rule scheduled) can never be missed.
+    if (getRequiredRulesForDate(rules, dateStr).length === 0) {
       completedDaysCount++;
       continue;
     }
 
+    const log = logsByDate.get(dateStr);
+
     if (!log || log.status === 'failed') {
-      // Missed day detected
-      if (shields > 0) {
-        needsShieldPrompt = true;
-        missedDate = dateStr;
-      } else {
-        status = 'failed';
-      }
-    } else if (log.status === 'shielded') {
-      // Already shielded day
-      completedDaysCount++;
-    } else if (log.status === 'completed') {
+      missedDates.push(dateStr);
+    } else {
+      // 'completed' and 'shielded' both keep the streak alive.
       completedDaysCount++;
     }
+  }
+
+  let status = user.status;
+  let needsShieldPrompt = false;
+
+  if (missedDates.length > shieldsRemaining) {
+    // More days need forgiving than there are shields to forgive them with.
+    status = 'failed';
+  } else if (missedDates.length > 0) {
+    needsShieldPrompt = true;
   }
 
   if (completedDaysCount >= 75 && status === 'active') {
@@ -139,10 +150,11 @@ export function evaluateUserChallenge(
 
   return {
     currentDay,
-    shieldsRemaining: shields,
+    shieldsRemaining,
     status,
     needsShieldPrompt,
-    missedDate,
+    missedDate: missedDates[0],
+    missedDates,
     completedDaysCount,
   };
 }
