@@ -9,7 +9,11 @@ export default function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="container">
-        <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
+        <p className="footer-line">
+          <span>{t('footer.copyright', { year: new Date().getFullYear() })}</span>
+          <span className="footer-sep" aria-hidden="true">|</span>
+          <span>{t('footer.brand')}</span>
+        </p>
         <p style={{ marginTop: '0.4rem', fontSize: '0.78rem' }}>{t('footer.tagline')}</p>
       </div>
     </footer>

@@ -21,6 +21,8 @@ export interface UserRow {
   status: ChallengeStatus;
   referred_by_id: string | null;
   created_at: string;
+  /** When the one-time post-day-7 rule change was used. Null = still available. */
+  rules_changed_at: string | null;
 }
 
 export interface RuleRow {
@@ -65,6 +67,7 @@ export interface Challenge {
   shieldsRemaining: number;
   status: ChallengeStatus;
   referredById: string | null;
+  rulesChangedAt: string | null;
   rules: RuleRow[];
   logs: DailyLogRow[];
 }

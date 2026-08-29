@@ -6,7 +6,6 @@ import OnboardingModal from '@/components/OnboardingModal';
 import { Rule } from '@/lib/streak-engine';
 import { getDefaultRules } from '@/components/RuleCustomizer';
 import { Users, Flame, ArrowRight, ShieldCheck, Award } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useI18n } from '@/lib/i18n';
 
 export default function JoinClient() {
@@ -30,7 +29,9 @@ export default function JoinClient() {
 
   return (
     <div className="container" style={{ padding: '3rem 1.5rem', maxWidth: '740px' }}>
-      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+      {/* Transform-only entrance — see `.rise-in`. An opacity-0 initial would
+          ship this page invisible until JS hydrates. */}
+      <div className="rise-in">
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           {refUsername ? (
             <div className="badge badge-shield" style={{ marginBottom: '1rem', padding: '0.45rem 1.2rem', fontSize: '0.9rem' }}>
@@ -69,7 +70,7 @@ export default function JoinClient() {
             <ArrowRight size={18} />
           </button>
         </div>
-      </motion.div>
+      </div>
 
       <OnboardingModal
         isOpen={isOnboardingOpen}

@@ -22,7 +22,7 @@ export default function HelpFeedback() {
         aria-label={t('help.trigger')}
       >
         <HelpCircle size={18} color="var(--accent-orange)" />
-        <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{t('help.trigger')}</span>
+        <span className="help-fab-label">{t('help.trigger')}</span>
       </button>
 
       <ModalPortal isOpen={isOpen} onClose={() => setIsOpen(false)}>

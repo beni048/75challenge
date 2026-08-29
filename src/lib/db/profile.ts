@@ -38,6 +38,7 @@ function assemble(user: UserRow, rules: RuleRow[], logs: DailyLogRow[]): Challen
     shieldsRemaining: user.shields_remaining,
     status: user.status,
     referredById: user.referred_by_id,
+    rulesChangedAt: user.rules_changed_at ?? null,
     rules,
     logs,
   };
@@ -177,37 +178,105 @@ export async function createChallenge(input: CreateChallengeInput): Promise<DbRe
 }
 
 /**
- * Replaces a user's rule set wholesale.
+ * Writes a rule set, preserving history.
  *
- * Rules are deleted and re-inserted rather than diffed: the set is tiny, and
- * `log_rule_checks` cascades, so historical check marks for a removed rule
- * disappear with it — which is the behaviour we want.
+ * Rules are diffed rather than replaced. That matters because
+ * `log_rule_checks.rule_id` cascades on delete: dropping and re-inserting every
+ * rule would destroy the per-rule check marks on every past day, and feed posts
+ * would lose the habit chips that show what someone actually did.
+ *
+ * So: unchanged rules are left alone, edited titles are updated in place (the
+ * row id survives, and with it its history), genuinely removed rules are
+ * deleted, and new ones inserted.
  */
 export async function replaceRules(userId: string, rules: Rule[]): Promise<DbResult<RuleRow[]>> {
   try {
     const supabase = createClient();
 
-    const { error: deleteError } = await supabase.from('rules').delete().eq('user_id', userId);
-    if (deleteError) return fail(deleteError);
-
-    if (rules.length === 0) return ok([]);
-
-    const { data, error } = await supabase
+    const { data: existing, error: readError } = await supabase
       .from('rules')
-      .insert(
-        rules.map((rule, index) => ({
+      .select('*')
+      .eq('user_id', userId);
+    if (readError) return fail(readError);
+
+    const existingById = new Map((existing ?? []).map((row) => [row.id, row]));
+    const keptIds = new Set<string>();
+
+    const updates: RuleRow[] = [];
+    const inserts: Omit<RuleRow, 'id'>[] = [];
+
+    rules.forEach((rule, index) => {
+      const match = existingById.get(rule.id);
+      if (match) {
+        keptIds.add(match.id);
+        const changed =
+          match.title !== rule.title ||
+          match.schedule_type !== rule.schedule_type ||
+          match.position !== index ||
+          JSON.stringify(match.custom_days ?? []) !== JSON.stringify(rule.custom_days ?? []);
+
+        if (changed) {
+          updates.push({
+            ...match,
+            title: rule.title,
+            schedule_type: rule.schedule_type,
+            custom_days: rule.custom_days ?? [],
+            position: index,
+          });
+        }
+      } else {
+        // Client-generated ids (`rule-1`, `custom-rule-…`) are not UUIDs, so the
+        // database assigns a real one on insert.
+        inserts.push({
           user_id: userId,
           title: rule.title,
           schedule_type: rule.schedule_type,
           custom_days: rule.custom_days ?? [],
           position: index,
-        }))
-      )
-      .select()
-      .order('position');
+        });
+      }
+    });
 
+    const removedIds = (existing ?? []).map((r) => r.id).filter((id) => !keptIds.has(id));
+
+    if (removedIds.length > 0) {
+      const { error } = await supabase.from('rules').delete().in('id', removedIds);
+      if (error) return fail(error);
+    }
+
+    if (updates.length > 0) {
+      const { error } = await supabase.from('rules').upsert(updates);
+      if (error) return fail(error);
+    }
+
+    if (inserts.length > 0) {
+      const { error } = await supabase.from('rules').insert(inserts);
+      if (error) return fail(error);
+    }
+
+    const { data, error } = await supabase
+      .from('rules')
+      .select('*')
+      .eq('user_id', userId)
+      .order('position');
     if (error) return fail(error);
+
     return ok(data ?? []);
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Marks the one-time post-day-7 rule change as spent.
+ * Idempotent — the SQL only writes when the allowance is still unused.
+ */
+export async function consumeRulesChange(): Promise<DbResult<true>> {
+  try {
+    const supabase = createClient();
+    const { error } = await supabase.rpc('consume_rules_change');
+    if (error) return fail(error);
+    return ok(true);
   } catch (error) {
     return fail(error);
   }

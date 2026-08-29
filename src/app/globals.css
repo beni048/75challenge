@@ -26,6 +26,7 @@
   --chip-bg: rgba(255, 255, 255, 0.05);
   --chip-bg-strong: rgba(255, 255, 255, 0.1);
   --surface-hover: rgba(255, 255, 255, 0.08);
+  --surface-band: rgba(255, 255, 255, 0.025);
   --grid-empty: rgba(255, 255, 255, 0.06);
   --backdrop: rgba(0, 0, 0, 0.75);
   --photo-backdrop: #000;
@@ -104,6 +105,16 @@
   --z-menu: 60;
   --z-modal: 1000;
 
+  /*
+   * Breakpoints. MOBILE FIRST: base rules target the smallest screen, and these
+   * are only ever used with `min-width` to *add* for larger ones. Never write a
+   * `max-width` query to claw back a desktop-first design.
+   *
+   * Custom properties cannot be used inside a media query, so these exist as
+   * documentation — keep the literals below in step with them.
+   *   sm 480px   md 768px   lg 1024px
+   */
+
   /* Spacing & Borders */
   --radius-sm: 8px;
   --radius-md: 14px;
@@ -126,6 +137,7 @@
   --chip-bg: rgba(15, 23, 42, 0.05);
   --chip-bg-strong: rgba(15, 23, 42, 0.09);
   --surface-hover: rgba(15, 23, 42, 0.06);
+  --surface-band: rgba(15, 23, 42, 0.03);
   --grid-empty: rgba(15, 23, 42, 0.05);
   --backdrop: rgba(15, 23, 42, 0.45);
   --photo-backdrop: #e2e8f0;
@@ -224,6 +236,19 @@ body > main {
   background: var(--bg-primary);
 }
 
+.footer-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.footer-sep {
+  color: var(--border-strong);
+  user-select: none;
+}
+
 /* Background Atmosphere */
 body::before {
   content: '';
@@ -266,9 +291,16 @@ a {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  /* 1rem gutters on a phone; 1.5rem is wasteful below ~380px. */
+  padding: 0 1rem;
   position: relative;
   z-index: var(--z-base);
+}
+
+@media (min-width: 480px) {
+  .container {
+    padding: 0 1.5rem;
+  }
 }
 
 /* Glass Card */
@@ -494,20 +526,115 @@ a {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-subtle);
-  padding: 1rem 0;
+  padding: 0.6rem 0;
+}
+
+@media (min-width: 480px) {
+  .navbar {
+    padding: 1rem 0;
+  }
 }
 
 .nav-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
+/* Below the nav breakpoint the actions collapse into the burger panel, so the
+   inline row is hidden rather than wrapped into the logo. */
 .nav-actions {
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.nav-burger {
+  display: inline-flex;
+}
+
+@media (min-width: 480px) {
+  .nav-container { gap: 1rem; }
+  .nav-actions { gap: 0.6rem; }
+}
+
+@media (min-width: 720px) {
+  .nav-actions {
+    display: flex;
+  }
+
+  .nav-burger {
+    display: none;
+  }
+}
+
+/* Burger panel: drops below the sticky bar, full width, same surface as the
+   account dropdown so the two read as one system. */
+.nav-mobile-panel {
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+  box-shadow: var(--modal-shadow);
+}
+
+.nav-mobile-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+}
+
+.nav-mobile-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.6rem;
+}
+
+.nav-mobile-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.nav-mobile-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nav-mobile-cta .btn {
+  width: 100%;
+}
+
+/* Account avatar trigger */
+.nav-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  background: var(--gradient-fire);
+  border: none;
+  color: var(--text-on-accent);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+/* The "75 CHALLENGE" wordmark is hidden on the narrowest screens so the flame
+   mark alone identifies the app and the nav actions keep their tap targets. */
+.logo-text {
+  display: none;
+}
+
+@media (min-width: 400px) {
+  .logo-text {
+    display: inline;
+  }
 }
 
 .logo {
@@ -536,17 +663,1082 @@ a {
   display: none;
 }
 
+/*
+ * =========================================================================
+ * MOBILE-FIRST LAYOUT UTILITIES
+ * =========================================================================
+ * Every rule below is written for the smallest screen first; `min-width`
+ * queries only add for larger ones. Prefer these classes over an inline
+ * `style={{ display: 'flex' }}` so the layout can actually respond.
+ */
+
+/* Vertical stack that becomes a row from `sm` up. The default direction is the
+   one a phone needs, which is the whole point of mobile first. */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.stack-tight { gap: 0.6rem; }
+.stack-loose { gap: 1.5rem; }
+
+@media (min-width: 480px) {
+  .stack-row-sm {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+@media (min-width: 768px) {
+  .stack-row-md {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+/* Space-between only once there is room; below that it stacks. */
+.split {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .split {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+/* Auto-fitting card grid: one column on a phone, more as width allows. */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .card-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+/* Section rhythm — noticeably tighter on a phone. */
+.section {
+  padding: 2rem 0;
+}
+
+@media (min-width: 768px) {
+  .section {
+    padding: 3.5rem 0;
+  }
+}
+
+.page {
+  padding: 1.5rem 0 2rem;
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding: 2.5rem 0 3rem;
+  }
+}
+
+/* Fluid type. Headings that are fixed in rem overflow narrow screens. */
+.h-hero {
+  font-size: clamp(2rem, 8vw, 4.2rem);
+  letter-spacing: -0.03em;
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.h-page {
+  font-size: clamp(1.5rem, 5.5vw, 2rem);
+}
+
+.h-section {
+  font-size: clamp(1.25rem, 4.5vw, 1.6rem);
+}
+
+/* Full-width tap target on mobile, natural width once side by side. */
+.btn-block {
+  width: 100%;
+}
+
+@media (min-width: 480px) {
+  .btn-block {
+    width: auto;
+  }
+}
+
+/*
+ * Touch targets. Anything interactive needs ~44px of height to be reliably
+ * tappable; the compact `.btn-sm` used across the nav is well under that.
+ */
+@media (pointer: coarse) {
+  .btn,
+  .icon-btn,
+  .menu-item,
+  .segmented button {
+    min-height: 44px;
+  }
+
+  .btn-sm {
+    min-height: 40px;
+  }
+}
+
+/* Wide content (the 75-day grid, rule rows) scrolls inside its own box rather
+   than forcing the whole page sideways. */
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ---------------- Landing page ---------------- */
+.landing-hero {
+  text-align: center;
+  padding-top: 2.5rem;
+  padding-bottom: 2rem;
+  max-width: 840px;
+}
+
+/*
+ * Transform-only entrance for page content.
+ *
+ * Use this instead of a framer-motion `initial={{ opacity: 0 }}` on anything
+ * that renders on page load. That pattern ships the markup invisible and only
+ * reveals it once JS hydrates, so a slow connection — or a crawler that runs no
+ * scripts — sees a blank page. Animating transform alone keeps the text legible
+ * from first paint. (Modals are exempt: they only exist after a click, so JS is
+ * already running.)
+ */
+.rise-in {
+  animation: riseIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes riseIn {
+  from { transform: translateY(14px); }
+  to { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise-in {
+    animation: none;
+  }
+}
+
+.landing-badge {
+  margin-bottom: 1rem;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.72rem;
+  /* The badge wraps rather than forcing the page wider on a narrow screen. */
+  white-space: normal;
+  text-align: center;
+}
+
+.landing-title {
+  margin-bottom: 1rem;
+}
+
+.landing-title-accent {
+  background: var(--gradient-fire);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.landing-subtitle {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  margin: 0 auto 1.75rem;
+  max-width: 60ch;
+}
+
+.landing-cta-btn {
+  width: 100%;
+}
+
+.landing-cta-sub {
+  margin-top: 0.7rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.landing-section {
+  max-width: 780px;
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+
+/* Full-bleed tinted band. The feed demo sits on its own surface so it reads as
+   a sample of the product rather than more of the hero. */
+.landing-band {
+  background: var(--surface-band);
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.landing-section-head {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+/* Small kicker over a section title — separates section headings from the
+   hero headline at a glance. */
+.landing-eyebrow {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-orange);
+}
+
+.landing-section-lede {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  max-width: 62ch;
+  margin: 0.35rem auto 0;
+}
+
+.landing-midcta,
+.landing-closing {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+/* Four equal boxes: one column on a phone, a 2x2 grid from tablet up, so no
+   card ends up alone on a row at a different width from the rest. */
+.landing-pillars {
+  align-items: stretch;
+}
+
+@media (min-width: 640px) {
+  .landing-pillars {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 640px) {
+  .landing-hero {
+    padding-top: 4rem;
+    padding-bottom: 3rem;
+  }
+
+  .landing-badge {
+    margin-bottom: 1.25rem;
+    padding: 0.45rem 1.2rem;
+    font-size: 0.82rem;
+  }
+
+  .landing-subtitle {
+    font-size: 1.15rem;
+    margin-bottom: 2rem;
+  }
+
+  .landing-cta-btn {
+    width: auto;
+    padding: 1.05rem 2.5rem;
+  }
+
+  .landing-section {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
+  .landing-midcta,
+  .landing-closing {
+    margin-top: 3rem;
+  }
+}
+
+/* Preview + feed cards */
+.preview-card {
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.preview-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.preview-card-name {
+  font-size: 1.02rem;
+}
+
+.preview-card-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.preview-card-caption {
+  font-size: 0.92rem;
+  color: var(--text-primary);
+  font-style: italic;
+}
+
+.preview-card-photo {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--photo-backdrop);
+  border: 1px solid var(--border-subtle);
+}
+
+.preview-card-sample {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-medium);
+}
+
+.preview-card-rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.rule-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--chip-bg);
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.preview-card-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 0.8rem;
+}
+
+.reaction-chip {
+  border-radius: var(--radius-full);
+  cursor: default;
+}
+
+@media (min-width: 640px) {
+  .preview-card {
+    padding: 1.5rem;
+  }
+
+  .preview-card-head {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+}
+
+/* How-it-works cards */
+.pillar-card {
+  padding: 1.2rem;
+}
+
+.pillar-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.pillar-card-title {
+  font-size: 1.02rem;
+}
+
+.pillar-card-body {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* ---------------- Participant profile ---------------- */
+.profile-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  background: var(--gradient-dark);
+  border: 1px solid var(--border-medium);
+}
+
+.profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.profile-avatar {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--gradient-fire);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--text-on-accent);
+  box-shadow: var(--glow-orange);
+}
+
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.profile-name {
+  font-size: 1.35rem;
+  /* Long display names must not push the banner wider than the screen. */
+  overflow-wrap: anywhere;
+}
+
+.profile-meta {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * Three stats as an equal grid rather than a `space-between` row. On a narrow
+ * screen the row version squashed the labels into two ragged lines.
+ */
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.profile-stat {
+  text-align: center;
+  min-width: 0;
+}
+
+.profile-stat-value {
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.profile-stat-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* Tabs scroll sideways instead of wrapping awkwardly. */
+.profile-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.profile-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.profile-tabs .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .profile-banner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .profile-avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 1.75rem;
+  }
+
+  .profile-name {
+    font-size: 1.75rem;
+  }
+
+  .profile-meta {
+    font-size: 0.85rem;
+  }
+
+  .profile-stats {
+    padding-top: 0;
+    border-top: none;
+    gap: 1.5rem;
+  }
+
+  .profile-stat-value {
+    font-size: 1.75rem;
+  }
+
+  .profile-stat-label {
+    font-size: 0.75rem;
+  }
+}
+
+/*
+ * Share-card wrapper.
+ *
+ * MilestoneCard is deliberately a fixed 340×604 canvas — it is exported as a
+ * 9:16 image, so its internal layout must not reflow with the viewport. That
+ * makes it wider than the content area on a small phone, so the wrapper scales
+ * it down visually instead. The negative margin reclaims the height the
+ * transform leaves behind (scale does not affect layout box size).
+ */
+.story-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0;
+}
+
+.story-wrap > * {
+  transform: scale(0.86);
+  transform-origin: top center;
+  margin-bottom: -100px;
+}
+
+@media (min-width: 400px) {
+  .story-wrap > * {
+    transform: none;
+    margin-bottom: 0;
+  }
+}
+
+/* ---------------- Auth pages (login / reset) ---------------- */
+.auth-page {
+  max-width: 460px;
+}
+
+.auth-card {
+  padding: 1.25rem;
+}
+
+.auth-title {
+  margin-bottom: 0.3rem;
+}
+
+.auth-lede {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Icon sits inside the field; the input reserves room for it. */
+.field-with-icon {
+  position: relative;
+}
+
+.field-with-icon .input-field {
+  width: 100%;
+  padding-left: 2.5rem;
+}
+
+.field-icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--accent-cyan);
+  cursor: pointer;
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem;
+}
+
+@media (min-width: 480px) {
+  .auth-card {
+    padding: 2rem;
+  }
+}
+
+/* ---------------- Feed ---------------- */
+.feed-page {
+  max-width: 780px;
+}
+
+.feed-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border-accent);
+}
+
+.feed-stats-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.feed-stats-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--accent-orange-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.feed-stats-numbers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.feed-stat-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.feed-stat-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.feed-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .feed-stats {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .feed-stats-numbers {
+    display: flex;
+    gap: 1.75rem;
+    padding-top: 0;
+    border-top: none;
+    text-align: right;
+  }
+
+  .feed-stat-value {
+    font-size: 1.35rem;
+  }
+}
+
+/* ---------------- Daily check-in ---------------- */
+.checkin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.25rem;
+}
+
+.checkin-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.habit-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.85rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  width: 100%;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.habit-toggle.is-done {
+  background: var(--accent-green-soft);
+  border-color: var(--accent-green-soft-border);
+}
+
+.habit-check {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  border: 2px solid var(--border-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-on-accent);
+}
+
+.habit-toggle.is-done .habit-check {
+  border: none;
+  background: var(--accent-green);
+}
+
+.habit-label {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.habit-toggle.is-done .habit-label {
+  color: var(--text-primary);
+  text-decoration: line-through;
+}
+
+.checkin-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+@media (min-width: 480px) {
+  .checkin-card {
+    padding: 1.75rem;
+  }
+
+  .checkin-head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .checkin-actions {
+    flex-direction: row;
+  }
+
+  .checkin-actions .btn:first-child {
+    flex: 1;
+  }
+}
+
+/* Centred "not found" / "log in first" states */
+.state-card {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.state-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1.25rem;
+}
+
+/* Onboarding wizard */
+.onboarding-modal {
+  max-width: 560px;
+}
+
+.onboarding-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.onboarding-step-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.onboarding-progress {
+  display: flex;
+  gap: 0.3rem;
+  margin-bottom: 1.25rem;
+}
+
+.onboarding-progress-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: var(--radius-full);
+  background: var(--chip-bg-strong);
+  transition: background 0.25s ease;
+}
+
+.onboarding-progress-bar.is-done {
+  background: var(--gradient-fire);
+}
+
+.onboarding-lede {
+  margin-top: 0.4rem;
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+}
+
+/* "How it works" list */
+.learn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.learn-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.learn-point-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-full);
+  background: var(--accent-orange-soft);
+  color: var(--accent-orange);
+}
+
+.learn-point-title {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.15rem;
+}
+
+.learn-point-body {
+  display: block;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.onboarding-finish {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.onboarding-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--chip-bg);
+  font-size: 0.85rem;
+}
+
+@media (min-width: 640px) {
+  .onboarding-summary {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+/* Habit rows in the rule customizer */
+.rule-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.rule-row-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rule-index {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--accent-orange-soft);
+  color: var(--accent-orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* The habit title is a real input, so it can be edited in place rather than
+   deleted and retyped. min-width:0 lets it shrink inside the flex row. */
+.rule-title-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.95rem;
+}
+
+.rule-delete {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.rule-delete:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.rule-row-schedule {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Schedule buttons scroll sideways on a narrow screen instead of wrapping into
+   a ragged block or pushing the page wider than the viewport. */
+.rule-schedule-buttons {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.rule-schedule-buttons::-webkit-scrollbar {
+  display: none;
+}
+
+.rule-schedule-buttons .btn {
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.65rem;
+}
+
+.rule-weekdays {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.weekday-toggle {
+  flex: 1;
+  min-width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-medium);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.weekday-toggle.is-selected {
+  border-color: var(--accent-orange);
+  background: var(--accent-orange);
+  color: var(--text-on-accent);
+}
+
+@media (min-width: 640px) {
+  .rule-row {
+    padding: 0.85rem 1rem;
+  }
+
+  .rule-row-schedule {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .weekday-toggle {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+  }
+}
+
 /* Toasts — bottom-left so they never sit under the help FAB */
 .toast-stack {
   position: fixed;
-  bottom: 1.5rem;
-  left: 1.5rem;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
   z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  max-width: min(380px, calc(100vw - 3rem));
   pointer-events: none;
+}
+
+@media (min-width: 480px) {
+  .toast-stack {
+    bottom: 1.5rem;
+    left: 1.5rem;
+    right: auto;
+    max-width: 380px;
+  }
 }
 
 .toast {
@@ -608,11 +1800,12 @@ a {
   }
 }
 
-/* Floating help trigger */
+/* Floating help trigger. On a phone it collapses to a circular icon button so
+   it does not sit on top of the content it is meant to help with. */
 .help-fab {
   position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
+  bottom: 1rem;
+  right: 1rem;
   z-index: var(--z-fab);
   border-radius: var(--radius-full);
   box-shadow: var(--fab-shadow);
@@ -622,6 +1815,23 @@ a {
   gap: 0.4rem;
   background: var(--bg-elevated);
   border-color: var(--border-medium);
+}
+
+.help-fab-label {
+  display: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+@media (min-width: 768px) {
+  .help-fab {
+    bottom: 1.5rem;
+    right: 1.5rem;
+  }
+
+  .help-fab-label {
+    display: inline;
+  }
 }
 
 /* Account dropdown */
@@ -674,19 +1884,39 @@ a {
   align-items: center;
   justify-content: center;
   z-index: var(--z-modal);
-  padding: 1rem;
+  padding: 0.75rem;
 }
 
+@media (min-width: 480px) {
+  .modal-backdrop {
+    padding: 1rem;
+  }
+}
+
+/*
+ * Mobile: a near-full-screen sheet. A centred card with margins wastes the
+ * little space a phone has, and the onboarding flow needs every pixel.
+ * From `sm` up it becomes the floating card again.
+ */
 .modal-content {
   background: var(--bg-secondary);
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-lg);
   max-width: 520px;
   width: 100%;
-  padding: 2rem;
+  padding: 1.25rem;
   box-shadow: var(--modal-shadow);
-  max-height: 90vh;
+  /* dvh, not vh: mobile browser chrome makes vh overflow the visible area. */
+  max-height: 92dvh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 480px) {
+  .modal-content {
+    padding: 2rem;
+    max-height: 90dvh;
+  }
 }
 
 /* Inline notice blocks */

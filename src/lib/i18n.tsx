@@ -45,84 +45,140 @@ const en = {
   'nav.language': 'Language',
   'nav.languageEn': 'Switch to English',
   'nav.languageDe': 'Auf Deutsch umschalten',
+  'nav.openMenu': 'Open menu',
+  'nav.closeMenu': 'Close menu',
+  'nav.menu': 'Menu',
 
-  'meta.title': '75 Challenge — Hard Discipline, Flexible Rules',
+  'meta.title': '75 Challenge — Challenge Yourself',
   'meta.description':
-    'Transform your body and mind in 75 days with customizable rules, self-paced trust logging, and positive social accountability.',
+    'Build habits that stick in 75 days. Choose your own, go at your own pace, and finish together with the community by 31 December 2026.',
 
-  'footer.copyright':
-    '© {year} 75 Challenge. Built for discipline, consistency, and positive accountability.',
-  'footer.tagline': 'Self-paced daily tracking. 1 Streak Shield per 75-day journey.',
+  'footer.copyright': '© {year}',
+  'footer.brand': '75 Challenge. For everyone getting back on track, together.',
+  'footer.tagline': 'Your habits, your pace. One Streak Shield per attempt.',
 
   // Landing hero
-  'hero.badge': '75 DAYS OF DISCIPLINE & ACCOUNTABILITY',
-  'hero.titleLead': 'Hard Discipline.',
-  'hero.titleAccent': 'Flexible Rules.',
+  'hero.badge': "Let's get on Track",
+  'hero.titleLead': 'Challenge Yourself —',
+  'hero.titleAccent': 'Together',
   'hero.subtitle':
-    'Forge unbreakable daily habits with personalized rule sets, self-paced logging, and 1 Streak Shield to survive emergencies. Zero toxicity, 100% positive hype.',
+    "Summer is over and you want to start some healthy routines, or get back into them? The 75 Challenge is your perfect opportunity to build habits that last. Let's do this together.",
   'hero.cta': 'Join 75 Challenge',
-  'hero.ctaSub': 'Tailor your own rules • Free forever • 1 Streak Shield per attempt',
+  'hero.goal': 'Our shared goal: finish the 75 days by {deadline}.',
 
-  'pillars.rules.title': 'Customizable Rules',
+  'pillars.rules.title': 'Habits you choose',
   'pillars.rules.desc':
-    'Set daily, workday, or custom schedules that fit your fitness, reading, and mental growth goals.',
-  'pillars.shield.title': '1 Streak Shield',
+    'Nobody hands you a list. Pick the habits that matter to you and the rhythm that fits your week — every day, workdays only, or specific days.',
+  'pillars.shield.title': 'One Streak Shield',
   'pillars.shield.desc':
-    'One lifeline per attempt. If you miss a day, deploy your shield once to save your progress.',
-  'pillars.hype.title': 'Positive-Only Hype',
+    'Life happens. If a day gets away from you, your shield covers it once and your progress stays intact.',
+  'pillars.hype.title': 'Support, not judgement',
   'pillars.hype.desc':
-    'No negative comments or downvotes. Celebrate milestones with multi-tap emoji reactions and confetti.',
+    'No comments to police, no downvotes, no leaderboards. Just people cheering each other on, one day at a time.',
 
-  'trust.title': 'Built on trust, not surveillance',
+  'howItWorks.eyebrow': 'The basics',
+  'howItWorks.title': 'How it works',
+  'howItWorks.lede':
+    'Four things worth knowing before you start. None of them involve anyone else grading you.',
+
+  'trust.title': 'You are your own judge',
   'trust.body':
-    'You check off your own progress, at your own pace. Nobody polices your day. If you decide you missed one, tell us — we will offer your Streak Shield once, and after that a fresh start from Day 1.',
+    'You tick off your own days, and you decide whether you are happy with how one went. Nobody is checking up on you. If you decide you missed a day, tell us — your shield covers it once, and after that you start fresh from Day 1. No shame in that.',
 
   // Join page
-  'join.badgeReferral': 'Squad Referral: @{username}',
-  'join.badgeDefault': 'SQUAD ONBOARDING',
-  'join.titleReferral': "Join @{username}'s 75 Challenge",
-  'join.titleDefault': 'Join the 75 Challenge',
+  'join.badgeReferral': 'Invited by @{username}',
+  'join.badgeDefault': 'LET’S GET STARTED',
+  'join.titleReferral': 'Join @{username} for the 75 Challenge',
+  'join.titleDefault': 'Ready when you are',
   'join.subtitle':
-    'Build habits with personalized rules, self-paced progress logging, and 1 Streak Shield lifeline.',
-  'join.perkRules': 'Custom Rules',
-  'join.perkShield': '1 Streak Shield',
-  'join.perkHype': 'Positive Hype Only',
+    'Choose your own habits, go at your own pace, and finish alongside everyone else who decided today was the day.',
+  'join.perkRules': 'Habits you choose',
+  'join.perkShield': 'One Streak Shield',
+  'join.perkHype': 'Support, not judgement',
   'join.ctaReferral': 'Join with @{username}',
   'join.ctaDefault': 'Join 75 Challenge',
 
-  // Onboarding modal
+  // Onboarding modal — four steps: learn, date, habits, account
   'onboarding.title': 'Join the 75 Challenge',
-  'onboarding.close': 'Close modal',
-  'onboarding.referral': 'Squad Referral: Joining with @{username}',
-  'onboarding.stepRules': '1. Rules & Schedule',
-  'onboarding.stepAuth': '2. Account & Launch',
-  'onboarding.startDateLabel': 'Choose Your Start Date',
-  'onboarding.finish': 'Finish: {date}',
-  'onboarding.continue': 'Continue to Registration',
-  'onboarding.summary': 'Start: {start} → Finish: {end}',
-  'onboarding.shieldIncluded': '1 Shield included',
-  'onboarding.submit': 'Join 75 Challenge',
-  'onboarding.minRulesAlert': 'Please configure at least 2 active rules.',
-  'onboarding.signupFailed': 'Signup failed. Please try again.',
+  'onboarding.close': 'Close',
+  'onboarding.referral': 'Joining with @{username}',
+  'onboarding.back': 'Back',
+  'onboarding.stepOf': 'Step {current} of {total}',
+
+  'onboarding.stepLearn': 'How it works',
+  'onboarding.stepDate': 'Start date',
+  'onboarding.stepRules': 'Your habits',
+  'onboarding.stepAuth': 'Account',
+
+  // Step 1 — education
+  'onboarding.learnTitle': 'Here is how it works',
+  'onboarding.learnIntro':
+    'Five things to know before you start. It takes a minute to read, and it is the whole game.',
+  'onboarding.learnHabits': 'Choose at least {min} habits',
+  'onboarding.learnHabitsDesc':
+    'You decide what you are working on — up to {max}. Make them specific enough that you know at the end of the day whether you did them.',
+  'onboarding.learnChange': 'You can change them once, after 7 days',
+  'onboarding.learnChangeDesc':
+    'The first week tells you a lot. After day 7 you get one chance to adjust your habits if you aimed too high or too low.',
+  'onboarding.learnShield': 'You get one Streak Shield',
+  'onboarding.learnShieldDesc':
+    'A single cheat day for the whole 75. Use it when life genuinely gets in the way.',
+  'onboarding.learnJudge': 'You are the judge',
+  'onboarding.learnJudgeDesc':
+    'Nobody checks up on you. At the end of each day you decide whether you are happy with how it went.',
+  'onboarding.learnReset': 'Miss a day with no shield left, and you restart',
+  'onboarding.learnResetDesc':
+    'Back to Day 1. It is not a punishment — it is what makes finishing mean something.',
+  'onboarding.learnCta': "Let's go",
+
+  // Step 2 — start date
+  'onboarding.dateTitle': 'When do you want to start?',
+  'onboarding.dateIntro':
+    'Today is fine. So is next Monday. Pick the day you can genuinely begin.',
+  'onboarding.startDateLabel': 'Your start date',
+  'onboarding.finish': 'You would finish on {date}',
+  'onboarding.dateCta': 'Continue to habits',
+
+  // Step 3 — habits
+  'onboarding.rulesTitle': 'What are you working on?',
+  'onboarding.rulesCta': 'Continue to account',
+
+  // Step 4 — account
+  'onboarding.summary': '{start} → {end}',
+  'onboarding.shieldIncluded': 'One Streak Shield included',
+  'onboarding.submit': 'Start my 75 days',
+  'onboarding.minRulesAlert': 'Please choose at least {min} habits.',
+  'onboarding.maxRulesAlert': 'You can have at most {max} habits.',
+  'onboarding.signupFailed': 'Sign-up did not go through. Please try again.',
+  'onboarding.resumeTitle': "You're already signed in",
+  'onboarding.resumeBody':
+    'That account exists, but this challenge was never finished. One more thing and you are on Day 1.',
+  'onboarding.resumeFailed': 'Could not finish setting up your challenge. Please try again.',
 
   // Date notices
-  'dates.invalid': 'Please select a valid start date.',
+  'dates.invalid': 'Please choose a valid start date.',
   'dates.crossesYearEnd':
-    'Heads up: your 75 days run past 31 December and finish on {date} in the new year. You can still join.',
+    'Heads up: starting here you would finish on {date}, past our shared goal of {deadline}. You are very welcome to join anyway — this is your challenge.',
 
   // Rule customizer
-  'rules.heading': 'Configure Your 75-Day Rule Set',
-  'rules.subheading': 'Minimum 2 rules required. Tailor daily frequency or pick specific weekdays.',
-  'rules.countOne': '{count} Rule Active',
-  'rules.countMany': '{count} Rules Active',
-  'rules.minWarning': 'You must configure at least 2 active rules to start your challenge.',
-  'rules.remove': 'Remove rule',
-  'rules.removeNamed': 'Remove rule {title}',
-  'rules.scheduleDaily': '7 Days / Week',
+  'rules.heading': 'Your habits',
+  'rules.subheading':
+    'Between {min} and {max}. Edit any of these, delete what does not fit, and add your own.',
+  'rules.recommendation':
+    'A good set stretches you in more than one direction — something physical, something about how you eat, and something you learn. Pick habits you will have to work for.',
+  'rules.countOne': '{count} habit',
+  'rules.countMany': '{count} habits',
+  'rules.minWarning': 'Choose at least {min} habits to start your challenge.',
+  'rules.maxWarning': 'That is the maximum of {max} habits.',
+  'rules.titleLabel': 'Habit {index}',
+  'rules.titlePlaceholder': 'Describe the habit...',
+  'rules.remove': 'Remove habit',
+  'rules.removeNamed': 'Remove habit {title}',
+  'rules.scheduleDaily': 'Every day',
   'rules.scheduleWorkdays': 'Mon-Fri',
-  'rules.scheduleCustom': 'Custom Days',
-  'rules.addPlaceholder': 'Add custom rule (e.g., Cold plunge 3 min, 100 pushups)...',
-  'rules.add': 'Add Rule',
+  'rules.scheduleCustom': 'Chosen days',
+  'rules.addPlaceholder': 'Add another habit...',
+  'rules.add': 'Add habit',
   'rules.default.workouts': '2x 45-min workouts (1 outdoors)',
   'rules.default.water': 'Drink 4 Liters of Water',
   'rules.default.read': 'Read 10 Pages (Non-fiction / Growth)',
@@ -136,31 +192,45 @@ const en = {
   'auth.emailLabel': 'Email Address',
   'auth.emailPlaceholder': 'you@example.com',
   'auth.emailInvalid': 'A valid email address is required.',
-  'auth.passwordLabel': 'Password (Min. 5 Characters)',
+  'auth.passwordLabel': 'Password (min. {min} characters)',
   'auth.passwordHint': 'Simple & Lenient',
-  'auth.passwordShort': 'Password must be at least 5 characters long.',
+  'auth.passwordShort': 'Password must be at least {min} characters long.',
   'auth.failed': 'Authentication failed. Please try again.',
   'auth.submitting': 'Committing Challenge...',
   'auth.submitDefault': 'Join the 75 Challenge',
 
+  // Auth failures. Supabase returns English-only strings, so its error codes are
+  // mapped to these keys instead of being shown raw (see src/lib/auth.ts).
+  'auth.err.weakPassword': 'That password is too short — use at least {min} characters.',
+  'auth.err.emailExists': 'An account with this email already exists. Try logging in instead.',
+  'auth.err.emailNotConfirmed':
+    'Please confirm your email address first — check your inbox for the link we sent.',
+  'auth.err.invalidCredentials': 'That email and password do not match an account.',
+  'auth.err.invalidEmail': 'That email address does not look right.',
+  'auth.err.rateLimited': 'Too many attempts. Please wait a minute and try again.',
+  'auth.err.signupDisabled': 'New sign-ups are currently closed.',
+  'auth.err.notConfigured':
+    'The account service is not configured for this environment. Please contact support.',
+  'auth.err.network': 'Could not reach the account service. Check your connection and try again.',
+
   // Daily checklist
-  'checklist.title': 'Daily Check-In Matrix',
-  'checklist.loggingFor': 'Logging for: {date}',
-  'checklist.progress': '{done} / {total} Complete',
-  'checklist.photoLabel': 'Daily Proof Photo (Auto-compressed to WebP < 200 KB)',
-  'checklist.photoChange': 'Change Photo',
-  'checklist.photoUpload': 'Upload Proof Photo',
-  'checklist.compressing': 'Compressing image on canvas...',
+  'checklist.title': 'Today',
+  'checklist.loggingFor': '{date}',
+  'checklist.progress': '{done} of {total} done',
+  'checklist.photoLabel': 'Add a photo, if you want to',
+  'checklist.photoChange': 'Change photo',
+  'checklist.photoUpload': 'Add a photo',
+  'checklist.compressing': 'Preparing your photo...',
   'checklist.compressionStats': 'Optimized: {before} KB → {after} KB (WebP)',
   'checklist.compressionFailed': 'Could not compress photo.',
-  'checklist.captionLabel': 'Daily Reflection or Workout Notes',
-  'checklist.captionPlaceholder': "How was today's discipline? Share thoughts with the squad...",
-  'checklist.submitComplete': 'Lock In Completed Day',
-  'checklist.submitPartial': 'Save Check-In',
-  'checklist.reportMissed': 'I Missed This Day',
+  'checklist.captionLabel': 'Anything you want to remember about today?',
+  'checklist.captionPlaceholder': 'How did it go? Optional, and only you decide what to share...',
+  'checklist.submitComplete': 'I did it today',
+  'checklist.submitPartial': 'Save today',
+  'checklist.reportMissed': 'I missed this one',
   'checklist.confirmIncomplete':
     'You still have unchecked rules. Do you want to report this day as missed?',
-  'checklist.photoAlt': 'Proof photo',
+  'checklist.photoAlt': 'Your photo for today',
 
   // Shield modal
   'shield.title': 'You reported a missed day',
@@ -179,8 +249,8 @@ const en = {
   'shield.close': 'Close',
 
   // Heatmap
-  'heatmap.title': '75-Day Discipline Grid',
-  'heatmap.subtitle': 'Every square represents 1 day. Miss none.',
+  'heatmap.title': 'Your 75 days',
+  'heatmap.subtitle': 'One square per day. Watch it fill up.',
   'heatmap.legendDone': 'Done',
   'heatmap.legendShielded': 'Shielded',
   'heatmap.legendMissed': 'Missed',
@@ -193,13 +263,13 @@ const en = {
   'heatmap.statusFailed': 'Missed',
 
   // User profile
-  'profile.activeAttempt': 'Active Attempt',
+  'profile.activeAttempt': 'In progress',
   'profile.meta': '@{username} • Started: {start} • Target Finish: {end}',
   'profile.dayOf75': 'Day of 75',
   'profile.shieldsLeft': 'Shields Left',
   'profile.activeRules': 'Active Rules',
-  'profile.tabDashboard': 'Daily Matrix & 75-Day Grid',
-  'profile.tabStory': '9:16 Instagram Story Exporter',
+  'profile.tabDashboard': 'My days',
+  'profile.tabStory': 'Share a card',
   'profile.loggedAlert': 'Day {date} locked in as {status}!',
   'profile.shieldAlert': 'Streak Shield deployed! Day recorded as shielded.',
   'profile.resetAlert': 'Reset to Day 1 confirmed. You have 1 fresh Streak Shield.',
@@ -232,9 +302,10 @@ const en = {
   'help.featureSubject': 'Feature Proposal - 75 Challenge',
 
   // Landing feed preview
+  'preview.eyebrow': 'The community',
   'preview.title': 'This is what the community feed looks like',
   'preview.subtitle':
-    'Participants check off their own rules, post their proof, and hype each other up. No downvotes, no comments section to police.',
+    'People check off their own days, share a bit if they feel like it, and cheer each other on. No downvotes, no comment section to police.',
   'preview.sampleBadge': 'Sample',
 
   // Reactions ("Fire", "Beast", … stay untranslated — they are product names)
@@ -243,17 +314,17 @@ const en = {
   // 9:16 story card
   'story.shieldReady': 'Shield Ready',
   'story.shieldUsed': 'Shield Used',
-  'story.milestone': 'Daily Milestone',
+  'story.milestone': 'Today',
   'story.day': 'DAY {day}',
-  'story.ofDays': 'of 75 days unbroken',
+  'story.ofDays': 'of 75 days',
   'story.start': 'Start',
   'story.finish': 'Finish',
   'story.percentComplete': '{percent}% Complete',
-  'story.rulesToday': 'Rules Completed Today',
+  'story.rulesToday': 'Done today',
   'story.daysLogged': '{count} days logged',
-  'story.defaultQuote': 'Discipline equals freedom.',
-  'story.export': 'Save 9:16 Story to Share',
-  'story.exporting': 'Generating Story...',
+  'story.defaultQuote': 'One day at a time.',
+  'story.export': 'Save card to share',
+  'story.exporting': 'Making your card...',
 
   // Day locking — a completed day is final and cannot be re-edited
   'day.doneTitle': "Today's day is locked in",
@@ -315,7 +386,7 @@ const en = {
   // Reset password page
   'reset.title': 'Choose a new password',
   'reset.desc': 'Your email is verified. Pick a new password to finish.',
-  'reset.newPassword': 'New Password (Min. 5 Characters)',
+  'reset.newPassword': 'New password (min. {min} characters)',
   'reset.confirmPassword': 'Repeat New Password',
   'reset.submit': 'Save new password',
   'reset.submitting': 'Saving...',
@@ -331,7 +402,18 @@ const en = {
   'account.tabRules': 'Rules',
   'account.tabProfile': 'Profile',
   'account.tabSecurity': 'Password',
-  'account.saveRules': 'Save rules',
+  'account.saveRules': 'Save habits',
+  'account.rulesLockedTitle': 'Your habits are locked in for now',
+  'account.rulesLockedBody':
+    'You are on day {current}. From day {unlocksOn} you get one chance to adjust them — the first week tells you a lot about whether you aimed right.',
+  'account.rulesUsedTitle': 'You have used your habit change',
+  'account.rulesUsedBody':
+    'These are your habits for the rest of the challenge. One change per attempt keeps the commitment meaningful.',
+  'account.rulesAvailableTitle': 'You can change your habits once',
+  'account.rulesAvailableBody':
+    'This is your single adjustment for this attempt. Take a moment — once you save, these are locked for the remaining days.',
+  'account.rulesChangeConfirm':
+    'This uses your one habit change for this attempt. Are you sure you want to save?',
   'account.rulesSaved': 'Your rules were updated.',
   'account.displayName': 'Display Name',
   'account.username': 'Username',
@@ -339,7 +421,7 @@ const en = {
   'account.saveProfile': 'Save profile',
   'account.profileSaved': 'Profile updated.',
   'account.changePassword': 'Change your password',
-  'account.newPassword': 'New Password (Min. 5 Characters)',
+  'account.newPassword': 'New password (min. {min} characters)',
   'account.confirmPassword': 'Repeat New Password',
   'account.updateSubmit': 'Update password',
   'account.updated': 'Password updated.',
@@ -376,80 +458,131 @@ const de: Record<TranslationKey, string> = {
   'nav.language': 'Sprache',
   'nav.languageEn': 'Switch to English',
   'nav.languageDe': 'Auf Deutsch umschalten',
+  'nav.openMenu': 'Menü öffnen',
+  'nav.closeMenu': 'Menü schliessen',
+  'nav.menu': 'Menü',
 
-  'meta.title': '75 Challenge — Harte Disziplin, flexible Regeln',
+  'meta.title': '75 Challenge — Fordere dich selbst',
   'meta.description':
-    'Verändere Körper und Kopf in 75 Tagen: mit eigenen Regeln, selbstbestimmtem Eintragen auf Vertrauensbasis und positiver Community.',
+    'Baue in 75 Tagen Gewohnheiten auf, die bleiben. Du wählst sie selbst, gehst dein Tempo und kommst gemeinsam mit der Community bis zum 31. Dezember 2026 ans Ziel.',
 
-  'footer.copyright':
-    '© {year} 75 Challenge. Gebaut für Disziplin, Beständigkeit und positive Verbindlichkeit.',
-  'footer.tagline': 'Selbstbestimmtes Tages-Tracking. 1 Streak-Schild pro 75-Tage-Reise.',
+  'footer.copyright': '© {year}',
+  'footer.brand': '75 Challenge. Für alle, die gemeinsam wieder in Fahrt kommen.',
+  'footer.tagline': 'Deine Gewohnheiten, dein Tempo. Ein Streak-Schild pro Versuch.',
 
-  'hero.badge': '75 TAGE DISZIPLIN & VERBINDLICHKEIT',
-  'hero.titleLead': 'Harte Disziplin.',
-  'hero.titleAccent': 'Flexible Regeln.',
+  'hero.badge': 'Lass uns loslegen',
+  'hero.titleLead': 'Fordere dich selbst —',
+  'hero.titleAccent': 'gemeinsam',
   'hero.subtitle':
-    'Baue unerschütterliche Gewohnheiten auf – mit eigenen Regelsets, selbstbestimmtem Eintragen und 1 Streak-Schild für den Notfall. Null Toxizität, 100 % positiver Zuspruch.',
+    'Der Sommer ist vorbei und du möchtest gesunde Routinen starten oder wieder aufnehmen? Die 75 Challenge ist deine perfekte Gelegenheit, Gewohnheiten aufzubauen, die bleiben. Machen wir das zusammen.',
   'hero.cta': '75 Challenge beitreten',
-  'hero.ctaSub': 'Eigene Regeln • Für immer kostenlos • 1 Streak-Schild pro Versuch',
+  'hero.goal': 'Unser gemeinsames Ziel: die 75 Tage bis zum {deadline} abschliessen.',
 
-  'pillars.rules.title': 'Anpassbare Regeln',
+  'pillars.rules.title': 'Gewohnheiten deiner Wahl',
   'pillars.rules.desc':
-    'Lege tägliche, werktägliche oder eigene Rhythmen fest – passend zu deinen Zielen für Fitness, Lesen und mentales Wachstum.',
-  'pillars.shield.title': '1 Streak-Schild',
+    'Niemand drückt dir eine Liste in die Hand. Wähle die Gewohnheiten, die dir wichtig sind, und den Rhythmus, der zu deiner Woche passt – täglich, werktags oder an bestimmten Tagen.',
+  'pillars.shield.title': 'Ein Streak-Schild',
   'pillars.shield.desc':
-    'Ein Rettungsanker pro Versuch. Wenn du einen Tag verpasst, setzt du dein Schild einmal ein und rettest deinen Fortschritt.',
-  'pillars.hype.title': 'Nur positiver Zuspruch',
+    'Das Leben kommt dazwischen. Wenn dir ein Tag entgleitet, deckt dein Schild ihn einmal ab und dein Fortschritt bleibt bestehen.',
+  'pillars.hype.title': 'Rückhalt statt Urteil',
   'pillars.hype.desc':
-    'Keine negativen Kommentare, keine Downvotes. Feiere Meilensteine mit Emoji-Reaktionen und Konfetti.',
+    'Keine Kommentare zu moderieren, keine Downvotes, keine Ranglisten. Nur Menschen, die sich gegenseitig anfeuern – Tag für Tag.',
 
-  'trust.title': 'Auf Vertrauen gebaut, nicht auf Kontrolle',
+  'howItWorks.eyebrow': 'Die Grundlagen',
+  'howItWorks.title': 'So funktioniert es',
+  'howItWorks.lede':
+    'Vier Dinge, die du vorher wissen solltest. Bei keinem davon bewertet dich jemand anderes.',
+
+  'trust.title': 'Du bist dein eigener Massstab',
   'trust.body':
-    'Du hakst deinen Fortschritt selbst ab, in deinem Tempo. Niemand kontrolliert deinen Tag. Wenn du sagst, du hast einen Tag verpasst, bieten wir dir einmal dein Streak-Schild an – danach geht es frisch bei Tag 1 los.',
+    'Du hakst deine Tage selbst ab und entscheidest selbst, ob du mit einem Tag zufrieden bist. Niemand kontrolliert dich. Wenn du sagst, du hast einen Tag verpasst, deckt dein Schild ihn einmal ab – danach startest du frisch bei Tag 1. Das ist keine Schande.',
 
-  'join.badgeReferral': 'Squad-Empfehlung: @{username}',
-  'join.badgeDefault': 'SQUAD-ONBOARDING',
-  'join.titleReferral': 'Tritt der 75 Challenge von @{username} bei',
-  'join.titleDefault': 'Tritt der 75 Challenge bei',
+  'join.badgeReferral': 'Eingeladen von @{username}',
+  'join.badgeDefault': 'LEGEN WIR LOS',
+  'join.titleReferral': 'Mach mit @{username} bei der 75 Challenge mit',
+  'join.titleDefault': 'Bereit, wenn du es bist',
   'join.subtitle':
-    'Baue Gewohnheiten auf – mit eigenen Regeln, selbstbestimmtem Eintragen und 1 Streak-Schild als Rettungsanker.',
-  'join.perkRules': 'Eigene Regeln',
-  'join.perkShield': '1 Streak-Schild',
-  'join.perkHype': 'Nur positiver Zuspruch',
+    'Wähle deine eigenen Gewohnheiten, geh dein Tempo und komm gemeinsam mit allen an, die sich heute dafür entschieden haben.',
+  'join.perkRules': 'Gewohnheiten deiner Wahl',
+  'join.perkShield': 'Ein Streak-Schild',
+  'join.perkHype': 'Rückhalt statt Urteil',
   'join.ctaReferral': 'Mit @{username} beitreten',
   'join.ctaDefault': '75 Challenge beitreten',
 
   'onboarding.title': 'Tritt der 75 Challenge bei',
-  'onboarding.close': 'Dialog schliessen',
-  'onboarding.referral': 'Squad-Empfehlung: Beitritt mit @{username}',
-  'onboarding.stepRules': '1. Regeln & Rhythmus',
-  'onboarding.stepAuth': '2. Konto & Start',
-  'onboarding.startDateLabel': 'Wähle dein Startdatum',
-  'onboarding.finish': 'Ende: {date}',
-  'onboarding.continue': 'Weiter zur Registrierung',
-  'onboarding.summary': 'Start: {start} → Ende: {end}',
-  'onboarding.shieldIncluded': '1 Schild inklusive',
-  'onboarding.submit': '75 Challenge beitreten',
-  'onboarding.minRulesAlert': 'Bitte richte mindestens 2 aktive Regeln ein.',
-  'onboarding.signupFailed': 'Registrierung fehlgeschlagen. Bitte versuche es erneut.',
+  'onboarding.close': 'Schliessen',
+  'onboarding.referral': 'Beitritt mit @{username}',
+  'onboarding.back': 'Zurück',
+  'onboarding.stepOf': 'Schritt {current} von {total}',
+
+  'onboarding.stepLearn': 'So funktioniert es',
+  'onboarding.stepDate': 'Startdatum',
+  'onboarding.stepRules': 'Deine Gewohnheiten',
+  'onboarding.stepAuth': 'Konto',
+
+  'onboarding.learnTitle': 'So funktioniert es',
+  'onboarding.learnIntro':
+    'Fünf Dinge, die du vorher wissen solltest. Eine Minute Lesezeit – und darum geht es im Kern.',
+  'onboarding.learnHabits': 'Wähle mindestens {min} Gewohnheiten',
+  'onboarding.learnHabitsDesc':
+    'Du entscheidest, woran du arbeitest – bis zu {max}. Formuliere sie so konkret, dass du am Abend genau weisst, ob du sie erfüllt hast.',
+  'onboarding.learnChange': 'Nach 7 Tagen kannst du sie einmal ändern',
+  'onboarding.learnChangeDesc':
+    'Die erste Woche zeigt dir viel. Ab Tag 7 hast du eine Gelegenheit nachzujustieren, falls du zu hoch oder zu tief gezielt hast.',
+  'onboarding.learnShield': 'Du bekommst ein Streak-Schild',
+  'onboarding.learnShieldDesc':
+    'Ein einziger Joker für die ganzen 75 Tage. Setze ihn ein, wenn das Leben wirklich dazwischenkommt.',
+  'onboarding.learnJudge': 'Du bist der Massstab',
+  'onboarding.learnJudgeDesc':
+    'Niemand kontrolliert dich. Am Ende jedes Tages entscheidest du, ob du mit dem Tag zufrieden bist.',
+  'onboarding.learnReset': 'Ohne Schild einen Tag verpasst? Dann startest du neu',
+  'onboarding.learnResetDesc':
+    'Zurück zu Tag 1. Das ist keine Strafe – das ist, was das Ankommen bedeutsam macht.',
+  'onboarding.learnCta': 'Los geht’s',
+
+  'onboarding.dateTitle': 'Wann möchtest du starten?',
+  'onboarding.dateIntro':
+    'Heute ist gut. Nächsten Montag auch. Wähle den Tag, an dem du wirklich beginnen kannst.',
+  'onboarding.startDateLabel': 'Dein Startdatum',
+  'onboarding.finish': 'Du wärst am {date} fertig',
+  'onboarding.dateCta': 'Weiter zu den Gewohnheiten',
+
+  'onboarding.rulesTitle': 'Woran arbeitest du?',
+  'onboarding.rulesCta': 'Weiter zum Konto',
+
+  'onboarding.summary': '{start} → {end}',
+  'onboarding.shieldIncluded': 'Ein Streak-Schild inklusive',
+  'onboarding.submit': 'Meine 75 Tage starten',
+  'onboarding.minRulesAlert': 'Bitte wähle mindestens {min} Gewohnheiten.',
+  'onboarding.maxRulesAlert': 'Du kannst höchstens {max} Gewohnheiten haben.',
+  'onboarding.signupFailed': 'Die Registrierung hat nicht geklappt. Bitte versuche es erneut.',
+  'onboarding.resumeTitle': 'Du bist bereits angemeldet',
+  'onboarding.resumeBody':
+    'Das Konto existiert bereits, aber die Challenge wurde nie fertig eingerichtet. Noch ein Schritt, dann bist du bei Tag 1.',
+  'onboarding.resumeFailed': 'Deine Challenge konnte nicht eingerichtet werden. Bitte versuche es erneut.',
 
   'dates.invalid': 'Bitte wähle ein gültiges Startdatum.',
   'dates.crossesYearEnd':
-    'Hinweis: Deine 75 Tage laufen über den 31. Dezember hinaus und enden am {date} im neuen Jahr. Du kannst trotzdem starten.',
+    'Hinweis: Mit diesem Start wärst du am {date} fertig – nach unserem gemeinsamen Ziel {deadline}. Du bist trotzdem herzlich willkommen – es ist deine Challenge.',
 
-  'rules.heading': 'Stelle dein 75-Tage-Regelset zusammen',
+  'rules.heading': 'Deine Gewohnheiten',
   'rules.subheading':
-    'Mindestens 2 Regeln nötig. Bestimme die Häufigkeit oder wähle einzelne Wochentage.',
-  'rules.countOne': '{count} Regel aktiv',
-  'rules.countMany': '{count} Regeln aktiv',
-  'rules.minWarning': 'Du brauchst mindestens 2 aktive Regeln, um deine Challenge zu starten.',
-  'rules.remove': 'Regel entfernen',
-  'rules.removeNamed': 'Regel {title} entfernen',
-  'rules.scheduleDaily': '7 Tage / Woche',
+    'Zwischen {min} und {max}. Bearbeite sie, lösche was nicht passt, und füge eigene hinzu.',
+  'rules.recommendation':
+    'Ein gutes Set fordert dich in mehreren Bereichen – etwas Körperliches, etwas zu deiner Ernährung und etwas, das du lernst. Wähle Gewohnheiten, für die du dich anstrengen musst.',
+  'rules.countOne': '{count} Gewohnheit',
+  'rules.countMany': '{count} Gewohnheiten',
+  'rules.minWarning': 'Wähle mindestens {min} Gewohnheiten, um deine Challenge zu starten.',
+  'rules.maxWarning': 'Das ist das Maximum von {max} Gewohnheiten.',
+  'rules.titleLabel': 'Gewohnheit {index}',
+  'rules.titlePlaceholder': 'Beschreibe die Gewohnheit...',
+  'rules.remove': 'Gewohnheit entfernen',
+  'rules.removeNamed': 'Gewohnheit {title} entfernen',
+  'rules.scheduleDaily': 'Jeden Tag',
   'rules.scheduleWorkdays': 'Mo-Fr',
-  'rules.scheduleCustom': 'Eigene Tage',
-  'rules.addPlaceholder': 'Eigene Regel hinzufügen (z. B. 3 Min Eisbad, 100 Liegestütze)...',
-  'rules.add': 'Regel hinzufügen',
+  'rules.scheduleCustom': 'Ausgewählte Tage',
+  'rules.addPlaceholder': 'Weitere Gewohnheit hinzufügen...',
+  'rules.add': 'Gewohnheit hinzufügen',
   'rules.default.workouts': '2x 45 Min Training (1x draussen)',
   'rules.default.water': '4 Liter Wasser trinken',
   'rules.default.read': '10 Seiten lesen (Sachbuch / Persönlichkeitsentwicklung)',
@@ -462,30 +595,44 @@ const de: Record<TranslationKey, string> = {
   'auth.emailLabel': 'E-Mail-Adresse',
   'auth.emailPlaceholder': 'du@beispiel.com',
   'auth.emailInvalid': 'Eine gültige E-Mail-Adresse ist erforderlich.',
-  'auth.passwordLabel': 'Passwort (mind. 5 Zeichen)',
+  'auth.passwordLabel': 'Passwort (mind. {min} Zeichen)',
   'auth.passwordHint': 'Einfach & unkompliziert',
-  'auth.passwordShort': 'Das Passwort muss mindestens 5 Zeichen lang sein.',
+  'auth.passwordShort': 'Das Passwort muss mindestens {min} Zeichen lang sein.',
   'auth.failed': 'Anmeldung fehlgeschlagen. Bitte versuche es erneut.',
   'auth.submitting': 'Challenge wird gestartet...',
   'auth.submitDefault': 'Tritt der 75 Challenge bei',
 
-  'checklist.title': 'Tägliche Check-in-Matrix',
-  'checklist.loggingFor': 'Eintrag für: {date}',
-  'checklist.progress': '{done} / {total} erledigt',
-  'checklist.photoLabel': 'Tages-Beweisfoto (automatisch als WebP < 200 KB komprimiert)',
+  'auth.err.weakPassword': 'Dieses Passwort ist zu kurz – verwende mindestens {min} Zeichen.',
+  'auth.err.emailExists':
+    'Mit dieser E-Mail-Adresse existiert bereits ein Konto. Melde dich stattdessen an.',
+  'auth.err.emailNotConfirmed':
+    'Bitte bestätige zuerst deine E-Mail-Adresse – schau in dein Postfach.',
+  'auth.err.invalidCredentials': 'E-Mail und Passwort passen zu keinem Konto.',
+  'auth.err.invalidEmail': 'Diese E-Mail-Adresse sieht nicht korrekt aus.',
+  'auth.err.rateLimited': 'Zu viele Versuche. Bitte warte eine Minute und versuche es erneut.',
+  'auth.err.signupDisabled': 'Neuanmeldungen sind derzeit geschlossen.',
+  'auth.err.notConfigured':
+    'Der Konto-Dienst ist für diese Umgebung nicht konfiguriert. Bitte kontaktiere den Support.',
+  'auth.err.network':
+    'Der Konto-Dienst ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.',
+
+  'checklist.title': 'Heute',
+  'checklist.loggingFor': '{date}',
+  'checklist.progress': '{done} von {total} erledigt',
+  'checklist.photoLabel': 'Füge ein Foto hinzu, wenn du magst',
   'checklist.photoChange': 'Foto ändern',
-  'checklist.photoUpload': 'Beweisfoto hochladen',
-  'checklist.compressing': 'Bild wird komprimiert...',
+  'checklist.photoUpload': 'Foto hinzufügen',
+  'checklist.compressing': 'Dein Foto wird vorbereitet...',
   'checklist.compressionStats': 'Optimiert: {before} KB → {after} KB (WebP)',
   'checklist.compressionFailed': 'Foto konnte nicht komprimiert werden.',
-  'checklist.captionLabel': 'Tagesreflexion oder Trainingsnotizen',
-  'checklist.captionPlaceholder': 'Wie war deine Disziplin heute? Teile es mit dem Squad...',
-  'checklist.submitComplete': 'Tag als erledigt eintragen',
-  'checklist.submitPartial': 'Check-in speichern',
-  'checklist.reportMissed': 'Ich habe diesen Tag verpasst',
+  'checklist.captionLabel': 'Willst du dir etwas zum heutigen Tag merken?',
+  'checklist.captionPlaceholder': 'Wie lief es? Freiwillig – du entscheidest, was du teilst...',
+  'checklist.submitComplete': 'Habe ich heute geschafft',
+  'checklist.submitPartial': 'Heute speichern',
+  'checklist.reportMissed': 'Den habe ich verpasst',
   'checklist.confirmIncomplete':
     'Es sind noch Regeln offen. Möchtest du diesen Tag als verpasst melden?',
-  'checklist.photoAlt': 'Beweisfoto',
+  'checklist.photoAlt': 'Dein Foto für heute',
 
   'shield.title': 'Du hast einen verpassten Tag gemeldet',
   'shield.subtitle':
@@ -503,8 +650,8 @@ const de: Record<TranslationKey, string> = {
   'shield.keepGoing': 'Doch nicht, Serie behalten',
   'shield.close': 'Schliessen',
 
-  'heatmap.title': '75-Tage-Disziplin-Raster',
-  'heatmap.subtitle': 'Jedes Feld steht für 1 Tag. Verpasse keinen.',
+  'heatmap.title': 'Deine 75 Tage',
+  'heatmap.subtitle': 'Ein Feld pro Tag. Schau zu, wie es sich füllt.',
   'heatmap.legendDone': 'Erledigt',
   'heatmap.legendShielded': 'Geschützt',
   'heatmap.legendMissed': 'Verpasst',
@@ -516,13 +663,13 @@ const de: Record<TranslationKey, string> = {
   'heatmap.statusShielded': 'Geschützt',
   'heatmap.statusFailed': 'Verpasst',
 
-  'profile.activeAttempt': 'Laufender Versuch',
+  'profile.activeAttempt': 'Läuft',
   'profile.meta': '@{username} • Start: {start} • Zielende: {end}',
   'profile.dayOf75': 'Tag von 75',
   'profile.shieldsLeft': 'Schilde übrig',
   'profile.activeRules': 'Aktive Regeln',
-  'profile.tabDashboard': 'Tagesmatrix & 75-Tage-Raster',
-  'profile.tabStory': '9:16 Instagram-Story-Export',
+  'profile.tabDashboard': 'Meine Tage',
+  'profile.tabStory': 'Karte teilen',
   'profile.loggedAlert': 'Tag {date} als {status} eingetragen!',
   'profile.shieldAlert': 'Streak-Schild eingesetzt! Tag als geschützt vermerkt.',
   'profile.resetAlert': 'Zurücksetzung auf Tag 1 bestätigt. Du hast 1 frisches Streak-Schild.',
@@ -552,26 +699,27 @@ const de: Record<TranslationKey, string> = {
   'help.supportSubject': 'Support-Anfrage - 75 Challenge',
   'help.featureSubject': 'Feature-Vorschlag - 75 Challenge',
 
+  'preview.eyebrow': 'Die Community',
   'preview.title': 'So sieht der Community-Feed aus',
   'preview.subtitle':
-    'Teilnehmende haken ihre eigenen Regeln ab, posten ihren Beweis und feuern sich gegenseitig an. Keine Downvotes, keine Kommentarspalte zum Moderieren.',
+    'Leute haken ihre eigenen Tage ab, teilen etwas, wenn ihnen danach ist, und feuern sich gegenseitig an. Keine Downvotes, keine Kommentarspalte zum Moderieren.',
   'preview.sampleBadge': 'Beispiel',
 
   'hype.give': '{label} als Zuspruch geben',
 
   'story.shieldReady': 'Schild bereit',
   'story.shieldUsed': 'Schild genutzt',
-  'story.milestone': 'Tages-Meilenstein',
+  'story.milestone': 'Heute',
   'story.day': 'TAG {day}',
-  'story.ofDays': 'von 75 Tagen ohne Unterbruch',
+  'story.ofDays': 'von 75 Tagen',
   'story.start': 'Start',
   'story.finish': 'Ziel',
   'story.percentComplete': '{percent}% geschafft',
-  'story.rulesToday': 'Heute erfüllte Regeln',
+  'story.rulesToday': 'Heute erledigt',
   'story.daysLogged': '{count} Tage eingetragen',
-  'story.defaultQuote': 'Disziplin ist Freiheit.',
-  'story.export': '9:16-Story zum Teilen sichern',
-  'story.exporting': 'Story wird erstellt...',
+  'story.defaultQuote': 'Ein Tag nach dem anderen.',
+  'story.export': 'Karte zum Teilen sichern',
+  'story.exporting': 'Deine Karte entsteht...',
 
   'day.doneTitle': 'Dein Tag ist eingetragen',
   'day.doneBody':
@@ -626,7 +774,7 @@ const de: Record<TranslationKey, string> = {
 
   'reset.title': 'Neues Passwort wählen',
   'reset.desc': 'Deine E-Mail ist bestätigt. Wähle jetzt ein neues Passwort.',
-  'reset.newPassword': 'Neues Passwort (mind. 5 Zeichen)',
+  'reset.newPassword': 'Neues Passwort (mind. {min} Zeichen)',
   'reset.confirmPassword': 'Neues Passwort wiederholen',
   'reset.submit': 'Neues Passwort speichern',
   'reset.submitting': 'Wird gespeichert...',
@@ -641,7 +789,18 @@ const de: Record<TranslationKey, string> = {
   'account.tabRules': 'Regeln',
   'account.tabProfile': 'Profil',
   'account.tabSecurity': 'Passwort',
-  'account.saveRules': 'Regeln speichern',
+  'account.saveRules': 'Gewohnheiten speichern',
+  'account.rulesLockedTitle': 'Deine Gewohnheiten sind vorerst fixiert',
+  'account.rulesLockedBody':
+    'Du bist an Tag {current}. Ab Tag {unlocksOn} hast du eine Gelegenheit, sie anzupassen – die erste Woche zeigt dir viel darüber, ob du richtig gezielt hast.',
+  'account.rulesUsedTitle': 'Du hast deine Anpassung bereits genutzt',
+  'account.rulesUsedBody':
+    'Das sind deine Gewohnheiten für den Rest der Challenge. Eine Änderung pro Versuch hält die Verbindlichkeit hoch.',
+  'account.rulesAvailableTitle': 'Du kannst deine Gewohnheiten einmal ändern',
+  'account.rulesAvailableBody':
+    'Das ist deine einzige Anpassung für diesen Versuch. Nimm dir einen Moment – nach dem Speichern sind sie für die restlichen Tage fixiert.',
+  'account.rulesChangeConfirm':
+    'Damit nutzt du deine einzige Anpassung für diesen Versuch. Wirklich speichern?',
   'account.rulesSaved': 'Deine Regeln wurden aktualisiert.',
   'account.displayName': 'Anzeigename',
   'account.username': 'Benutzername',
@@ -649,7 +808,7 @@ const de: Record<TranslationKey, string> = {
   'account.saveProfile': 'Profil speichern',
   'account.profileSaved': 'Profil aktualisiert.',
   'account.changePassword': 'Passwort ändern',
-  'account.newPassword': 'Neues Passwort (mind. 5 Zeichen)',
+  'account.newPassword': 'Neues Passwort (mind. {min} Zeichen)',
   'account.confirmPassword': 'Neues Passwort wiederholen',
   'account.updateSubmit': 'Passwort aktualisieren',
   'account.updated': 'Passwort aktualisiert.',

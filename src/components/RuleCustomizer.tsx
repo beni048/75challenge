@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { Rule, ScheduleType } from '@/lib/streak-engine';
-import { Plus, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, AlertCircle, Lightbulb } from 'lucide-react';
 import { useI18n, TranslationKey, translate, Locale } from '@/lib/i18n';
+import { MIN_RULES, MAX_RULES, canAddRule } from '@/lib/rules-policy';
 
 /** Rule ids are stable; only the title is localized at creation time. */
 const DEFAULT_RULE_KEYS: { id: string; key: TranslationKey }[] = [
@@ -15,8 +16,9 @@ const DEFAULT_RULE_KEYS: { id: string; key: TranslationKey }[] = [
 ];
 
 /**
- * The 75 Hard starter set, written in the given language. Titles become user
- * data once saved, so they are not re-translated afterwards.
+ * The starter set, written in the given language. These are a *suggestion*:
+ * every title is editable in place, so nobody has to delete a default before
+ * they can describe their own habit.
  */
 export function getDefaultRules(locale: Locale): Rule[] {
   return DEFAULT_RULE_KEYS.map(({ id, key }) => ({
@@ -38,27 +40,31 @@ const WEEKDAY_LABELS: Record<Locale, string[]> = {
 interface RuleCustomizerProps {
   rules: Rule[];
   onChange: (updatedRules: Rule[]) => void;
+  /** Hides the heading when the surrounding step already provides one. */
+  hideHeading?: boolean;
 }
 
-export default function RuleCustomizer({ rules, onChange }: RuleCustomizerProps) {
+export default function RuleCustomizer({ rules, onChange, hideHeading = false }: RuleCustomizerProps) {
   const { t, locale } = useI18n();
   const [newRuleTitle, setNewRuleTitle] = useState('');
 
   const weekdays = WEEKDAY_LABELS[locale] ?? WEEKDAY_LABELS.en;
+  const atMax = !canAddRule(rules.length);
 
   const handleAddRule = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!newRuleTitle.trim()) return;
+    if (!newRuleTitle.trim() || atMax) return;
 
     onChange([
       ...rules,
-      {
-        id: `custom-rule-${Date.now()}`,
-        title: newRuleTitle.trim(),
-        schedule_type: 'daily',
-      },
+      { id: `custom-rule-${Date.now()}`, title: newRuleTitle.trim(), schedule_type: 'daily' },
     ]);
     setNewRuleTitle('');
+  };
+
+  /** Edits a habit's wording in place — no delete-then-retype dance. */
+  const handleRenameRule = (id: string, title: string) => {
+    onChange(rules.map((r) => (r.id === id ? { ...r, title } : r)));
   };
 
   const handleDeleteRule = (id: string) => {
@@ -96,77 +102,63 @@ export default function RuleCustomizer({ rules, onChange }: RuleCustomizerProps)
         : t('rules.scheduleCustom');
 
   return (
-    <div className="rule-customizer" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-        <div>
-          <h4 style={{ fontSize: '1.1rem', marginBottom: '0.2rem' }}>{t('rules.heading')}</h4>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{t('rules.subheading')}</p>
-        </div>
-        <span
-          className={`badge ${rules.length >= 2 ? 'badge-success' : 'badge-fire'}`}
-          id="active-rules-count-badge"
-        >
-          {rules.length === 1
-            ? t('rules.countOne', { count: rules.length })
-            : t('rules.countMany', { count: rules.length })}
-        </span>
-      </div>
-
-      {rules.length < 2 && (
-        <div className="notice notice-warn">
-          <AlertCircle size={18} />
-          <span>{t('rules.minWarning')}</span>
+    <div className="stack">
+      {!hideHeading && (
+        <div className="split">
+          <div>
+            <h4 className="h-section" style={{ marginBottom: '0.2rem' }}>
+              {t('rules.heading')}
+            </h4>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              {t('rules.subheading', { min: MIN_RULES, max: MAX_RULES })}
+            </p>
+          </div>
+          <span
+            className={`badge ${rules.length >= MIN_RULES ? 'badge-success' : 'badge-fire'}`}
+            id="active-rules-count-badge"
+          >
+            {rules.length === 1
+              ? t('rules.countOne', { count: rules.length })
+              : t('rules.countMany', { count: rules.length })}
+          </span>
         </div>
       )}
 
-      {/* Rules list */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+      {/* Nudge towards a set that covers more than one area of life. */}
+      <div className="notice notice-info">
+        <Lightbulb size={18} style={{ flexShrink: 0 }} />
+        <span>{t('rules.recommendation')}</span>
+      </div>
+
+      {rules.length < MIN_RULES && (
+        <div className="notice notice-warn">
+          <AlertCircle size={18} style={{ flexShrink: 0 }} />
+          <span>{t('rules.minWarning', { min: MIN_RULES })}</span>
+        </div>
+      )}
+
+      {/* Habit list — every title is an input, editable in place. */}
+      <div className="stack stack-tight">
         {rules.map((rule, idx) => (
-          <div
-            key={rule.id}
-            className="glass-card"
-            style={{
-              padding: '0.85rem 1rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.6rem',
-              borderColor: 'var(--border-subtle)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <span
-                  style={{
-                    width: '24px',
-                    height: '24px',
-                    flexShrink: 0,
-                    borderRadius: 'var(--radius-full)',
-                    background: 'var(--accent-orange-soft)',
-                    color: 'var(--accent-orange)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                  }}
-                >
-                  {idx + 1}
-                </span>
-                <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{rule.title}</span>
-              </div>
+          <div key={rule.id} className="rule-row">
+            <div className="rule-row-head">
+              <span className="rule-index" aria-hidden="true">
+                {idx + 1}
+              </span>
+
+              <input
+                type="text"
+                className="input-field rule-title-input"
+                value={rule.title}
+                onChange={(e) => handleRenameRule(rule.id, e.target.value)}
+                placeholder={t('rules.titlePlaceholder')}
+                aria-label={t('rules.titleLabel', { index: idx + 1 })}
+              />
 
               <button
                 type="button"
                 onClick={() => handleDeleteRule(rule.id)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  padding: '0.3rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
+                className="rule-delete"
                 title={t('rules.remove')}
                 aria-label={t('rules.removeNamed', { title: rule.title })}
               >
@@ -174,16 +166,14 @@ export default function RuleCustomizer({ rules, onChange }: RuleCustomizerProps)
               </button>
             </div>
 
-            {/* Schedule selector */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+            <div className="rule-row-schedule">
+              <div className="rule-schedule-buttons">
                 {(['daily', 'workdays', 'custom'] as ScheduleType[]).map((type) => (
                   <button
                     key={type}
                     type="button"
                     onClick={() => handleUpdateSchedule(rule.id, type)}
                     className={`btn btn-sm ${rule.schedule_type === type ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
                   >
                     {scheduleLabel(type)}
                   </button>
@@ -191,7 +181,7 @@ export default function RuleCustomizer({ rules, onChange }: RuleCustomizerProps)
               </div>
 
               {rule.schedule_type === 'custom' && (
-                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                <div className="rule-weekdays">
                   {weekdays.map((label, day) => {
                     const isSelected = (rule.custom_days || []).includes(day);
                     return (
@@ -200,20 +190,7 @@ export default function RuleCustomizer({ rules, onChange }: RuleCustomizerProps)
                         type="button"
                         onClick={() => handleToggleDay(rule.id, day)}
                         aria-pressed={isSelected}
-                        style={{
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: 'var(--radius-sm)',
-                          border: isSelected ? '1px solid var(--accent-orange)' : '1px solid var(--border-medium)',
-                          background: isSelected ? 'var(--accent-orange)' : 'var(--bg-tertiary)',
-                          color: isSelected ? 'var(--text-on-accent)' : 'var(--text-muted)',
-                          fontSize: '0.7rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
+                        className={`weekday-toggle${isSelected ? ' is-selected' : ''}`}
                       >
                         {label}
                       </button>
@@ -226,21 +203,27 @@ export default function RuleCustomizer({ rules, onChange }: RuleCustomizerProps)
         ))}
       </div>
 
-      {/* Add new rule */}
-      <form onSubmit={handleAddRule} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-        <input
-          type="text"
-          placeholder={t('rules.addPlaceholder')}
-          value={newRuleTitle}
-          onChange={(e) => setNewRuleTitle(e.target.value)}
-          className="input-field"
-          style={{ flex: '1 1 220px' }}
-          id="new-rule-input"
-        />
-        <button type="submit" className="btn btn-secondary" style={{ whiteSpace: 'nowrap' }} id="add-rule-btn">
-          <Plus size={16} /> {t('rules.add')}
-        </button>
-      </form>
+      {atMax ? (
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+          {t('rules.maxWarning', { max: MAX_RULES })}
+        </p>
+      ) : (
+        <form onSubmit={handleAddRule} className="stack stack-tight stack-row-sm">
+          <input
+            type="text"
+            placeholder={t('rules.addPlaceholder')}
+            value={newRuleTitle}
+            onChange={(e) => setNewRuleTitle(e.target.value)}
+            className="input-field"
+            style={{ flex: 1, minWidth: 0 }}
+            id="new-rule-input"
+            data-testid="new-rule-input"
+          />
+          <button type="submit" className="btn btn-secondary btn-block" id="add-rule-btn">
+            <Plus size={16} /> {t('rules.add')}
+          </button>
+        </form>
+      )}
     </div>
   );
 }

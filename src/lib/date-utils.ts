@@ -3,6 +3,16 @@
  * Handles standard date formatting, 75-day calculations, and informational date notices.
  */
 
+/** How many days the challenge runs. Named so the 75/74 arithmetic is legible. */
+export const CHALLENGE_LENGTH_DAYS = 75;
+
+/**
+ * The community's shared finish line. Declared here rather than imported from
+ * `challenge-goal.ts` because that module imports this one — keeping the raw
+ * constant at the bottom of the dependency graph avoids the cycle.
+ */
+export const CHALLENGE_DEADLINE = '2026-12-31';
+
 /**
  * Returns the effective log date (YYYY-MM-DD) for local time.
  */
@@ -34,7 +44,7 @@ export function parseDate(dateStr: string): Date {
 export function calculateTargetEndDate(startDateStr: string): string {
   const start = parseDate(startDateStr);
   const end = new Date(start);
-  end.setDate(end.getDate() + 74);
+  end.setDate(end.getDate() + (CHALLENGE_LENGTH_DAYS - 1));
   return formatDate(end);
 }
 
@@ -49,7 +59,19 @@ export function calculateCurrentDay(startDateStr: string, effectiveDateStr: stri
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   
   if (diffDays < 0) return 1; // Before start
-  return Math.min(diffDays + 1, 75); // 1 to 75
+  return Math.min(diffDays + 1, CHALLENGE_LENGTH_DAYS);
+}
+
+/**
+ * Formats a date for prose, in the reader's language
+ * ("December 31, 2026" / "31. Dezember 2026").
+ */
+export function formatLongDate(dateStr: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale === 'de' ? 'de-CH' : 'en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(parseDate(dateStr));
 }
 
 export interface ChallengeDateEvaluation {
@@ -59,6 +81,8 @@ export interface ChallengeDateEvaluation {
   /** Translation key for a non-blocking notice, resolved by the caller. */
   infoNoticeKey?: 'dates.crossesYearEnd';
   infoNoticeVars?: Record<string, string>;
+  /** True when this start date still meets the community's shared deadline. */
+  meetsSharedGoal: boolean;
   /** Translation key for a blocking error. */
   errorKey?: 'dates.invalid';
 }
@@ -70,31 +94,35 @@ export interface ChallengeDateEvaluation {
  * informational notice — joining is still allowed. Copy is returned as
  * translation keys so both languages render from one source.
  */
-export function validateChallengeDates(startDateStr: string): ChallengeDateEvaluation {
+export function validateChallengeDates(
+  startDateStr: string,
+  deadline: string = CHALLENGE_DEADLINE
+): ChallengeDateEvaluation {
   if (!startDateStr) {
-    return { valid: false, endDate: '', errorKey: 'dates.invalid' };
+    return { valid: false, endDate: '', meetsSharedGoal: false, errorKey: 'dates.invalid' };
   }
 
   const startDate = parseDate(startDateStr);
   if (Number.isNaN(startDate.getTime())) {
-    return { valid: false, endDate: '', errorKey: 'dates.invalid' };
+    return { valid: false, endDate: '', meetsSharedGoal: false, errorKey: 'dates.invalid' };
   }
 
-  const year = startDate.getFullYear();
   const endDate = calculateTargetEndDate(startDateStr);
-  const parsedEndDate = parseDate(endDate);
-  const dec31 = new Date(year, 11, 31, 23, 59, 59);
+  // Compared against the community's shared finish line, not against the end of
+  // whichever year the challenge happens to start in.
+  const meetsSharedGoal = endDate <= deadline;
 
-  if (parsedEndDate > dec31) {
+  if (!meetsSharedGoal) {
     return {
       valid: true,
       endDate,
+      meetsSharedGoal,
       infoNoticeKey: 'dates.crossesYearEnd',
-      infoNoticeVars: { date: endDate },
+      infoNoticeVars: { date: endDate, deadline },
     };
   }
 
-  return { valid: true, endDate };
+  return { valid: true, endDate, meetsSharedGoal };
 }
 
 /**
@@ -103,7 +131,7 @@ export function validateChallengeDates(startDateStr: string): ChallengeDateEvalu
 export function generate75DayDates(startDateStr: string): string[] {
   const dates: string[] = [];
   const start = parseDate(startDateStr);
-  for (let i = 0; i < 75; i++) {
+  for (let i = 0; i < CHALLENGE_LENGTH_DAYS; i++) {
     const d = new Date(start);
     d.setDate(d.getDate() + i);
     dates.push(formatDate(d));

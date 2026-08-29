@@ -140,10 +140,10 @@ export default function UserProfilePage() {
   // Profiles are for participants only (start.md §6).
   if (!session) {
     return (
-      <div className="container" style={{ padding: '4rem 1.5rem', maxWidth: '520px', textAlign: 'center' }}>
-        <div className="glass-card" style={{ padding: '2rem' }}>
-          <h2 style={{ fontSize: '1.4rem', marginBottom: '1.25rem' }}>{t('account.notLoggedIn')}</h2>
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+      <div className="container page" style={{ maxWidth: '520px' }}>
+        <div className="glass-card state-card">
+          <h2 className="h-page">{t('account.notLoggedIn')}</h2>
+          <div className="state-actions">
             <Link href="/login" className="btn btn-secondary">
               {t('nav.login')}
             </Link>
@@ -159,9 +159,9 @@ export default function UserProfilePage() {
   if (!challenge) {
     const stillLooking = !isOwnProfile && !lookupDone;
     return (
-      <div className="container" style={{ padding: '4rem 1.5rem', maxWidth: '520px', textAlign: 'center' }}>
-        <div className="glass-card" style={{ padding: '2rem' }}>
-          <h2 style={{ fontSize: '1.3rem', marginBottom: '1rem' }}>
+      <div className="container page" style={{ maxWidth: '520px' }}>
+        <div className="glass-card state-card">
+          <h2 className="h-page" style={{ marginBottom: '1rem' }}>
             {stillLooking ? t('common.loading') : t('profile.notFound')}
           </h2>
           {!stillLooking && ownChallenge && (
@@ -194,48 +194,18 @@ export default function UserProfilePage() {
           : null;
 
   return (
-    <div className="container" style={{ padding: '2.5rem 1.5rem', maxWidth: '980px' }}>
+    <div className="container page" style={{ maxWidth: '980px' }}>
       {/* Profile banner */}
-      <div
-        className="glass-card"
-        style={{
-          padding: '2rem',
-          marginBottom: '2rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1.5rem',
-          background: 'var(--gradient-dark)',
-          border: '1px solid var(--border-medium)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-          <div
-            style={{
-              width: '64px',
-              height: '64px',
-              flexShrink: 0,
-              borderRadius: 'var(--radius-full)',
-              background: 'var(--gradient-fire)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.75rem',
-              fontWeight: 900,
-              color: 'var(--text-on-accent)',
-              boxShadow: 'var(--glow-orange)',
-            }}
-          >
-            {challenge.displayName.charAt(0).toUpperCase()}
-          </div>
+      <div className="glass-card profile-banner">
+        <div className="profile-identity">
+          <div className="profile-avatar">{challenge.displayName.charAt(0).toUpperCase()}</div>
 
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-              <h2 style={{ fontSize: '1.75rem' }}>{challenge.displayName}</h2>
+          <div style={{ minWidth: 0 }}>
+            <div className="profile-name-row">
+              <h2 className="profile-name">{challenge.displayName}</h2>
               <span className="badge badge-fire">{t('profile.activeAttempt')}</span>
             </div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            <p className="profile-meta">
               {t('profile.meta', {
                 username: challenge.username,
                 start: challenge.startDate,
@@ -245,30 +215,32 @@ export default function UserProfilePage() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '1.5rem' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--accent-orange)' }}>{currentDay}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('profile.dayOf75')}</div>
+        <div className="profile-stats">
+          <div className="profile-stat">
+            <div className="profile-stat-value" style={{ color: 'var(--accent-orange)' }}>
+              {currentDay}
+            </div>
+            <div className="profile-stat-label">{t('profile.dayOf75')}</div>
           </div>
 
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--accent-cyan)' }}>
+          <div className="profile-stat">
+            <div className="profile-stat-value" style={{ color: 'var(--accent-cyan)' }}>
               {challenge.shieldsRemaining}
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('profile.shieldsLeft')}</div>
+            <div className="profile-stat-label">{t('profile.shieldsLeft')}</div>
           </div>
 
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--accent-green)' }}>
+          <div className="profile-stat">
+            <div className="profile-stat-value" style={{ color: 'var(--accent-green)' }}>
               {challenge.rules.length}
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('profile.activeRules')}</div>
+            <div className="profile-stat-label">{t('profile.activeRules')}</div>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+      <div className="profile-tabs">
         <button
           onClick={() => setActiveTab('dashboard')}
           className={`btn ${activeTab === 'dashboard' ? 'btn-primary' : 'btn-secondary'}`}
@@ -285,7 +257,7 @@ export default function UserProfilePage() {
       </div>
 
       {activeTab === 'dashboard' ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div className="stack stack-loose">
           <ConsistencyHeatmap
             startDate={challenge.startDate}
             logs={challenge.logs.map((log) => ({ log_date: log.log_date, status: log.status }))}
@@ -308,7 +280,7 @@ export default function UserProfilePage() {
             ))}
         </div>
       ) : (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
+        <div className="story-wrap">
           <MilestoneCard
             displayName={challenge.displayName}
             username={challenge.username}

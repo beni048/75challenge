@@ -3,9 +3,48 @@
 > **READ THIS FILE BEFORE EVERY WORK SESSION.**
 > This is the single source of truth for all product requirements, architecture constraints, and design decisions.
 >
+> 📱 **MOBILE FIRST IS MANDATORY** — see §12. Every screen is designed for a phone first.
+>
 > 🐙 **GIT & GITHUB OPERATIONS**: When performing any Git or GitHub work (branching, committing, pull requests), always consult the [GitHub Git Rules & Best Practices](file:///home/benjamin/workspace/github.com/beni048/75challenge/github.md) guidelines. This includes the **dev → production promotion rule**: all new work lands on `dev` (deployed to `dev.75challenge.quest`) first; `main` (deployed to `75challenge.quest`) only receives changes that have been tested on dev and explicitly approved by the user. Never push a feature straight to `main`.
 >
 > 🧪 **TESTING & PRE-DEPLOYMENT RULES**: **ALWAYS** run tests (`npm test`) and type-check (`npm run build`) before pushing code or triggering deployments. Always consult the [Testing Rules & Best Practices](file:///home/benjamin/workspace/github.com/beni048/75challenge/testing.md) guide before modifying or adding tests.
+
+---
+
+## 0. Supabase Auth — diagnosed and fixed (2026-08-29)
+
+Sign-up used to fail silently. Two independent causes, both now handled:
+
+**1. Password minimum mismatch (the real "user not created").** The UI validated
+5 characters; Supabase enforces **6** and rejects anything shorter with
+`422 weak_password`. A 5-character password passed our form and was then refused
+by the API, so no account was ever created.
+→ Fixed: `src/lib/password.ts` holds `PASSWORD_MIN_LENGTH = 6` as the single
+source of truth, and every password string carries `{min}` rather than a
+hardcoded digit. `src/test/password.test.ts` fails the build if a number is ever
+written back into that copy.
+
+**2. Email confirmation.** `mailer_autoconfirm` was off, so `signUp` returned no
+session, the user was sent to /login, and logging in failed with
+"Email not confirmed".
+→ Decision: **auto-confirm is enabled on the dev project** so sign-up lands
+straight on Day 1. Production keeps confirmation on once real SMTP is
+configured. The confirmation path still works (`needsEmailConfirmation` →
+`75_pending_signup` → `ChallengeProvider` creates the challenge on first
+authenticated visit).
+
+### Rules for auth work
+- **Never hardcode the password length in a sentence.** Use `PASSWORD_MIN_LENGTH`
+  and interpolate `{min}`. This is exactly how the bug happened.
+- **Never show a raw Supabase error.** They are English-only. Map `error_code` to
+  a translation key in `src/lib/auth.ts` (`toErrorKey`) so failures are bilingual.
+- If sign-up misbehaves again, check in this order: the password minimum in the
+  Supabase dashboard, `mailer_autoconfirm`, the allow-listed redirect URLs, and
+  that `NEXT_PUBLIC_SUPABASE_URL` is a bare origin with no `/rest/v1` suffix.
+
+### Still unverified against a live project
+Email-confirmation sign-up, proof-photo upload to the `proof-photos` bucket, and
+`participant_count()`. Treat as unproven until exercised on `dev.75challenge.quest`.
 
 ---
 
@@ -33,15 +72,26 @@
 
 ### Auth Strategy
 - **Method**: Email + Password (simple registration).
-- **Password Policy**: Minimum **5 characters**. No forced uppercase, numbers, or special symbols.
+- **Password Policy**: Minimum **6 characters** — this is what Supabase enforces server-side. Defined once in `src/lib/password.ts`; never write the number into copy (§0). No forced uppercase, numbers, or symbols.
 - **Session Persistence**: Supabase SSR with persistent HTTP-only refresh tokens. Users stay logged in across daily sessions without re-authenticating.
 
 ### Sign-Up Flow ("Join the 75 Challenge")
 Required fields:
 1. **Display Name** (real name or pseudonym)
-2. **Email** + **Password** (min 5 chars)
-3. **Rule Set** (selected in signup modal)
-4. **Start Date** — previewed dynamically with calculated end date. If the end date finishes after December 31st, an informational notice is displayed, but users are still allowed to join.
+2. **Email** + **Password** (min 6 chars)
+3. **Habits** — between 3 and 11
+4. **Start Date** — previewed with the calculated finish date. Finishing after the shared deadline shows an informational notice but never blocks joining.
+
+### Onboarding is four sequential steps
+`OnboardingModal` walks through one decision per screen — this matters most on a
+phone, where combining them would mean scrolling past things people skip:
+
+1. **How it works** — the five mechanics, ending in a "Let's go" button
+2. **Start date** — on its own screen, with the calculated finish date
+3. **Habits** — on its own screen, editable in place
+4. **Account** — display name, email, password
+
+Never merge the start date and habit steps back together.
 
 ### Log In & Password Reset
 - A **Log In** button sits next to **Join 75 Challenge** in the header for signed-out visitors.
@@ -75,8 +125,20 @@ Pre-loaded rules:
 - No alcohol
 
 ### Customization Rules
-- Users **can** edit, add, or delete rules.
-- **Minimum 2 active rules** required to commit.
+- Users **can** edit, add, or delete habits. **Titles are editable in place** —
+  never make someone delete a suggested habit in order to type their own.
+- **Between 3 and 11 habits.** Defined in `src/lib/rules-policy.ts`
+  (`MIN_RULES` / `MAX_RULES`); never hardcode the numbers.
+- The customizer **recommends spreading habits across areas** — something
+  physical, something dietary, something you learn — and encourages habits that
+  are genuinely challenging.
+- **One change after day 7.** Habits are locked for the first week; from day 8
+  the participant gets exactly one adjustment. Enforced in the UI
+  (`src/lib/rules-window.ts`) *and* in the database (a trigger in
+  `0002_rules_change_window.sql`), so it cannot be bypassed via the API.
+- **Editing habits must never destroy history.** `replaceRules` diffs rather
+  than deleting and re-inserting: `log_rule_checks.rule_id` cascades on delete,
+  so a wholesale replace would wipe the per-rule check marks on every past day.
 - **Schedule Types** per rule:
   - `daily` — 7 days a week
   - `workdays` — Mon–Fri only
@@ -170,7 +232,7 @@ Multi-tap reaction buttons with animations:
 
 ### Landing Page (`/`)
 `/` serves two audiences:
-- **Signed out** — hero section with the core vision, the introduction (three pillars + trust statement), and a **read-only** feed preview below it. The preview is illustrative only: nothing in it is clickable. Primary CTA is **"Join 75 Challenge"**.
+- **Signed out**, in this order: **hero → feed preview → how it works → closing CTA**. The feed preview sits *above* the explanation on purpose — seeing real people mid-challenge is more persuasive than being told the rules first. Do not move "How it works" back above the feed. The preview is illustrative only: nothing in it is clickable.
 - **Signed in** — the community feed *is* the landing page. There is no separate "Community Feed" nav link.
 
 ### Header
@@ -184,10 +246,43 @@ Multi-tap reaction buttons with animations:
 
 ## 9. Database Schema
 
-> **Source of truth: `supabase/migrations/0001_initial_schema.sql`.** That file is
-> what actually runs. Apply it to the dev project first, then production
-> (github.md §4). The summary below is orientation only — if it disagrees with
-> the migration, the migration wins.
+> **Source of truth: the files in `supabase/migrations/`, applied in order.**
+>
+> **Run 0001 → 0002 → 0003.** `0001` creates the tables, RLS, storage and
+> functions. `0002` reconciles a database whose tables predate 0001 — the
+> `create table if not exists` guard in 0001 skips creation but NOT the rest of
+> the file, so a schema can look applied while missing `users.updated_at`,
+> `rules.position` and `daily_logs.updated_at`. That state breaks every write
+> path. `0003` adds the one-time rule change window.
+>
+> **Verifying an apply is not "do the tables exist" — it is "do the columns
+> exist".** Run this in the Supabase SQL editor; zero rows means the schema has
+> everything the app needs:
+>
+> ```sql
+> select c.tbl, c.col
+> from (values
+>   ('users','updated_at'), ('users','rules_changed_at'),
+>   ('rules','position'),   ('daily_logs','updated_at')
+> ) as c(tbl, col)
+> where not exists (
+>   select 1 from information_schema.columns i
+>   where i.table_schema = 'public'
+>     and i.table_name = c.tbl
+>     and i.column_name = c.col
+> );
+> ```
+>
+> And `current_day` must be gone — this must return 0:
+>
+> ```sql
+> select count(*) from information_schema.columns
+>  where table_schema = 'public' and table_name = 'users'
+>    and column_name = 'current_day';
+> ```
+>
+> Apply to dev first, then production (github.md §4). The table below is
+> orientation only — if it disagrees with the migrations, the migrations win.
 
 | Table | Holds | Notes |
 |---|---|---|
@@ -241,7 +336,47 @@ page and renders broken after a reload.
 
 ---
 
-## 12. Theming (Dark + Light)
+## 12. Mobile First — MANDATORY
+
+> **Always design and implement UI with a strictly Mobile First approach.**
+> Write the base styles for the smallest screen, and add `@media (min-width: …)`
+> blocks *only* where a larger screen genuinely needs something different.
+
+This project uses **vanilla CSS, not Tailwind** (§1), so the directive is the
+same idea expressed in our own system: base rules are the phone layout, and
+`min-width` queries play the role `sm:` / `md:` / `lg:` prefixes would elsewhere.
+
+### The rules
+1. **Base styles are mobile.** If you find yourself writing a `max-width` query
+   to undo a desktop layout on small screens, the component is backwards — start
+   again from the phone.
+2. **Breakpoints**: `sm 480px`, `md 768px`, `lg 1024px`. Documented in
+   `globals.css`; use these literals, not ad-hoc numbers.
+3. **Never hardcode a layout dimension in an inline `style`.** Inline styles
+   cannot hold media queries, which is precisely how this app ended up with 351
+   inline style blocks and exactly one media query. Layout belongs in a class.
+4. **Use the layout utilities** in `globals.css` rather than reinventing them:
+   `.stack` (column → row from `sm`/`md` via `.stack-row-sm` / `.stack-row-md`),
+   `.split` (stacks below 640px, space-between above), `.card-grid`,
+   `.section` / `.page` for vertical rhythm, `.btn-block` for full-width
+   buttons on mobile.
+5. **Fluid type**: `.h-hero`, `.h-page`, `.h-section` use `clamp()`. A fixed
+   `2.5rem` heading overflows a 360px screen.
+6. **Touch targets ≥ 44px** under `@media (pointer: coarse)`. Already applied to
+   `.btn`, `.icon-btn`, `.menu-item` and the language switch.
+7. **Use `dvh`, not `vh`.** Mobile browser chrome makes `100vh` overflow.
+8. **Wide content scrolls in its own box** (`.scroll-x`, or `overflow-x: auto`),
+   never widening the page. The body must never scroll horizontally.
+9. **Modals are near-full-screen sheets on mobile** and floating cards from
+   `sm` up — see `.modal-content`.
+
+### Verifying
+Check every change at **360px** width before considering it done. If a phone has
+to scroll sideways, or a control is under 44px, it is not finished.
+
+---
+
+## 13. Theming (Dark + Light)
 
 - Both a **dark** (default) and a **light** theme ship, toggled from the header and persisted in `localStorage` under `75_theme`. With no stored choice the OS `prefers-color-scheme` is followed.
 - The layout runs a blocking init script so the correct theme paints on first frame — no flash.
@@ -255,7 +390,30 @@ page and renders broken after a reload.
 
 ---
 
-## 13. UI/UX Design Standards
+## 14. UI/UX Design Standards
+
+### Voice & Tone — MANDATORY
+
+The product is **open, empathetic, supportive and community-driven**. It is not a
+bootcamp. Earlier copy leaned on "hard discipline", "unbreakable", "zero
+toxicity" and similar — that register is retired; do not reintroduce it.
+
+**Write like this:**
+- Address the reader as an equal who has decided to do something for themselves.
+- Assume good faith. Someone who misses a day had a reason.
+- Say what happens, not what they should feel about it.
+- "You decide", "you are the judge", "together", "no shame in that".
+
+**Not like this:**
+- Commands, military framing, or anything implying we are watching.
+- Shame or loss framing around a missed day or a reset.
+- Hype adjectives standing in for substance ("unbreakable", "beast mode").
+
+**Anchors:**
+- Title: **"Challenge Yourself"**
+- Shared goal: **finish the 75 days by 31 December 2026** — the deadline is a
+  constant in `src/lib/challenge-goal.ts`, never typed into a sentence.
+- The user is accountable **only to themselves**; the community supports, never grades.
 
 ### Design Philosophy
 - **Premium, modern aesthetic** — dark mode primary, glassmorphism accents, vibrant gradients.
@@ -291,7 +449,7 @@ page and renders broken after a reload.
 
 ---
 
-## 14. Critical Business Rules Summary
+## 15. Critical Business Rules Summary
 
 1. **Min 5-char password** — no complexity requirements.
 2. **Min 2 active rules** to start a challenge.
@@ -305,8 +463,12 @@ page and renders broken after a reload.
 10. **Client-side image compression** to WebP < 200 KB before upload.
 11. **Export Utility** to handle converting the `MilestoneCard` DOM element into a downloadable image (e.g. `html-to-image`).
 12. **Every user-facing string exists in English AND German** (see §11).
-13. **Every colour goes through a CSS token** so both themes work (see §12).
-14. **Overlays render through `ModalPortal`** so nothing paints over them (see §12).
+12b. **Mobile First is mandatory** — base styles are the phone; `min-width` only (see §12).
+12c. **Between 3 and 11 habits**, editable in place, changeable once from day 8 (see §3).
+12d. **Password minimum is 6**, from `PASSWORD_MIN_LENGTH`, never typed into copy (see §0).
+12e. **Tone is supportive, never disciplinarian** (see §14).
+13. **Every colour goes through a CSS token** so both themes work (see §13).
+14. **Overlays render through `ModalPortal`** so nothing paints over them (see §13).
 15. **A completed day is locked** — final, not editable (see §4).
 16. **The database is the source of truth**, not `localStorage` (see §2).
 17. **Never persist a `blob:` URL.** Upload to Storage and store the returned URL (see §9).
@@ -315,7 +477,7 @@ page and renders broken after a reload.
 
 ---
 
-## 15. Environment Variables Required
+## 16. Environment Variables Required
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>

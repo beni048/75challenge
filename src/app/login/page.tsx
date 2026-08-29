@@ -35,7 +35,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (!result.ok) {
-      setError(result.message || t('login.failed'));
+      setError(t(result.errorKey ?? 'login.failed', result.errorVars));
       return;
     }
 
@@ -61,7 +61,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (!result.ok) {
-      setError(result.message || t('auth.failed'));
+      setError(t(result.errorKey ?? 'auth.failed', result.errorVars));
       return;
     }
     setNotice(t('forgot.sent', { email: email.trim() }));

@@ -91,10 +91,10 @@ export default function FeedStream() {
   // The feed is for participants only (start.md §5).
   if (!session) {
     return (
-      <div className="container" style={{ padding: '4rem 1.5rem', maxWidth: '520px', textAlign: 'center' }}>
-        <div className="glass-card" style={{ padding: '2rem' }}>
-          <h2 style={{ fontSize: '1.3rem', marginBottom: '1.25rem' }}>{t('feed.loginRequired')}</h2>
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+      <div className="container page" style={{ maxWidth: '520px' }}>
+        <div className="glass-card state-card">
+          <h2 className="h-page">{t('feed.loginRequired')}</h2>
+          <div className="state-actions">
             <Link href="/login" className="btn btn-secondary">
               {t('nav.login')}
             </Link>
@@ -108,60 +108,36 @@ export default function FeedStream() {
   }
 
   return (
-    <div className="container" style={{ padding: '2rem 1.5rem', maxWidth: '780px' }}>
+    <div className="container page feed-page">
       {/* Community counters */}
-      <div
-        className="glass-card"
-        style={{
-          padding: '1.25rem 1.5rem',
-          marginBottom: '2rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          border: '1px solid var(--border-accent)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--accent-orange-soft)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
+      <div className="glass-card feed-stats">
+        <div className="feed-stats-head">
+          <div className="feed-stats-icon">
             <Users size={22} color="var(--accent-orange)" />
           </div>
           <h4 style={{ fontSize: '1rem' }}>{t('feed.statsTitle')}</h4>
         </div>
 
-        <div style={{ display: 'flex', gap: '1.75rem' }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--accent-orange)' }}>
+        <div className="feed-stats-numbers">
+          <div>
+            <div className="feed-stat-value" style={{ color: 'var(--accent-orange)' }}>
               {activeToday}
             </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{t('feed.activeToday')}</div>
+            <div className="feed-stat-label">{t('feed.activeToday')}</div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>
+          <div>
+            <div className="feed-stat-value" style={{ color: 'var(--accent-cyan)' }}>
               {totalUsers}
             </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{t('feed.totalUsers')}</div>
+            <div className="feed-stat-label">{t('feed.totalUsers')}</div>
           </div>
         </div>
       </div>
 
-      <div style={{ marginBottom: '1.25rem' }}>
-        <h3 style={{ fontSize: '1.35rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Flame size={20} color="var(--accent-orange)" />
-          {t('feed.liveTitle')}
-        </h3>
-      </div>
+      <h3 className="h-section feed-title">
+        <Flame size={20} color="var(--accent-orange)" />
+        {t('feed.liveTitle')}
+      </h3>
 
       {/* Says plainly that the sample posts are samples. They disappear as soon
           as a real participant checks in today. */}
@@ -177,7 +153,7 @@ export default function FeedStream() {
       ) : posts.length === 0 ? (
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t('feed.empty')}</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <div className="stack">
           {posts.map((post) => (
             <FeedCard key={post.id} post={post} onUnfollow={handleUnfollow} onReact={handleReact} />
           ))}

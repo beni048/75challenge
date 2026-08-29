@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
+import { PASSWORD_MIN_LENGTH, isPasswordLongEnough } from '@/lib/password';
 import { updatePassword, hasSupabaseSession } from '@/lib/auth';
 
 /**
@@ -53,8 +54,8 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setError(null);
 
-    if (password.length < 5) {
-      setError(t('auth.passwordShort'));
+    if (!isPasswordLongEnough(password)) {
+      setError(t('auth.passwordShort', { min: PASSWORD_MIN_LENGTH }));
       return;
     }
     if (password !== confirmPassword) {
@@ -67,7 +68,7 @@ export default function ResetPasswordPage() {
     setLoading(false);
 
     if (!result.ok) {
-      setError(result.message || t('auth.failed'));
+      setError(t(result.errorKey ?? 'auth.failed', result.errorVars));
       return;
     }
     setDone(true);
@@ -116,7 +117,7 @@ export default function ResetPasswordPage() {
             <form onSubmit={handleSubmit}>
               <div className="input-group">
                 <label className="input-label" htmlFor="reset-password">
-                  {t('reset.newPassword')}
+                  {t('reset.newPassword', { min: PASSWORD_MIN_LENGTH })}
                 </label>
                 <div style={{ position: 'relative' }}>
                   <input
@@ -127,7 +128,7 @@ export default function ResetPasswordPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="new-password"
-                    minLength={5}
+                    minLength={PASSWORD_MIN_LENGTH}
                     required
                   />
                   <Lock
@@ -150,7 +151,7 @@ export default function ResetPasswordPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     autoComplete="new-password"
-                    minLength={5}
+                    minLength={PASSWORD_MIN_LENGTH}
                     required
                   />
                   <Lock

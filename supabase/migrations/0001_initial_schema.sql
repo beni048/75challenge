@@ -1,7 +1,13 @@
 -- 75 Challenge — initial schema
 --
 -- Apply to the dev Supabase project first, then production (see github.md §4).
--- Safe to re-run: every statement is guarded.
+--
+-- ⚠️  `create table if not exists` only guards against the table EXISTING — not
+--     against it having a different shape. If these tables were already created
+--     from an older blueprint, creation is skipped and their old columns remain,
+--     while the RLS/function sections below still apply. The result looks
+--     applied but is missing columns. `0002_align_schema.sql` reconciles that;
+--     always run 0001 → 0002 → 0003 in order on an existing database.
 --
 -- Design notes for future devs:
 --   * `users.id` IS the Supabase auth user id. One auth account = one challenge.

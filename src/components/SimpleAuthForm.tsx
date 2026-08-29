@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User as UserIcon, AlertCircle, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
+import { PASSWORD_MIN_LENGTH, isPasswordLongEnough } from '@/lib/password';
 
 interface SimpleAuthFormProps {
   initialDisplayName?: string;
@@ -40,8 +41,8 @@ export default function SimpleAuthForm({
     }
 
     // Lenient password policy: minimum 5 characters.
-    if (password.length < 5) {
-      setError(t('auth.passwordShort'));
+    if (!isPasswordLongEnough(password)) {
+      setError(t('auth.passwordShort', { min: PASSWORD_MIN_LENGTH }));
       return;
     }
 
@@ -110,7 +111,7 @@ export default function SimpleAuthForm({
       <div className="input-group">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
           <label className="input-label" htmlFor="auth-password">
-            {t('auth.passwordLabel')}
+            {t('auth.passwordLabel', { min: PASSWORD_MIN_LENGTH })}
           </label>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('auth.passwordHint')}</span>
         </div>
@@ -125,7 +126,7 @@ export default function SimpleAuthForm({
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
             required
-            minLength={5}
+            minLength={PASSWORD_MIN_LENGTH}
           />
           <Lock
             size={18}

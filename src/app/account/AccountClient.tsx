@@ -6,11 +6,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import RuleCustomizer from '@/components/RuleCustomizer';
 import { Rule } from '@/lib/streak-engine';
 import { useI18n } from '@/lib/i18n';
+import { PASSWORD_MIN_LENGTH, isPasswordLongEnough } from '@/lib/password';
 import { useChallenge } from '@/components/ChallengeProvider';
 import { useToast, ConfirmDialog } from '@/components/Toast';
-import { replaceRules, updateProfile, restartChallenge } from '@/lib/db/profile';
+import { replaceRules, updateProfile, restartChallenge, consumeRulesChange } from '@/lib/db/profile';
+import { MIN_RULES } from '@/lib/rules-policy';
+import { getRulesChangeState } from '@/lib/rules-window';
 import { signOut, updatePassword, sendPasswordReset } from '@/lib/auth';
-import { Lock, ArrowRight, LogOut, RotateCcw } from 'lucide-react';
+import { Lock, ArrowRight, LogOut, RotateCcw, Info, CheckCircle2 } from 'lucide-react';
 
 type Tab = 'rules' | 'profile' | 'security';
 
@@ -46,6 +49,7 @@ export default function AccountClient() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirmRestart, setConfirmRestart] = useState(false);
+  const [confirmRulesChange, setConfirmRulesChange] = useState(false);
 
   if (loading) return <div style={{ minHeight: '60vh' }} />;
 
@@ -77,20 +81,39 @@ export default function AccountClient() {
     }));
   const displayName = editedName ?? challenge.displayName;
 
+  // One adjustment per attempt, from day 8. The database enforces this too;
+  // this is what lets the UI explain the state instead of just failing.
+  const rulesChange = getRulesChangeState(challenge.startDate, challenge.rulesChangedAt);
+  const canEditRules = rulesChange.status === 'available';
+
   const handleSaveRules = async () => {
-    if (draftRules.length < 2) {
-      toast.error(t('rules.minWarning'));
+    if (draftRules.length < MIN_RULES) {
+      toast.error(t('rules.minWarning', { min: MIN_RULES }));
       return;
     }
+    setConfirmRulesChange(true);
+  };
 
+  const handleConfirmSaveRules = async () => {
+    setConfirmRulesChange(false);
     setBusy(true);
-    const result = await replaceRules(challenge.id, draftRules);
-    setBusy(false);
 
+    const result = await replaceRules(challenge.id, draftRules);
     if (result.error) {
+      setBusy(false);
       toast.error(result.error);
       return;
     }
+
+    // Spend the allowance only after the rules actually landed.
+    const consumed = await consumeRulesChange();
+    setBusy(false);
+
+    if (consumed.error) {
+      toast.error(consumed.error);
+      return;
+    }
+
     setEditedRules(null);
     await refresh();
     toast.success(t('account.rulesSaved'));
@@ -118,8 +141,8 @@ export default function AccountClient() {
   const handleUpdatePassword = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (password.length < 5) {
-      toast.error(t('auth.passwordShort'));
+    if (!isPasswordLongEnough(password)) {
+      toast.error(t('auth.passwordShort', { min: PASSWORD_MIN_LENGTH }));
       return;
     }
     if (password !== confirmPassword) {
@@ -132,7 +155,7 @@ export default function AccountClient() {
     setBusy(false);
 
     if (!result.ok) {
-      toast.error(result.message ?? t('auth.failed'));
+      toast.error(t(result.errorKey ?? 'auth.failed', result.errorVars));
       return;
     }
     setPassword('');
@@ -146,7 +169,7 @@ export default function AccountClient() {
 
     const result = await sendPasswordReset(email);
     if (!result.ok) {
-      toast.error(result.message ?? t('auth.failed'));
+      toast.error(t(result.errorKey ?? 'auth.failed', result.errorVars));
       return;
     }
     toast.success(t('account.resetSent', { email }));
@@ -199,16 +222,65 @@ export default function AccountClient() {
       </div>
 
       {tab === 'rules' && (
-        <div className="glass-card" style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <RuleCustomizer rules={draftRules} onChange={setEditedRules} />
-          <button
-            onClick={handleSaveRules}
-            className="btn btn-primary"
-            style={{ alignSelf: 'flex-start' }}
-            disabled={busy}
-          >
-            {busy ? t('common.saving') : t('account.saveRules')}
-          </button>
+        <div className="glass-card stack" style={{ padding: '1.25rem' }}>
+          {/* State of the one-time change, explained before the controls. */}
+          {rulesChange.status === 'locked' && (
+            <div className="notice notice-info">
+              <Info size={18} style={{ flexShrink: 0 }} />
+              <span>
+                <strong>{t('account.rulesLockedTitle')}</strong>{' '}
+                {t('account.rulesLockedBody', {
+                  current: rulesChange.currentDay,
+                  unlocksOn: rulesChange.unlocksOnDay,
+                })}
+              </span>
+            </div>
+          )}
+
+          {rulesChange.status === 'used' && (
+            <div className="notice notice-info">
+              <CheckCircle2 size={18} style={{ flexShrink: 0 }} />
+              <span>
+                <strong>{t('account.rulesUsedTitle')}</strong> {t('account.rulesUsedBody')}
+              </span>
+            </div>
+          )}
+
+          {canEditRules && (
+            <div className="notice notice-warn">
+              <Info size={18} style={{ flexShrink: 0 }} />
+              <span>
+                <strong>{t('account.rulesAvailableTitle')}</strong> {t('account.rulesAvailableBody')}
+              </span>
+            </div>
+          )}
+
+          {canEditRules ? (
+            <>
+              <RuleCustomizer rules={draftRules} onChange={setEditedRules} />
+              <button
+                onClick={handleSaveRules}
+                className="btn btn-primary btn-block"
+                disabled={busy}
+              >
+                {busy ? t('common.saving') : t('account.saveRules')}
+              </button>
+            </>
+          ) : (
+            // Outside the window the habits are shown read-only.
+            <ul className="stack stack-tight" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {draftRules.map((rule, idx) => (
+                <li key={rule.id} className="rule-row">
+                  <div className="rule-row-head">
+                    <span className="rule-index" aria-hidden="true">
+                      {idx + 1}
+                    </span>
+                    <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{rule.title}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 
@@ -269,7 +341,7 @@ export default function AccountClient() {
             <form onSubmit={handleUpdatePassword}>
               <div className="input-group">
                 <label className="input-label" htmlFor="account-new-password">
-                  {t('account.newPassword')}
+                  {t('account.newPassword', { min: PASSWORD_MIN_LENGTH })}
                 </label>
                 <div style={{ position: 'relative' }}>
                   <input
@@ -280,7 +352,7 @@ export default function AccountClient() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="new-password"
-                    minLength={5}
+                    minLength={PASSWORD_MIN_LENGTH}
                   />
                   <Lock
                     size={18}
@@ -302,7 +374,7 @@ export default function AccountClient() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     autoComplete="new-password"
-                    minLength={5}
+                    minLength={PASSWORD_MIN_LENGTH}
                   />
                   <Lock
                     size={18}
@@ -338,6 +410,16 @@ export default function AccountClient() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmRulesChange}
+        title={t('account.rulesAvailableTitle')}
+        body={t('account.rulesChangeConfirm')}
+        confirmLabel={t('account.saveRules')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={handleConfirmSaveRules}
+        onCancel={() => setConfirmRulesChange(false)}
+      />
 
       <ConfirmDialog
         isOpen={confirmRestart}

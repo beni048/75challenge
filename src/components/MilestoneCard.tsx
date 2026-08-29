@@ -213,7 +213,7 @@ export default function MilestoneCard({
       <button
         onClick={handleExport}
         className="btn btn-primary"
-        style={{ width: '340px', padding: '0.85rem' }}
+        style={{ width: '100%', maxWidth: '340px', padding: '0.85rem' }}
         disabled={isExporting}
         id="export-story-btn"
       >

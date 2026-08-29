@@ -7,9 +7,11 @@ import HelpFeedback from '@/components/HelpFeedback';
 import { THEME_INIT_SCRIPT } from '@/lib/theme';
 
 export const metadata: Metadata = {
-  title: '75 Challenge — Hard Discipline, Flexible Rules',
+  // Static metadata is emitted on the server, before a locale is known, so it
+  // stays in English. The in-page copy is translated (see src/lib/i18n.tsx).
+  title: '75 Challenge — Challenge Yourself',
   description:
-    'Transform your body and mind in 75 days with customizable rules, self-paced trust logging, and positive social accountability.',
+    'Build habits that stick in 75 days. Choose your own, go at your own pace, and finish together with the community by 31 December 2026.',
   manifest: '/manifest.webmanifest',
   applicationName: '75 Challenge',
   appleWebApp: {

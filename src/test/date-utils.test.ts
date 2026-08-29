@@ -62,17 +62,19 @@ describe('Date & Time Utilities', () => {
       expect(result.valid).toBe(true);
       expect(result.endDate).toBe('2027-01-07');
       expect(result.infoNoticeKey).toBe('dates.crossesYearEnd');
-      expect(result.infoNoticeVars).toEqual({ date: '2027-01-07' });
+      expect(result.infoNoticeVars).toEqual({ date: '2027-01-07', deadline: '2026-12-31' });
+      expect(result.meetsSharedGoal).toBe(false);
     });
 
     it('renders the year-end notice in both languages', () => {
       const result = validateChallengeDates('2026-10-25');
       const key = result.infoNoticeKey!;
 
+      // Both languages must name the user's own finish date and the shared goal.
       expect(translate('en', key, result.infoNoticeVars)).toContain('2027-01-07');
-      expect(translate('en', key, result.infoNoticeVars)).toContain('31 December');
+      expect(translate('en', key, result.infoNoticeVars)).toContain('2026-12-31');
       expect(translate('de', key, result.infoNoticeVars)).toContain('2027-01-07');
-      expect(translate('de', key, result.infoNoticeVars)).toContain('31. Dezember');
+      expect(translate('de', key, result.infoNoticeVars)).toContain('2026-12-31');
     });
 
     it('rejects an empty start date', () => {

@@ -2,18 +2,30 @@
 
 import React, { useState } from 'react';
 import { Rule } from '@/lib/streak-engine';
-import { validateChallengeDates, formatDate } from '@/lib/date-utils';
+import { validateChallengeDates, formatDate, formatLongDate } from '@/lib/date-utils';
 import SimpleAuthForm from './SimpleAuthForm';
 import RuleCustomizer from './RuleCustomizer';
 import ModalPortal from './ModalPortal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Flame, Users, Info } from 'lucide-react';
+import {
+  X, Calendar, Flame, Users, Info, ArrowLeft, ArrowRight,
+  ListChecks, RefreshCw, ShieldCheck, Scale, RotateCcw, User as UserIcon,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { savePendingSignup } from '@/lib/pending-signup';
+import { useChallenge } from './ChallengeProvider';
 import { createChallenge } from '@/lib/db/profile';
 import { signUp } from '@/lib/auth';
 import { useToast } from './Toast';
+import { MIN_RULES, MAX_RULES, hasEnoughRules } from '@/lib/rules-policy';
+
+/**
+ * Four sequential steps. Splitting them keeps each screen to one decision,
+ * which matters most on a phone where everything else would need scrolling.
+ */
+type Step = 'learn' | 'date' | 'rules' | 'auth';
+const STEP_ORDER: Step[] = ['learn', 'date', 'rules', 'auth'];
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -21,6 +33,29 @@ interface OnboardingModalProps {
   configuredRules: Rule[];
   onRulesChange?: (rules: Rule[]) => void;
   referredBy?: string | null;
+}
+
+/** One point on the "how it works" screen. */
+function LearnPoint({
+  icon,
+  title,
+  body,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  body: string;
+}) {
+  return (
+    <li className="learn-point">
+      <span className="learn-point-icon" aria-hidden="true">
+        {icon}
+      </span>
+      <span>
+        <strong className="learn-point-title">{title}</strong>
+        <span className="learn-point-body">{body}</span>
+      </span>
+    </li>
+  );
 }
 
 export default function OnboardingModal({
@@ -31,22 +66,34 @@ export default function OnboardingModal({
   referredBy,
 }: OnboardingModalProps) {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const toast = useToast();
+  const { session, refresh } = useChallenge();
+
+  const [step, setStep] = useState<Step>('learn');
   const [startDate, setStartDate] = useState(formatDate(new Date()));
-  const [activeStep, setActiveStep] = useState<'rules' | 'auth'>('rules');
   const [loading, setLoading] = useState(false);
+  const [resumeName, setResumeName] = useState('');
 
   const { endDate, infoNoticeKey, infoNoticeVars } = validateChallengeDates(startDate);
-  const infoNotice = infoNoticeKey ? t(infoNoticeKey, infoNoticeVars) : null;
+  const infoNotice = infoNoticeKey
+    ? t(infoNoticeKey, {
+        date: formatLongDate(String(infoNoticeVars?.date ?? endDate), locale),
+        deadline: formatLongDate(String(infoNoticeVars?.deadline ?? ''), locale),
+      })
+    : null;
+
+  const stepIndex = STEP_ORDER.indexOf(step);
+  const goTo = (next: Step) => setStep(next);
+  const goBack = () => setStep(STEP_ORDER[Math.max(0, stepIndex - 1)]);
 
   const handleSignupAndCommit = async (authData: {
     displayName: string;
     email: string;
     password: string;
   }) => {
-    if (configuredRules.length < 2) {
-      toast.error(t('onboarding.minRulesAlert'));
+    if (!hasEnoughRules(configuredRules.length)) {
+      toast.error(t('onboarding.minRulesAlert', { min: MIN_RULES }));
       return;
     }
 
@@ -56,12 +103,12 @@ export default function OnboardingModal({
 
       if (!result.ok) {
         setLoading(false);
-        toast.error(result.message ?? t('onboarding.signupFailed'));
+        toast.error(t(result.errorKey ?? 'onboarding.signupFailed', result.errorVars));
         return;
       }
 
-      // The chosen rules and start date are parked locally either way, so they
-      // survive an email-confirmation round trip.
+      // Park the chosen habits and start date either way, so they survive an
+      // email-confirmation round trip.
       savePendingSignup({
         displayName: authData.displayName,
         startDate,
@@ -70,9 +117,8 @@ export default function OnboardingModal({
       });
 
       if (!result.hasSession || !result.userId) {
-        // The project requires email confirmation: the challenge row cannot be
-        // written until the user is authenticated. ChallengeProvider creates it
-        // on their first signed-in visit.
+        // Confirmation required: the challenge row cannot be written until the
+        // user is authenticated. ChallengeProvider creates it on first visit.
         setLoading(false);
         onClose();
         toast.info(t('signup.confirmEmail'));
@@ -104,147 +150,264 @@ export default function OnboardingModal({
     }
   };
 
+  /**
+   * For someone who already has a Supabase session but no challenge — a
+   * previous signup attempt whose account was created but whose challenge
+   * write failed, or an email-confirmation redirect landing them back here.
+   * Re-running signUp() for this person would fail with "email already
+   * exists"; the fix is to skip straight to writing the challenge against the
+   * session they already hold.
+   */
+  const handleResumeSetup = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!session?.user) return;
+
+    if (!resumeName.trim()) {
+      toast.error(t('auth.nameRequired'));
+      return;
+    }
+    if (!hasEnoughRules(configuredRules.length)) {
+      toast.error(t('onboarding.minRulesAlert', { min: MIN_RULES }));
+      return;
+    }
+
+    setLoading(true);
+    const created = await createChallenge({
+      userId: session.user.id,
+      displayName: resumeName.trim(),
+      startDate,
+      rules: configuredRules,
+      referredByUsername: referredBy ?? null,
+    });
+    setLoading(false);
+
+    if (created.error || !created.data) {
+      toast.error(created.error ?? t('onboarding.resumeFailed'));
+      return;
+    }
+
+    await refresh();
+    onClose();
+    router.push(`/user/${created.data.username}`);
+  };
+
   return (
     <ModalPortal isOpen={isOpen} onClose={onClose}>
       <AnimatePresence>
         {isOpen && (
           <div className="modal-backdrop" onClick={onClose}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.22 }}
-            className="modal-content"
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: '620px' }}
-            role="dialog"
-            aria-modal="true"
-            aria-label={t('onboarding.title')}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <Flame size={24} color="var(--accent-orange)" />
-                <h3 style={{ fontSize: '1.35rem' }}>{t('onboarding.title')}</h3>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: 16 }}
+              transition={{ duration: 0.2 }}
+              className="modal-content onboarding-modal"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('onboarding.title')}
+            >
+              {/* Header */}
+              <div className="onboarding-head">
+                {stepIndex > 0 ? (
+                  <button type="button" onClick={goBack} className="icon-btn" aria-label={t('onboarding.back')}>
+                    <ArrowLeft size={17} />
+                  </button>
+                ) : (
+                  <Flame size={22} color="var(--accent-orange)" />
+                )}
+
+                <span className="onboarding-step-label">
+                  {t('onboarding.stepOf', { current: stepIndex + 1, total: STEP_ORDER.length })}
+                </span>
+
+                <button type="button" onClick={onClose} className="icon-btn" aria-label={t('onboarding.close')}>
+                  <X size={17} />
+                </button>
               </div>
-              <button
-                onClick={onClose}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                aria-label={t('onboarding.close')}
-              >
-                <X size={20} />
-              </button>
-            </div>
 
-            {referredBy && (
-              <div className="notice notice-info" style={{ marginBottom: '1rem' }}>
-                <Users size={16} />
-                <span>{t('onboarding.referral', { username: referredBy })}</span>
+              {/* Progress */}
+              <div className="onboarding-progress" aria-hidden="true">
+                {STEP_ORDER.map((s, i) => (
+                  <span key={s} className={`onboarding-progress-bar${i <= stepIndex ? ' is-done' : ''}`} />
+                ))}
               </div>
-            )}
 
-            {/* Step tabs */}
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
-              <button
-                type="button"
-                onClick={() => setActiveStep('rules')}
-                className={`btn btn-sm ${activeStep === 'rules' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ flex: 1 }}
-              >
-                {t('onboarding.stepRules')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveStep('auth')}
-                className={`btn btn-sm ${activeStep === 'auth' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ flex: 1 }}
-                disabled={configuredRules.length < 2}
-              >
-                {t('onboarding.stepAuth')}
-              </button>
-            </div>
+              {referredBy && (
+                <div className="notice notice-info" style={{ marginBottom: '1rem' }}>
+                  <Users size={16} style={{ flexShrink: 0 }} />
+                  <span>{t('onboarding.referral', { username: referredBy })}</span>
+                </div>
+              )}
 
-            {activeStep === 'rules' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div
-                  className="glass-card"
-                  style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', backgroundColor: 'var(--bg-tertiary)' }}
-                >
+              {/* ---------- Step 1: how it works ---------- */}
+              {step === 'learn' && (
+                <div className="stack">
+                  <div>
+                    <h3 className="h-page">{t('onboarding.learnTitle')}</h3>
+                    <p className="onboarding-lede">{t('onboarding.learnIntro')}</p>
+                  </div>
+
+                  <ul className="learn-list">
+                    <LearnPoint
+                      icon={<ListChecks size={18} />}
+                      title={t('onboarding.learnHabits', { min: MIN_RULES })}
+                      body={t('onboarding.learnHabitsDesc', { min: MIN_RULES, max: MAX_RULES })}
+                    />
+                    <LearnPoint
+                      icon={<RefreshCw size={18} />}
+                      title={t('onboarding.learnChange')}
+                      body={t('onboarding.learnChangeDesc')}
+                    />
+                    <LearnPoint
+                      icon={<ShieldCheck size={18} />}
+                      title={t('onboarding.learnShield')}
+                      body={t('onboarding.learnShieldDesc')}
+                    />
+                    <LearnPoint
+                      icon={<Scale size={18} />}
+                      title={t('onboarding.learnJudge')}
+                      body={t('onboarding.learnJudgeDesc')}
+                    />
+                    <LearnPoint
+                      icon={<RotateCcw size={18} />}
+                      title={t('onboarding.learnReset')}
+                      body={t('onboarding.learnResetDesc')}
+                    />
+                  </ul>
+
+                  <button type="button" onClick={() => goTo('date')} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                    {t('onboarding.learnCta')} <ArrowRight size={18} />
+                  </button>
+                </div>
+              )}
+
+              {/* ---------- Step 2: start date ---------- */}
+              {step === 'date' && (
+                <div className="stack">
+                  <div>
+                    <h3 className="h-page">{t('onboarding.dateTitle')}</h3>
+                    <p className="onboarding-lede">{t('onboarding.dateIntro')}</p>
+                  </div>
+
                   <div className="input-group" style={{ marginBottom: 0 }}>
                     <label className="input-label" htmlFor="modal-start-date">
                       {t('onboarding.startDateLabel')}
                     </label>
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <input
-                        id="modal-start-date"
-                        type="date"
-                        className="input-field"
-                        style={{ flex: '1 1 180px' }}
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                      />
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.4rem',
-                          fontSize: '0.85rem',
-                          color: 'var(--text-secondary)',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        <Calendar size={16} color="var(--accent-orange)" />
-                        <span>{t('onboarding.finish', { date: endDate })}</span>
-                      </div>
-                    </div>
-
-                    {/* Non-blocking notice when the 75 days run past 31 December */}
-                    {infoNotice && (
-                      <div className="notice notice-info" style={{ marginTop: '0.5rem', fontSize: '0.78rem' }}>
-                        <Info size={14} />
-                        <span>{infoNotice}</span>
-                      </div>
-                    )}
+                    <input
+                      id="modal-start-date"
+                      type="date"
+                      className="input-field"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
                   </div>
+
+                  <div className="onboarding-finish">
+                    <Calendar size={16} color="var(--accent-orange)" style={{ flexShrink: 0 }} />
+                    <span>{t('onboarding.finish', { date: formatLongDate(endDate, locale) })}</span>
+                  </div>
+
+                  {/* Finishing after the shared goal is allowed — just flagged. */}
+                  {infoNotice && (
+                    <div className="notice notice-info">
+                      <Info size={16} style={{ flexShrink: 0 }} />
+                      <span>{infoNotice}</span>
+                    </div>
+                  )}
+
+                  <button type="button" onClick={() => goTo('rules')} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                    {t('onboarding.dateCta')} <ArrowRight size={18} />
+                  </button>
                 </div>
+              )}
 
-                <RuleCustomizer rules={configuredRules} onChange={(updated) => onRulesChange?.(updated)} />
+              {/* ---------- Step 3: habits ---------- */}
+              {step === 'rules' && (
+                <div className="stack">
+                  <div className="split">
+                    <h3 className="h-page">{t('onboarding.rulesTitle')}</h3>
+                    <span className={`badge ${hasEnoughRules(configuredRules.length) ? 'badge-success' : 'badge-fire'}`}>
+                      {configuredRules.length === 1
+                        ? t('rules.countOne', { count: configuredRules.length })
+                        : t('rules.countMany', { count: configuredRules.length })}
+                    </span>
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={() => setActiveStep('auth')}
-                  className="btn btn-primary btn-lg"
-                  style={{ width: '100%', marginTop: '0.5rem' }}
-                  disabled={configuredRules.length < 2}
-                >
-                  {t('onboarding.continue')}
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div
-                  style={{
-                    padding: '0.75rem 1rem',
-                    borderRadius: 'var(--radius-md)',
-                    backgroundColor: 'var(--chip-bg)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    flexWrap: 'wrap',
-                    fontSize: '0.85rem',
-                  }}
-                >
-                  <span>{t('onboarding.summary', { start: startDate, end: endDate })}</span>
-                  <span style={{ color: 'var(--accent-cyan)' }}>{t('onboarding.shieldIncluded')}</span>
+                  <RuleCustomizer
+                    rules={configuredRules}
+                    onChange={(updated) => onRulesChange?.(updated)}
+                    hideHeading
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => goTo('auth')}
+                    className="btn btn-primary btn-lg"
+                    style={{ width: '100%' }}
+                    disabled={!hasEnoughRules(configuredRules.length)}
+                  >
+                    {t('onboarding.rulesCta')} <ArrowRight size={18} />
+                  </button>
                 </div>
+              )}
 
-                <SimpleAuthForm
-                  onSubmit={handleSignupAndCommit}
-                  submitButtonText={t('onboarding.submit')}
-                  loading={loading}
-                />
-              </div>
-            )}
+              {/* ---------- Step 4: account ---------- */}
+              {step === 'auth' && (
+                <div className="stack">
+                  <div className="onboarding-summary">
+                    <span>
+                      {t('onboarding.summary', {
+                        start: formatLongDate(startDate, locale),
+                        end: formatLongDate(endDate, locale),
+                      })}
+                    </span>
+                    <span style={{ color: 'var(--accent-cyan)' }}>{t('onboarding.shieldIncluded')}</span>
+                  </div>
+
+                  {session ? (
+                    // Already authenticated with no challenge yet (§ handleResumeSetup) —
+                    // finish setup against the existing session instead of signing up again.
+                    <form onSubmit={handleResumeSetup} className="stack">
+                      <div className="notice notice-info">
+                        <Info size={16} style={{ flexShrink: 0 }} />
+                        <span>
+                          <strong>{t('onboarding.resumeTitle')}</strong> {t('onboarding.resumeBody')}
+                        </span>
+                      </div>
+
+                      <div className="input-group" style={{ marginBottom: 0 }}>
+                        <label className="input-label" htmlFor="resume-display-name">
+                          {t('auth.nameLabel')}
+                        </label>
+                        <div className="field-with-icon">
+                          <input
+                            id="resume-display-name"
+                            type="text"
+                            className="input-field"
+                            placeholder={t('auth.namePlaceholder')}
+                            value={resumeName}
+                            onChange={(e) => setResumeName(e.target.value)}
+                            autoComplete="nickname"
+                            required
+                          />
+                          <UserIcon size={18} className="field-icon" />
+                        </div>
+                      </div>
+
+                      <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
+                        {loading ? t('auth.submitting') : t('onboarding.submit')}
+                      </button>
+                    </form>
+                  ) : (
+                    <SimpleAuthForm
+                      onSubmit={handleSignupAndCommit}
+                      submitButtonText={t('onboarding.submit')}
+                      loading={loading}
+                    />
+                  )}
+                </div>
+              )}
             </motion.div>
           </div>
         )}

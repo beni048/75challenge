@@ -31,6 +31,9 @@ interface ChallengeContextValue {
   setChallenge: (challenge: Challenge | null) => void;
 }
 
+/** How long to wait for Supabase before assuming signed-out. */
+const AUTH_RESOLVE_TIMEOUT_MS = 4000;
+
 const ChallengeContext = createContext<ChallengeContextValue | null>(null);
 
 export default function ChallengeProvider({ children }: { children: React.ReactNode }) {
@@ -100,8 +103,19 @@ export default function ChallengeProvider({ children }: { children: React.ReactN
       if (!data.session) setLoading(false);
     });
 
+    /*
+     * Hard ceiling on the loading state. The header hides Log In / Join while
+     * loading to avoid flashing them at a signed-in user, so if the auth call
+     * hangs — offline, DNS failure, a project that never answers — a visitor is
+     * left with no way into the app at all. Better a brief flash than a dead end.
+     */
+    const settle = window.setTimeout(() => {
+      if (active) setLoading(false);
+    }, AUTH_RESOLVE_TIMEOUT_MS);
+
     return () => {
       active = false;
+      window.clearTimeout(settle);
       subscription.subscription.unsubscribe();
     };
   }, [loadChallenge]);
