@@ -4,6 +4,8 @@
 > This is the single source of truth for all product requirements, architecture constraints, and design decisions.
 >
 > 🐙 **GIT & GITHUB OPERATIONS**: When performing any Git or GitHub work (branching, committing, pull requests), always consult the [GitHub Git Rules & Best Practices](file:///home/benjamin/workspace/github.com/beni048/75challenge/github.md) guidelines.
+>
+> 🧪 **TESTING & PRE-DEPLOYMENT RULES**: **ALWAYS** run tests (`npm test`) and type-check (`npm run build`) before pushing code or triggering deployments. Always consult the [Testing Rules & Best Practices](file:///home/benjamin/workspace/github.com/beni048/75challenge/testing.md) guide before modifying or adding tests.
 
 ---
 
