@@ -218,65 +218,16 @@ CREATE TABLE user_unfollows (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   PRIMARY KEY (follower_id, unfollowed_id)
 );
-
--- Support Tickets Table
-CREATE TABLE support_tickets (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-  subject TEXT NOT NULL,
-  message TEXT NOT NULL,
-  category TEXT CHECK (category IN ('bug', 'account', 'general')) NOT NULL DEFAULT 'general',
-  status TEXT CHECK (status IN ('open', 'in_progress', 'resolved', 'closed')) NOT NULL DEFAULT 'open',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Feature Proposals Table
-CREATE TABLE feature_proposals (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-  title TEXT NOT NULL,
-  description TEXT NOT NULL,
-  status TEXT CHECK (status IN ('pending', 'under_review', 'planned', 'completed', 'declined')) NOT NULL DEFAULT 'pending',
-  upvote_count INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Feature Proposal Upvotes Table
-CREATE TABLE feature_upvotes (
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-  proposal_id UUID REFERENCES feature_proposals(id) ON DELETE CASCADE NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  PRIMARY KEY (user_id, proposal_id)
-);
 ```
 
 ---
 
-## 10. Contact Support & Propose Feature
+## 10. Contact Support & Feedback
 
-### Contact Support
+### Help & Feedback
+- We use simple `mailto:` links for contact and support rather than complex ticketing or feature-request systems.
 - Accessible from a **persistent help icon** (bottom-right FAB or settings menu).
-- Route: `/support`
-- Logged-in users can submit a support ticket with:
-  - **Subject** (text, required)
-  - **Category** dropdown: `Bug Report`, `Account Issue`, `General`
-  - **Message** (textarea, required, max 2000 chars)
-- Tickets are stored in `support_tickets` table.
-- Users can view their own ticket history and status on the `/support` page.
-- Status flow: `open` → `in_progress` → `resolved` / `closed`.
-- **No admin panel in v1** — tickets are managed directly in Supabase dashboard.
-
-### Propose Feature
-- Route: `/features`
-- Logged-in users can submit a feature proposal with:
-  - **Title** (text, required, max 100 chars)
-  - **Description** (textarea, required, max 1000 chars)
-- All proposals are publicly visible to logged-in users, sorted by upvote count (descending).
-- **Upvote mechanic**: Each user can upvote a proposal **once** (toggle on/off). Upvote count is denormalized on `feature_proposals.upvote_count` for fast sorting.
-- Status badges shown per proposal: `Pending`, `Under Review`, `Planned`, `Completed`, `Declined`.
-- **Rate limit**: Max 3 proposals per user per week (enforced client-side + RLS).
-- Proposals cannot be edited or deleted by the user after submission.
+- Opens default email client to send an email to the support address.
 
 ---
 
@@ -300,11 +251,9 @@ CREATE TABLE feature_upvotes (
 | `FeedCard` | Strava-style activity card with reactions |
 | `HypeButton` | Animated reaction button with confetti |
 | `UserProfileView` | 75-day calendar grid + stats |
-| `SupportForm` | Contact support ticket submission form |
-| `SupportTicketList` | User's own ticket history with status badges |
-| `FeatureProposalForm` | Submit a new feature proposal |
-| `FeatureProposalCard` | Displays a proposal with upvote button + count |
-| `FeatureBoard` | Sortable list of all proposals |
+| `MilestoneCard` | Component formatted for 9:16 Instagram Story exports |
+| `ConsistencyHeatmap` | Group progress matrix visualization |
+| `HelpFeedback` | Simple mailto link component for support/features |
 
 ---
 
@@ -318,10 +267,9 @@ CREATE TABLE feature_upvotes (
 6. **1 Streak Shield per attempt** — no more, no less.
 7. **Second missed day = hard reset** — no exceptions.
 8. **No text comments, no downvotes** — reactions only.
-9. **Cold-start threshold: < 2 users** → show static preview posts in feed.
+9. **Cold-start threshold: < 2 users** → show static preview posts in feed. Feed query must filter `daily_logs` to show ONLY 'completed' or 'shielded' statuses.
 10. **Client-side image compression** to WebP < 200 KB before upload.
-11. **Support tickets** — max 2000 chars per message, managed via Supabase dashboard.
-12. **Feature proposals** — max 3 per user per week, 1 upvote per user per proposal, no edits after submission.
+11. **Export Utility** to handle converting the `MilestoneCard` DOM element into a downloadable image (e.g. `html-to-image`).
 
 ---
 
