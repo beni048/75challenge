@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Rule, DailyLog } from '@/lib/streak-engine';
 import { compressImageToWebP } from '@/lib/image-compressor';
 import { getEffectiveLogDate } from '@/lib/date-utils';
-import { Check, Upload, Image as ImageIcon, Flame, Shield, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Check, Upload, Sparkles, AlertTriangle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface DailyChecklistProps {
@@ -12,6 +12,7 @@ interface DailyChecklistProps {
   logDate?: string;
   existingLog?: DailyLog;
   onSaveLog: (log: DailyLog) => void;
+  onReportFailure?: (logDate: string) => void;
 }
 
 export default function DailyChecklist({
@@ -19,6 +20,7 @@ export default function DailyChecklist({
   logDate = getEffectiveLogDate(),
   existingLog,
   onSaveLog,
+  onReportFailure,
 }: DailyChecklistProps) {
   const [completedRuleIds, setCompletedRuleIds] = useState<string[]>(
     existingLog?.rule_checks?.filter((c) => c.is_completed).map((c) => c.rule_id) || []
@@ -40,7 +42,6 @@ export default function DailyChecklist({
 
     setIsCompressing(true);
     try {
-      // Compress in browser via Canvas API to WebP < 200KB
       const result = await compressImageToWebP(file);
       setPhotoPreview(result.previewUrl);
       setCompressionStats(
@@ -61,11 +62,15 @@ export default function DailyChecklist({
 
     if (!allRulesDone) {
       const confirmIncomplete = confirm(
-        'Not all rules are checked off. Saving will mark this day as incomplete/failed unless shielded. Proceed?'
+        'You have unchecked rules. Do you want to report this day as missed / incomplete?'
       );
       if (!confirmIncomplete) return;
+
+      if (onReportFailure) {
+        onReportFailure(logDate);
+        return;
+      }
     } else {
-      // Confetti burst on full completion
       confetti({
         particleCount: 40,
         spread: 60,
@@ -94,7 +99,7 @@ export default function DailyChecklist({
         <div>
           <h3 style={{ fontSize: '1.25rem', marginBottom: '0.2rem' }}>Daily Check-In Matrix</h3>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-            Logging for: <strong>{logDate}</strong> (3:00 AM reset cutoff active)
+            Logging for: <strong>{logDate}</strong>
           </p>
         </div>
 
@@ -213,14 +218,27 @@ export default function DailyChecklist({
         />
       </div>
 
-      <button
-        type="submit"
-        className="btn btn-primary"
-        style={{ padding: '0.9rem 1.5rem', width: '100%', fontWeight: 700 }}
-      >
-        <Sparkles size={18} />
-        {allRulesDone ? 'Lock In Completed Day' : 'Save Check-In'}
-      </button>
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <button
+          type="submit"
+          className="btn btn-primary"
+          style={{ flex: 1, padding: '0.9rem 1.5rem', fontWeight: 700 }}
+        >
+          <Sparkles size={18} />
+          {allRulesDone ? 'Lock In Completed Day' : 'Save Check-In'}
+        </button>
+
+        {onReportFailure && (
+          <button
+            type="button"
+            onClick={() => onReportFailure(logDate)}
+            className="btn btn-secondary"
+            style={{ color: '#ff5252', borderColor: 'rgba(255, 23, 68, 0.3)', padding: '0.9rem 1.2rem' }}
+          >
+            <AlertTriangle size={16} /> Report Missed Day
+          </button>
+        )}
+      </div>
     </form>
   );
 }

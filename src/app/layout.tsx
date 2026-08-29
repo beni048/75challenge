@@ -6,7 +6,7 @@ import { Flame } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: '75 Challenge — Hard Discipline, Flexible Rules',
-  description: 'Transform your body and mind in 75 days with flexible rules, a 3:00 AM reset window, and positive social accountability.',
+  description: 'Transform your body and mind in 75 days with customizable rules, self-paced trust logging, and positive social accountability.',
 };
 
 export default function RootLayout({
@@ -30,7 +30,7 @@ export default function RootLayout({
                 Community Feed
               </Link>
               <Link href="/join" className="btn btn-primary btn-sm" id="nav-join">
-                Launch 75 Days
+                Join 75 Challenge
               </Link>
             </nav>
           </div>
@@ -56,7 +56,7 @@ export default function RootLayout({
           <div className="container">
             <p>© {new Date().getFullYear()} 75 Challenge. Built for discipline, consistency, and positive accountability.</p>
             <p style={{ marginTop: '0.4rem', fontSize: '0.78rem' }}>
-              Daily cycles reset at 3:00 AM local time. 1 Streak Shield per 75-day journey.
+              Self-paced daily tracking. 1 Streak Shield per 75-day journey.
             </p>
           </div>
         </footer>

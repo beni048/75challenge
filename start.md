@@ -40,9 +40,8 @@
 Required fields:
 1. **Display Name** (real name or pseudonym)
 2. **Email** + **Password** (min 5 chars)
-3. **Rule Set** (transferred from Rule Builder if used on landing page)
-4. **Start Date** — must be within **September** of the current year
-5. **Hard Deadline**: challenge window (start + 74 days) must finish **on or before December 31st**. End date previewed dynamically.
+3. **Rule Set** (selected in signup modal)
+4. **Start Date** — previewed dynamically with calculated end date. If the end date finishes after December 31st, an informational notice is displayed, but users are still allowed to join.
 
 ### Squad Referral Links
 - URL pattern: `/join?ref=username`
@@ -70,23 +69,18 @@ Pre-loaded rules:
 
 ---
 
-## 4. 3:00 AM Reset Cutoff & Streak Shield System
+## 4. Asynchronous Progress & Streak Shield System
 
-### 3:00 AM Grace Period
-- Daily operational cycle: **3:00 AM → 2:59 AM local time** (not midnight).
-- Accommodates night-owl logging.
-- All date calculations must use this cutoff, not calendar midnight.
+### Self-Paced Trust & Check-Ins
+- Users check off their own daily progress asynchronously. We trust participants to manage their habits.
+- No artificial cutoff hours (e.g. 3 AM) — check-ins are recorded for their respective calendar dates.
 
-### Asynchronous Check-ins
-- Daily logging is **not** strictly required in real-time.
-- Past days appear as **retroactive checkbox matrices** — users can log previous days.
-
-### Streak Shield Mechanic
+### Self-Reported Failure & Streak Shield Mechanic
 - Each user receives exactly **1 Streak Shield** per 75-day attempt.
-- If a day passes uncompleted (after 3:00 AM cutoff):
-  - **Prompt**: "Use your 1 Streak Shield" **OR** "Accept Hard Reset to Day 1"
-  - If shield is used → day marked as `shielded`, challenge continues.
-  - A **second** missed day → **immediate hard reset to Day 1** (no choice).
+- When a user willingly reports or logs a failed day:
+  - **Prompt**: "Use your 1 Streak Shield" **OR** "Accept Hard Reset to Day 1" (with a warning that this resets progress to Day 1).
+  - If the shield is deployed → day is recorded as `shielded`, progress continues.
+  - If a subsequent failure occurs with 0 shields remaining → hard reset to Day 1.
 
 ---
 
@@ -146,12 +140,12 @@ Multi-tap reaction buttons with animations:
 
 ---
 
-## 8. Landing Page & Try-Before-Signup
+## 8. Landing Page & Onboarding
 
 ### Landing Page (`/`)
-- Unauthenticated visitors see an **interactive landing page** with static preview posts.
-- **Interactive Rule Builder**: visitors customize rules on the landing page.
-- Clicking **"Commit & Launch 75 Days"** transfers configured rules into the sign-up modal.
+- Public visitors see a high-energy hero section with the core vision, feature highlights, and a primary **"Join 75 Challenge"** CTA.
+- Displays the live community feed preview stream below.
+- Clicking **"Join 75 Challenge"** opens the onboarding modal with rule configuration, start date selection, and authentication.
 
 ---
 
@@ -263,15 +257,14 @@ CREATE TABLE user_unfollows (
 
 1. **Min 5-char password** — no complexity requirements.
 2. **Min 2 active rules** to start a challenge.
-3. **Start date must be in September** of the current year.
-4. **End date (start + 74 days) must be ≤ December 31st**.
-5. **3:00 AM local time** is the day boundary, not midnight.
-6. **1 Streak Shield per attempt** — no more, no less.
-7. **Second missed day = hard reset** — no exceptions.
-8. **No text comments, no downvotes** — reactions only.
-9. **Cold-start threshold: < 2 users** → show static preview posts in feed. Feed query must filter `daily_logs` to show ONLY 'completed' or 'shielded' statuses.
-10. **Client-side image compression** to WebP < 200 KB before upload.
-11. **Export Utility** to handle converting the `MilestoneCard` DOM element into a downloadable image (e.g. `html-to-image`).
+3. **Start date & duration** — 75 consecutive days. If the calculated finish date extends beyond December 31st, an informative notice is shown, but users are permitted to join.
+4. **Self-paced trust check-ins** — users log their habits asynchronously without rigid midnight/3AM clock lockouts.
+5. **1 Streak Shield per attempt** — if a user willingly reports a failed day, they are prompted once to deploy their shield or accept a hard reset to Day 1.
+6. **Subsequent failure with 0 shields** = hard reset to Day 1.
+7. **No text comments, no downvotes** — reactions only.
+8. **Cold-start threshold: < 2 users** → show static preview posts in feed. Feed query must filter `daily_logs` to show ONLY 'completed' or 'shielded' statuses.
+9. **Client-side image compression** to WebP < 200 KB before upload.
+10. **Export Utility** to handle converting the `MilestoneCard` DOM element into a downloadable image (e.g. `html-to-image`).
 
 ---
 

@@ -10,35 +10,14 @@ import {
 } from '@/lib/date-utils';
 
 describe('Date & Time Utilities', () => {
-  describe('getEffectiveLogDate (3:00 AM cutoff)', () => {
-    it('returns today date when time is >= 3:00 AM', () => {
-      // 2026-09-15 03:00:00
-      const date = new Date(2026, 8, 15, 3, 0, 0);
-      expect(getEffectiveLogDate(date)).toBe('2026-09-15');
-
-      // 2026-09-15 23:59:59
-      const nightDate = new Date(2026, 8, 15, 23, 59, 59);
-      expect(getEffectiveLogDate(nightDate)).toBe('2026-09-15');
-    });
-
-    it('rolls back to yesterday when time is < 3:00 AM', () => {
-      // 2026-09-16 02:59:59 (night owl logging)
-      const lateNightDate = new Date(2026, 8, 16, 2, 59, 59);
-      expect(getEffectiveLogDate(lateNightDate)).toBe('2026-09-15');
-
-      // 2026-09-16 00:00:01
-      const midnightDate = new Date(2026, 8, 16, 0, 0, 1);
-      expect(getEffectiveLogDate(midnightDate)).toBe('2026-09-15');
-    });
-  });
-
-  describe('formatDate & parseDate', () => {
+  describe('getEffectiveLogDate & formatDate', () => {
     it('formats dates consistently to YYYY-MM-DD', () => {
-      const date = new Date(2026, 8, 5); // Sept 5
-      expect(formatDate(date)).toBe('2026-09-05');
+      const date = new Date(2026, 8, 15); // Sept 15
+      expect(formatDate(date)).toBe('2026-09-15');
+      expect(getEffectiveLogDate(date)).toBe('2026-09-15');
     });
 
-    it('parses YYYY-MM-DD into a local Date without timezone shifting', () => {
+    it('parses YYYY-MM-DD into a local Date object', () => {
       const parsed = parseDate('2026-09-01');
       expect(parsed.getFullYear()).toBe(2026);
       expect(parsed.getMonth()).toBe(8); // 0-indexed September
@@ -50,8 +29,8 @@ describe('Date & Time Utilities', () => {
     it('calculates start + 74 days accurately', () => {
       // Sept 1 + 74 days = Nov 14
       expect(calculateTargetEndDate('2026-09-01')).toBe('2026-11-14');
-      // Sept 15 + 74 days = Nov 28
-      expect(calculateTargetEndDate('2026-09-15')).toBe('2026-11-28');
+      // Oct 20 + 74 days = Jan 02
+      expect(calculateTargetEndDate('2026-10-20')).toBe('2027-01-02');
     });
   });
 
@@ -70,20 +49,18 @@ describe('Date & Time Utilities', () => {
   });
 
   describe('validateChallengeDates', () => {
-    it('accepts start dates within September finishing before Dec 31', () => {
+    it('accepts start dates within current year finishing before Dec 31', () => {
       const result = validateChallengeDates('2026-09-01');
       expect(result.valid).toBe(true);
       expect(result.endDate).toBe('2026-11-14');
+      expect(result.infoNotice).toBeUndefined();
     });
 
-    it('rejects start dates outside of September', () => {
-      const octResult = validateChallengeDates('2026-10-01');
-      expect(octResult.valid).toBe(false);
-      expect(octResult.error).toContain('September');
-
-      const augResult = validateChallengeDates('2026-08-31');
-      expect(augResult.valid).toBe(false);
-      expect(augResult.error).toContain('September');
+    it('allows joining and shows infoNotice when end date exceeds Dec 31', () => {
+      const result = validateChallengeDates('2026-10-25');
+      expect(result.valid).toBe(true);
+      expect(result.endDate).toBe('2027-01-07');
+      expect(result.infoNotice).toContain('new year');
     });
   });
 

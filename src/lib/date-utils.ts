@@ -1,21 +1,13 @@
 /**
  * Date and Time utilities for 75 Challenge
- * Handles the 3:00 AM local time reset cutoff and 75-day calculations.
+ * Handles standard date formatting, 75-day calculations, and informational date notices.
  */
 
 /**
  * Returns the effective log date (YYYY-MM-DD) for local time.
- * If the current time is before 3:00 AM, the effective date is yesterday.
  */
 export function getEffectiveLogDate(now: Date = new Date()): string {
-  const local = new Date(now);
-  const hour = local.getHours();
-  
-  if (hour < 3) {
-    local.setDate(local.getDate() - 1);
-  }
-  
-  return formatDate(local);
+  return formatDate(now);
 }
 
 /**
@@ -47,7 +39,7 @@ export function calculateTargetEndDate(startDateStr: string): string {
 }
 
 /**
- * Calculates current day number (1-indexed) in the 75-day challenge based on effective date.
+ * Calculates current day number (1-indexed) in the 75-day challenge.
  */
 export function calculateCurrentDay(startDateStr: string, effectiveDateStr: string = getEffectiveLogDate()): number {
   const start = parseDate(startDateStr);
@@ -61,26 +53,32 @@ export function calculateCurrentDay(startDateStr: string, effectiveDateStr: stri
 }
 
 /**
- * Validates start date is within September of current year and ends on or before Dec 31st.
+ * Evaluates start date and end date. If the challenge ends after Dec 31st,
+ * provides an informational notice, but always allows joining (`valid: true`).
  */
-export function validateChallengeDates(startDateStr: string): { valid: boolean; error?: string; endDate: string } {
+export function validateChallengeDates(startDateStr: string): {
+  valid: boolean;
+  endDate: string;
+  infoNotice?: string;
+  error?: string;
+} {
+  if (!startDateStr) {
+    return { valid: false, endDate: '', error: 'Please select a valid start date.' };
+  }
+
   const startDate = parseDate(startDateStr);
   const year = startDate.getFullYear();
-  const month = startDate.getMonth(); // 0-indexed, 8 is September
-  
   const endDate = calculateTargetEndDate(startDateStr);
   const parsedEndDate = parseDate(endDate);
   const dec31 = new Date(year, 11, 31, 23, 59, 59);
 
-  if (month !== 8) {
-    return { valid: false, error: 'Start date must be in September.', endDate };
-  }
+  let infoNotice: string | undefined = undefined;
 
   if (parsedEndDate > dec31) {
-    return { valid: false, error: 'The 75-day challenge must conclude on or before December 31st.', endDate };
+    infoNotice = `Your 75-day challenge concludes in the new year on ${endDate}.`;
   }
 
-  return { valid: true, endDate };
+  return { valid: true, endDate, infoNotice };
 }
 
 /**

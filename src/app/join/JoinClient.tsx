@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import RuleCustomizer, { DEFAULT_75_HARD_RULES } from '@/components/RuleCustomizer';
 import OnboardingModal from '@/components/OnboardingModal';
 import { Rule } from '@/lib/streak-engine';
-import { Users, Flame, ArrowRight, ShieldCheck } from 'lucide-react';
+import { DEFAULT_75_HARD_RULES } from '@/components/RuleCustomizer';
+import { Users, Flame, ArrowRight, ShieldCheck, Award } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function JoinClient() {
@@ -15,7 +15,7 @@ export default function JoinClient() {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
   return (
-    <div className="container" style={{ padding: '3rem 1.5rem', maxWidth: '800px' }}>
+    <div className="container" style={{ padding: '3rem 1.5rem', maxWidth: '740px' }}>
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -27,7 +27,7 @@ export default function JoinClient() {
               className="badge badge-shield"
               style={{ marginBottom: '1rem', padding: '0.45rem 1.2rem', fontSize: '0.9rem' }}
             >
-              <Users size={16} /> Invited by @{refUsername}
+              <Users size={16} /> Squad Referral: @{refUsername}
             </div>
           ) : (
             <div
@@ -39,30 +39,37 @@ export default function JoinClient() {
           )}
 
           <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
-            {refUsername ? `Join @${refUsername}'s 75-Day Squad` : 'Launch Your 75-Day Challenge'}
+            {refUsername ? `Join @${refUsername}'s 75 Challenge` : 'Join the 75 Challenge'}
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', maxWidth: '600px', margin: '0 auto' }}>
-            Customize your rule set, set your September start date, and hold each other accountable through unbroken daily discipline.
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', maxWidth: '580px', margin: '0 auto' }}>
+            Build habits with personalized rules, self-paced progress logging, and 1 Streak Shield lifeline.
           </p>
         </div>
 
-        {/* Customizer Box */}
-        <div className="glass-card" style={{ padding: '2rem', marginBottom: '2rem' }}>
-          <RuleCustomizer rules={rules} onChange={setRules} />
-
-          <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-            <button
-              onClick={() => setIsOnboardingOpen(true)}
-              className="btn btn-primary btn-lg pulse-active"
-              style={{ width: '100%', maxWidth: '420px', padding: '1rem 2rem' }}
-              disabled={rules.length < 2}
-            >
-              {refUsername ? `Commit with @${refUsername}` : 'Commit & Launch Challenge'} <ArrowRight size={18} />
-            </button>
-            <p style={{ marginTop: '0.8rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              Includes 3:00 AM reset cutoff + 1 Streak Shield per attempt
-            </p>
+        {/* Action Card */}
+        <div className="glass-card" style={{ padding: '2.5rem', textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Award size={18} color="var(--accent-orange)" />
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Custom Rules</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <ShieldCheck size={18} color="var(--accent-cyan)" />
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>1 Streak Shield</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Users size={18} color="var(--accent-green)" />
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Positive Hype Only</span>
+            </div>
           </div>
+
+          <button
+            onClick={() => setIsOnboardingOpen(true)}
+            className="btn btn-primary btn-lg pulse-active"
+            style={{ width: '100%', maxWidth: '380px', padding: '1rem 2rem' }}
+          >
+            {refUsername ? `Join with @${refUsername}` : 'Join 75 Challenge'} <ArrowRight size={18} />
+          </button>
         </div>
       </motion.div>
 
@@ -70,6 +77,7 @@ export default function JoinClient() {
         isOpen={isOnboardingOpen}
         onClose={() => setIsOnboardingOpen(false)}
         configuredRules={rules}
+        onRulesChange={setRules}
         referredBy={refUsername}
       />
     </div>

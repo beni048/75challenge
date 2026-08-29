@@ -53,10 +53,10 @@ export default function ShieldModal({
               </div>
 
               <h3 style={{ fontSize: '1.4rem', marginBottom: '0.35rem' }}>
-                Missed Day Detected
+                Missed Day Reported
               </h3>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
-                Operational cycle cutoff (3:00 AM) passed for <strong>{missedDate}</strong> without full completion.
+                You reported an incomplete day on <strong>{missedDate}</strong>.
               </p>
             </div>
 
@@ -78,7 +78,7 @@ export default function ShieldModal({
                     </h4>
                   </div>
                   <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                    Protects your streak and marks {missedDate} as shielded. Note: You will have 0 shields remaining. A future missed day will force a reset.
+                    Protects your streak and marks {missedDate} as shielded. You will have 0 shields remaining. A subsequent missed day will require a hard reset.
                   </p>
                   <button
                     onClick={onUseShield}
@@ -99,7 +99,7 @@ export default function ShieldModal({
                     fontSize: '0.85rem',
                   }}
                 >
-                  <strong>No Streak Shields Remaining:</strong> Your shield was already consumed on a previous attempt.
+                  <strong>No Streak Shields Remaining:</strong> Your 1 shield was already deployed on this 75-day attempt.
                 </div>
               )}
 
@@ -113,10 +113,10 @@ export default function ShieldModal({
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
                   <RotateCcw size={18} color="var(--text-muted)" />
-                  <h4 style={{ fontSize: '0.95rem' }}>Option 2: Accept Hard Reset to Day 1</h4>
+                  <h4 style={{ fontSize: '0.95rem' }}>Option 2: Hard Reset to Day 1</h4>
                 </div>
                 <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                  Acknowledge the missed day, reset current progress back to Day 1, and restore your 1 Streak Shield for the new attempt.
+                  ⚠️ <strong>Warning:</strong> This will wipe your current streak and start a brand new attempt from <strong>Day 1</strong> with 1 fresh Streak Shield.
                 </p>
                 <button
                   onClick={onHardReset}
