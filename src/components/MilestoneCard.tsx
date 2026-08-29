@@ -2,8 +2,9 @@
 
 import React, { useRef, useState } from 'react';
 import { exportElementAsImage } from '@/lib/export-utils';
-import { Flame, Shield, CheckCircle2, Download, Share2, Sparkles } from 'lucide-react';
+import { Flame, Shield, CheckCircle2, Download, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { useI18n } from '@/lib/i18n';
 
 interface MilestoneCardProps {
   displayName: string;
@@ -22,8 +23,9 @@ export default function MilestoneCard({
   completedRules,
   shieldsRemaining,
   streakDays,
-  quote = 'Discipline equals freedom.',
+  quote,
 }: MilestoneCardProps) {
+  const { t } = useI18n();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -100,7 +102,7 @@ export default function MilestoneCard({
               gap: '0.25rem',
             }}
           >
-            <Shield size={12} /> {shieldsRemaining > 0 ? 'Shield Ready' : 'Shield Used'}
+            <Shield size={12} /> {shieldsRemaining > 0 ? t('story.shieldReady') : t('story.shieldUsed')}
           </span>
         </div>
 
@@ -116,7 +118,7 @@ export default function MilestoneCard({
               marginBottom: '0.2rem',
             }}
           >
-            Daily Milestone
+            {t('story.milestone')}
           </div>
 
           <div
@@ -130,10 +132,10 @@ export default function MilestoneCard({
               WebkitTextFillColor: 'transparent',
             }}
           >
-            DAY {dayNumber}
+            {t('story.day', { day: dayNumber })}
           </div>
           <div style={{ fontSize: '0.95rem', color: '#94a3b8', marginTop: '0.3rem' }}>
-            of 75 Days unbroken
+            {t('story.ofDays')}
           </div>
 
           {/* Progress bar */}
@@ -157,9 +159,9 @@ export default function MilestoneCard({
             />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#64748b', marginTop: '0.3rem' }}>
-            <span>Start</span>
-            <span>{progressPercent}% Complete</span>
-            <span>Finish</span>
+            <span>{t('story.start')}</span>
+            <span>{t('story.percentComplete', { percent: progressPercent })}</span>
+            <span>{t('story.finish')}</span>
           </div>
         </div>
 
@@ -174,7 +176,7 @@ export default function MilestoneCard({
           }}
         >
           <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
-            Rules Completed Today
+            {t('story.rulesToday')}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
             {completedRules.slice(0, 4).map((rule, idx) => (
@@ -197,8 +199,13 @@ export default function MilestoneCard({
 
         {/* Footer Identity */}
         <div style={{ textAlign: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '0.75rem' }}>
+          <div style={{ fontStyle: 'italic', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: '0.5rem' }}>
+            “{quote ?? t('story.defaultQuote')}”
+          </div>
           <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>{displayName}</div>
-          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>@{username} • 75challenge.app</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+            @{username} • {t('story.daysLogged', { count: streakDays })}
+          </div>
         </div>
       </div>
 
@@ -211,7 +218,7 @@ export default function MilestoneCard({
         id="export-story-btn"
       >
         {isExporting ? <Sparkles size={18} /> : <Download size={18} />}
-        {isExporting ? 'Generating Story...' : 'Save 9:16 Story to Share'}
+        {isExporting ? t('story.exporting') : t('story.export')}
       </button>
     </div>
   );

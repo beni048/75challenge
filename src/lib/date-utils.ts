@@ -52,33 +52,49 @@ export function calculateCurrentDay(startDateStr: string, effectiveDateStr: stri
   return Math.min(diffDays + 1, 75); // 1 to 75
 }
 
-/**
- * Evaluates start date and end date. If the challenge ends after Dec 31st,
- * provides an informational notice, but always allows joining (`valid: true`).
- */
-export function validateChallengeDates(startDateStr: string): {
+export interface ChallengeDateEvaluation {
+  /** Always true for a parseable date — a year-end overrun never blocks joining. */
   valid: boolean;
   endDate: string;
-  infoNotice?: string;
-  error?: string;
-} {
+  /** Translation key for a non-blocking notice, resolved by the caller. */
+  infoNoticeKey?: 'dates.crossesYearEnd';
+  infoNoticeVars?: Record<string, string>;
+  /** Translation key for a blocking error. */
+  errorKey?: 'dates.invalid';
+}
+
+/**
+ * Evaluates a start date against the 75-day window.
+ *
+ * If the challenge finishes after 31 December, the result carries an
+ * informational notice — joining is still allowed. Copy is returned as
+ * translation keys so both languages render from one source.
+ */
+export function validateChallengeDates(startDateStr: string): ChallengeDateEvaluation {
   if (!startDateStr) {
-    return { valid: false, endDate: '', error: 'Please select a valid start date.' };
+    return { valid: false, endDate: '', errorKey: 'dates.invalid' };
   }
 
   const startDate = parseDate(startDateStr);
+  if (Number.isNaN(startDate.getTime())) {
+    return { valid: false, endDate: '', errorKey: 'dates.invalid' };
+  }
+
   const year = startDate.getFullYear();
   const endDate = calculateTargetEndDate(startDateStr);
   const parsedEndDate = parseDate(endDate);
   const dec31 = new Date(year, 11, 31, 23, 59, 59);
 
-  let infoNotice: string | undefined = undefined;
-
   if (parsedEndDate > dec31) {
-    infoNotice = `Your 75-day challenge concludes in the new year on ${endDate}.`;
+    return {
+      valid: true,
+      endDate,
+      infoNoticeKey: 'dates.crossesYearEnd',
+      infoNoticeVars: { date: endDate },
+    };
   }
 
-  return { valid: true, endDate, infoNotice };
+  return { valid: true, endDate };
 }
 
 /**

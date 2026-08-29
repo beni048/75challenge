@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FeedPost } from '@/lib/feed';
+import { FeedPost, localizedCaption, localizedRules } from '@/lib/feed';
 import HypeButton, { ReactionType } from './HypeButton';
-import { CheckCircle2, UserMinus, UserCheck, Flame, Shield } from 'lucide-react';
+import { CheckCircle2, UserMinus, UserCheck } from 'lucide-react';
 import Link from 'next/link';
+import { useI18n } from '@/lib/i18n';
 
 interface FeedCardProps {
   post: FeedPost;
@@ -13,6 +14,7 @@ interface FeedCardProps {
 }
 
 export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
+  const { t, locale } = useI18n();
   const [isUnfollowed, setIsUnfollowed] = useState(false);
 
   const handleToggleUnfollow = () => {
@@ -32,41 +34,47 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          opacity: 0.6,
+          gap: '1rem',
+          flexWrap: 'wrap',
+          opacity: 0.7,
         }}
       >
         <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-          Posts from @{post.user.username} are hidden.
+          {t('feed.hidden', { username: post.user.username })}
         </span>
         <button
           onClick={handleToggleUnfollow}
           className="btn btn-secondary btn-sm"
           style={{ fontSize: '0.75rem' }}
         >
-          <UserCheck size={14} /> Undo Unfollow
+          <UserCheck size={14} /> {t('feed.undoUnfollow')}
         </button>
       </div>
     );
   }
 
+  const caption = localizedCaption(post, locale);
+  const rules = localizedRules(post, locale);
+
   return (
     <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div
             style={{
               width: '42px',
               height: '42px',
+              flexShrink: 0,
               borderRadius: 'var(--radius-full)',
-              background: 'linear-gradient(135deg, rgba(255,90,31,0.2) 0%, rgba(0,229,255,0.2) 100%)',
+              background: 'var(--gradient-avatar)',
               border: '1px solid var(--border-medium)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontWeight: 800,
               fontSize: '1rem',
-              color: '#fff',
+              color: 'var(--text-primary)',
             }}
           >
             {post.user.display_name.charAt(0).toUpperCase()}
@@ -75,16 +83,15 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
           <div>
             <Link
               href={`/user/${post.user.username}`}
-              style={{ fontWeight: 700, fontSize: '1.05rem', color: '#fff' }}
-              className="hover:underline"
+              style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}
             >
               {post.user.display_name}
             </Link>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
               <span>@{post.user.username}</span>
               <span>•</span>
               <span style={{ color: 'var(--accent-orange)', fontWeight: 600 }}>
-                Day {post.day_number} of 75
+                {t('feed.dayOf75', { day: post.day_number })}
               </span>
             </div>
           </div>
@@ -92,7 +99,7 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <span className={`badge ${post.status === 'completed' ? 'badge-success' : 'badge-shield'}`}>
-            {post.status === 'completed' ? 'Day Completed' : 'Shield Used'}
+            {post.status === 'completed' ? t('feed.statusCompleted') : t('feed.statusShielded')}
           </span>
 
           <button
@@ -103,9 +110,10 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
               color: 'var(--text-muted)',
               cursor: 'pointer',
               padding: '0.2rem',
+              display: 'flex',
             }}
-            title="Unfollow user from feed"
-            aria-label={`Unfollow ${post.user.username}`}
+            title={t('feed.unfollow')}
+            aria-label={t('feed.unfollowNamed', { username: post.user.username })}
           >
             <UserMinus size={16} />
           </button>
@@ -113,33 +121,43 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
       </div>
 
       {/* Caption */}
-      {post.caption && (
-        <p style={{ fontSize: '0.95rem', color: 'var(--text-primary)', lineHeight: 1.5 }}>
-          {post.caption}
-        </p>
+      {caption && (
+        <p style={{ fontSize: '0.95rem', color: 'var(--text-primary)', lineHeight: 1.5 }}>{caption}</p>
       )}
 
-      {/* Photo (if uploaded) */}
+      {/* Proof photo */}
       {post.photo_url && (
-        <div style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden', maxHeight: '400px', background: '#000' }}>
+        <div
+          style={{
+            borderRadius: 'var(--radius-md)',
+            overflow: 'hidden',
+            background: 'var(--photo-backdrop)',
+            border: '1px solid var(--border-subtle)',
+            aspectRatio: '3 / 2',
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- user proof photos
+              arrive as blob:/data: URLs from client-side compression, which the
+              next/image optimizer cannot process. */}
           <img
             src={post.photo_url}
-            alt="Daily check-in"
-            style={{ width: '100%', height: 'auto', objectFit: 'cover' }}
+            alt={t('feed.photoAlt')}
+            loading="lazy"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
         </div>
       )}
 
-      {/* Checked-off Rules */}
+      {/* Checked-off rules */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
-        {post.completed_rules.map((rule, idx) => (
+        {rules.map((rule, idx) => (
           <span
             key={idx}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '0.35rem',
-              background: 'rgba(255, 255, 255, 0.05)',
+              background: 'var(--chip-bg)',
               padding: '0.3rem 0.65rem',
               borderRadius: 'var(--radius-sm)',
               fontSize: '0.8rem',
@@ -152,7 +170,7 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
         ))}
       </div>
 
-      {/* Reactions Bar with HypeButton */}
+      {/* Reactions */}
       <div
         style={{
           display: 'flex',
@@ -170,9 +188,7 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
         />
 
         {post.is_mock && (
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-            Preview Post
-          </span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{t('feed.previewPost')}</span>
         )}
       </div>
     </div>

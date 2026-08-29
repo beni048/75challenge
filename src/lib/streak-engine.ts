@@ -91,7 +91,7 @@ export function evaluateUserChallenge(
   const logsByDate = new Map<string, DailyLog>();
   logs.forEach((log) => logsByDate.set(log.log_date, log));
 
-  let shields = user.shields_remaining;
+  const shields = user.shields_remaining;
   let status = user.status;
   let completedDaysCount = 0;
   let needsShieldPrompt = false;

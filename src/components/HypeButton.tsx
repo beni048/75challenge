@@ -3,9 +3,11 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { useI18n } from '@/lib/i18n';
 
 export type ReactionType = 'fire' | 'beast' | 'launch' | 'hype';
 
+// Reaction names are product vocabulary and stay the same in every language.
 const REACTION_CONFIG: Record<ReactionType, { emoji: string; label: string; color: string }> = {
   fire: { emoji: '🔥', label: 'Fire', color: 'var(--accent-orange)' },
   beast: { emoji: '💪', label: 'Beast', color: 'var(--accent-green)' },
@@ -26,11 +28,11 @@ interface HypeButtonProps {
 }
 
 export default function HypeButton({
-  postId,
   reactions: initialReactions,
   userReactions: initialUserReactions = [],
   onReact,
 }: HypeButtonProps) {
+  const { t } = useI18n();
   const [counts, setCounts] = useState(initialReactions);
   const [activeReactions, setActiveReactions] = useState<string[]>(initialUserReactions);
 
@@ -91,14 +93,14 @@ export default function HypeButton({
             style={{
               padding: '0.35rem 0.75rem',
               borderRadius: 'var(--radius-full)',
-              background: isSelected ? 'rgba(255, 255, 255, 0.12)' : 'var(--bg-tertiary)',
+              background: isSelected ? 'var(--chip-bg-strong)' : 'var(--bg-tertiary)',
               borderColor: isSelected ? item.color : 'var(--border-subtle)',
               display: 'flex',
               alignItems: 'center',
               gap: '0.3rem',
               fontSize: '0.85rem',
             }}
-            title={`Give ${item.label} hype`}
+            title={t('hype.give', { label: item.label })}
           >
             <span style={{ fontSize: '1rem' }}>{item.emoji}</span>
             <span style={{ fontWeight: 700, fontSize: '0.8rem', color: isSelected ? item.color : 'var(--text-secondary)' }}>

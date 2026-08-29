@@ -31,8 +31,10 @@ All test files reside inside `src/test/`:
 ```text
 src/test/
 ├── setup.ts                 # Global test environment, JSDOM & Canvas mocks
-├── date-utils.test.ts       # 3:00 AM cutoff rollover, date validators, 75-day calculations
-├── streak-engine.test.ts    # Rule scheduling, 1 Streak Shield mechanics, hard-reset evaluations
+├── date-utils.test.ts       # Date formatting, 75-day calculations, year-end notice
+├── streak-engine.test.ts    # Rule scheduling, 1 Streak Shield mechanics, reset evaluations
+├── session.test.ts          # Local challenge session: Day-1 start, logs, shield, reset
+├── i18n.test.ts             # EN/DE parity: no missing keys, matching placeholders
 ├── feed.test.ts             # Positive-only feed filters (completed/shielded), cold-start mock schemas
 └── components.test.tsx      # Unit tests for UI components (RuleCustomizer, HypeButton, HelpFeedback)
 ```
@@ -42,13 +44,24 @@ src/test/
 ## 3. Testing Conventions & Guidelines
 
 ### Unit & Algorithmic Tests
-1. **Timezone & 3 AM Cutoff Invariance**:
-   - Always test both standard hours (e.g. 12:00 PM) and early morning hours (< 3:00 AM) to ensure the 3:00 AM rollover operates consistently across date boundaries.
-2. **State Machine Transitions**:
+1. **Calendar-Date Logging**:
+   - Check-ins belong to their plain local calendar date. There is **no** cutoff-hour rollover to test — if you find a test asserting a 3 AM boundary, it is stale and should be removed.
+2. **Fresh-Account Invariant**:
+   - A newly created session must be on Day 1 with `logs === []`. Assert this explicitly; it is the bug most likely to regress.
+   - A stored session missing a `logs` field must load as an empty history, never as completed days.
+3. **State Machine Transitions**:
    - Verify that missing 1 past day prompts the Shield when `shields_remaining > 0`.
    - Verify that missing a 2nd past day (or when `shields_remaining === 0`) immediately transitions `status` to `'failed'`.
-3. **Strict Positive-Only Filtering**:
+4. **Strict Positive-Only Filtering**:
    - Ensure test cases assert that daily logs with status `'failed'` or incomplete checkmarks are excluded from the community feed.
+
+### Localization Tests (mandatory)
+`src/test/i18n.test.ts` is a guard, not a formality. It must keep asserting that:
+1. Every `en` key has a `de` translation, and vice versa — a missing key fails the suite.
+2. `{placeholder}` tokens match exactly between the two languages.
+3. Long strings are not identical across languages (a sign of a forgotten translation).
+
+> When you add copy, add it to **both** locales in the same commit. The suite will not let a half-translated string reach `main`.
 
 ### Component & UI Tests
 1. **Mocking External Browser APIs**:
@@ -57,6 +70,8 @@ src/test/
    - Test that clicking reaction buttons in `HypeButton` updates the UI immediately without blocking on network responses.
 3. **Validation Guards**:
    - Test that `RuleCustomizer` surfaces the minimum 2-rule requirement warning when fewer than 2 rules are selected.
+4. **Provider-Free Rendering**:
+   - Components use `useI18n()`, which falls back to English when rendered outside `I18nProvider`. Unit tests may therefore render components directly and assert against English copy.
 
 ---
 

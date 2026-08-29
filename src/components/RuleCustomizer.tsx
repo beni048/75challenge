@@ -2,25 +2,38 @@
 
 import React, { useState } from 'react';
 import { Rule, ScheduleType } from '@/lib/streak-engine';
-import { Plus, Trash2, Check, Calendar, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, AlertCircle } from 'lucide-react';
+import { useI18n, TranslationKey, translate, Locale } from '@/lib/i18n';
 
-export const DEFAULT_75_HARD_RULES: Rule[] = [
-  { id: 'rule-1', title: '2x 45-min workouts (1 outdoors)', schedule_type: 'daily' },
-  { id: 'rule-2', title: 'Drink 4 Liters of Water', schedule_type: 'daily' },
-  { id: 'rule-3', title: 'Read 10 Pages (Non-fiction / Growth)', schedule_type: 'daily' },
-  { id: 'rule-4', title: 'Follow Clean Diet (No Cheat Meals)', schedule_type: 'daily' },
-  { id: 'rule-5', title: 'Zero Alcohol', schedule_type: 'daily' },
+/** Rule ids are stable; only the title is localized at creation time. */
+const DEFAULT_RULE_KEYS: { id: string; key: TranslationKey }[] = [
+  { id: 'rule-1', key: 'rules.default.workouts' },
+  { id: 'rule-2', key: 'rules.default.water' },
+  { id: 'rule-3', key: 'rules.default.read' },
+  { id: 'rule-4', key: 'rules.default.diet' },
+  { id: 'rule-5', key: 'rules.default.alcohol' },
 ];
 
-const WEEKDAYS = [
-  { label: 'S', day: 0 },
-  { label: 'M', day: 1 },
-  { label: 'T', day: 2 },
-  { label: 'W', day: 3 },
-  { label: 'T', day: 4 },
-  { label: 'F', day: 5 },
-  { label: 'S', day: 6 },
-];
+/**
+ * The 75 Hard starter set, written in the given language. Titles become user
+ * data once saved, so they are not re-translated afterwards.
+ */
+export function getDefaultRules(locale: Locale): Rule[] {
+  return DEFAULT_RULE_KEYS.map(({ id, key }) => ({
+    id,
+    title: translate(locale, key),
+    schedule_type: 'daily' as ScheduleType,
+  }));
+}
+
+/** English starter set, kept for non-localized callers and tests. */
+export const DEFAULT_75_HARD_RULES: Rule[] = getDefaultRules('en');
+
+const WEEKDAY_LABELS: Record<Locale, string[]> = {
+  // Sunday-first, matching JavaScript's getDay().
+  en: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+  de: ['S', 'M', 'D', 'M', 'D', 'F', 'S'],
+};
 
 interface RuleCustomizerProps {
   rules: Rule[];
@@ -28,22 +41,23 @@ interface RuleCustomizerProps {
 }
 
 export default function RuleCustomizer({ rules, onChange }: RuleCustomizerProps) {
+  const { t, locale } = useI18n();
   const [newRuleTitle, setNewRuleTitle] = useState('');
-  const [newScheduleType, setNewScheduleType] = useState<ScheduleType>('daily');
-  const [newCustomDays, setNewCustomDays] = useState<number[]>([1, 3, 5]); // Mon, Wed, Fri default
 
-  const handleAddRule = (e: React.FormEvent) => {
+  const weekdays = WEEKDAY_LABELS[locale] ?? WEEKDAY_LABELS.en;
+
+  const handleAddRule = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!newRuleTitle.trim()) return;
 
-    const newRule: Rule = {
-      id: `custom-rule-${Date.now()}`,
-      title: newRuleTitle.trim(),
-      schedule_type: newScheduleType,
-      custom_days: newScheduleType === 'custom' ? newCustomDays : undefined,
-    };
-
-    onChange([...rules, newRule]);
+    onChange([
+      ...rules,
+      {
+        id: `custom-rule-${Date.now()}`,
+        title: newRuleTitle.trim(),
+        schedule_type: 'daily',
+      },
+    ]);
     setNewRuleTitle('');
   };
 
@@ -68,49 +82,44 @@ export default function RuleCustomizer({ rules, onChange }: RuleCustomizerProps)
         const currentDays = r.custom_days || [];
         const nextDays = currentDays.includes(dayNumber)
           ? currentDays.filter((d) => d !== dayNumber)
-          : [...currentDays, dayNumber].sort();
+          : [...currentDays, dayNumber].sort((a, b) => a - b);
         return { ...r, custom_days: nextDays };
       })
     );
   };
 
+  const scheduleLabel = (type: ScheduleType) =>
+    type === 'daily'
+      ? t('rules.scheduleDaily')
+      : type === 'workdays'
+        ? t('rules.scheduleWorkdays')
+        : t('rules.scheduleCustom');
+
   return (
     <div className="rule-customizer" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
         <div>
-          <h4 style={{ fontSize: '1.1rem', marginBottom: '0.2rem' }}>Configure Your 75-Day Rule Set</h4>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-            Minimum 2 rules required. Tailor daily frequency or pick specific weekdays.
-          </p>
+          <h4 style={{ fontSize: '1.1rem', marginBottom: '0.2rem' }}>{t('rules.heading')}</h4>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{t('rules.subheading')}</p>
         </div>
         <span
           className={`badge ${rules.length >= 2 ? 'badge-success' : 'badge-fire'}`}
           id="active-rules-count-badge"
         >
-          {rules.length} {rules.length === 1 ? 'Rule' : 'Rules'} Active
+          {rules.length === 1
+            ? t('rules.countOne', { count: rules.length })
+            : t('rules.countMany', { count: rules.length })}
         </span>
       </div>
 
       {rules.length < 2 && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.75rem',
-            backgroundColor: 'rgba(255, 90, 31, 0.12)',
-            border: '1px solid rgba(255, 90, 31, 0.3)',
-            borderRadius: 'var(--radius-md)',
-            color: 'var(--accent-orange-light)',
-            fontSize: '0.85rem',
-          }}
-        >
+        <div className="notice notice-warn">
           <AlertCircle size={18} />
-          <span>You must configure at least 2 active rules to start your challenge.</span>
+          <span>{t('rules.minWarning')}</span>
         </div>
       )}
 
-      {/* Rules List */}
+      {/* Rules list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
         {rules.map((rule, idx) => (
           <div
@@ -130,8 +139,9 @@ export default function RuleCustomizer({ rules, onChange }: RuleCustomizerProps)
                   style={{
                     width: '24px',
                     height: '24px',
+                    flexShrink: 0,
                     borderRadius: 'var(--radius-full)',
-                    background: 'rgba(255, 90, 31, 0.15)',
+                    background: 'var(--accent-orange-soft)',
                     color: 'var(--accent-orange)',
                     display: 'flex',
                     alignItems: 'center',
@@ -157,45 +167,46 @@ export default function RuleCustomizer({ rules, onChange }: RuleCustomizerProps)
                   display: 'flex',
                   alignItems: 'center',
                 }}
-                title="Remove rule"
-                aria-label={`Remove rule ${rule.title}`}
+                title={t('rules.remove')}
+                aria-label={t('rules.removeNamed', { title: rule.title })}
               >
                 <Trash2 size={16} />
               </button>
             </div>
 
-            {/* Schedule Selector */}
+            {/* Schedule selector */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <div style={{ display: 'flex', gap: '0.35rem' }}>
+              <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                 {(['daily', 'workdays', 'custom'] as ScheduleType[]).map((type) => (
                   <button
                     key={type}
                     type="button"
                     onClick={() => handleUpdateSchedule(rule.id, type)}
                     className={`btn btn-sm ${rule.schedule_type === type ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', textTransform: 'capitalize' }}
+                    style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
                   >
-                    {type === 'daily' ? '7 Days / Week' : type === 'workdays' ? 'Mon-Fri' : 'Custom Days'}
+                    {scheduleLabel(type)}
                   </button>
                 ))}
               </div>
 
               {rule.schedule_type === 'custom' && (
                 <div style={{ display: 'flex', gap: '0.25rem' }}>
-                  {WEEKDAYS.map((w) => {
-                    const isSelected = (rule.custom_days || []).includes(w.day);
+                  {weekdays.map((label, day) => {
+                    const isSelected = (rule.custom_days || []).includes(day);
                     return (
                       <button
-                        key={w.day}
+                        key={day}
                         type="button"
-                        onClick={() => handleToggleDay(rule.id, w.day)}
+                        onClick={() => handleToggleDay(rule.id, day)}
+                        aria-pressed={isSelected}
                         style={{
                           width: '24px',
                           height: '24px',
                           borderRadius: 'var(--radius-sm)',
                           border: isSelected ? '1px solid var(--accent-orange)' : '1px solid var(--border-medium)',
                           background: isSelected ? 'var(--accent-orange)' : 'var(--bg-tertiary)',
-                          color: isSelected ? '#fff' : 'var(--text-muted)',
+                          color: isSelected ? 'var(--text-on-accent)' : 'var(--text-muted)',
                           fontSize: '0.7rem',
                           fontWeight: 700,
                           cursor: 'pointer',
@@ -204,7 +215,7 @@ export default function RuleCustomizer({ rules, onChange }: RuleCustomizerProps)
                           justifyContent: 'center',
                         }}
                       >
-                        {w.label}
+                        {label}
                       </button>
                     );
                   })}
@@ -215,19 +226,19 @@ export default function RuleCustomizer({ rules, onChange }: RuleCustomizerProps)
         ))}
       </div>
 
-      {/* Add New Rule Bar */}
-      <form onSubmit={handleAddRule} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+      {/* Add new rule */}
+      <form onSubmit={handleAddRule} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
         <input
           type="text"
-          placeholder="Add custom rule (e.g., Cold plunge 3 min, 100 pushups)..."
+          placeholder={t('rules.addPlaceholder')}
           value={newRuleTitle}
           onChange={(e) => setNewRuleTitle(e.target.value)}
           className="input-field"
-          style={{ flex: 1 }}
+          style={{ flex: '1 1 220px' }}
           id="new-rule-input"
         />
         <button type="submit" className="btn btn-secondary" style={{ whiteSpace: 'nowrap' }} id="add-rule-btn">
-          <Plus size={16} /> Add Rule
+          <Plus size={16} /> {t('rules.add')}
         </button>
       </form>
     </div>

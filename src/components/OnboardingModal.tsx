@@ -2,12 +2,16 @@
 
 import React, { useState } from 'react';
 import { Rule } from '@/lib/streak-engine';
-import { validateChallengeDates, calculateTargetEndDate, formatDate } from '@/lib/date-utils';
+import { validateChallengeDates, formatDate } from '@/lib/date-utils';
 import SimpleAuthForm from './SimpleAuthForm';
 import RuleCustomizer from './RuleCustomizer';
+import ModalPortal from './ModalPortal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, ShieldCheck, Flame, Users, Info, Settings } from 'lucide-react';
+import { X, Calendar, Flame, Users, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/lib/i18n';
+import { createSession, saveSession } from '@/lib/session';
+import { signUp } from '@/lib/auth';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -25,52 +29,55 @@ export default function OnboardingModal({
   referredBy,
 }: OnboardingModalProps) {
   const router = useRouter();
+  const { t } = useI18n();
   const [startDate, setStartDate] = useState(formatDate(new Date()));
   const [activeStep, setActiveStep] = useState<'rules' | 'auth'>('rules');
   const [loading, setLoading] = useState(false);
 
-  const { valid, endDate, infoNotice, error: dateError } = validateChallengeDates(startDate);
+  const { endDate, infoNoticeKey, infoNoticeVars } = validateChallengeDates(startDate);
+  const infoNotice = infoNoticeKey ? t(infoNoticeKey, infoNoticeVars) : null;
 
-  const handleSignupAndCommit = async (authData: { displayName: string; email: string; password: string }) => {
+  const handleSignupAndCommit = async (authData: {
+    displayName: string;
+    email: string;
+    password: string;
+  }) => {
     if (configuredRules.length < 2) {
-      alert('Please configure at least 2 active rules.');
+      alert(t('onboarding.minRulesAlert'));
       return;
     }
 
     setLoading(true);
-
     try {
-      const userPayload = {
-        id: `user-${Date.now()}`,
-        username: authData.displayName.toLowerCase().replace(/[^a-z0-9]/g, '_'),
-        display_name: authData.displayName,
+      // Register the credentials. The challenge itself is stored locally, so a
+      // failure here (offline, service not configured) must not block the join.
+      await signUp(authData.email, authData.password);
+
+      const username = authData.displayName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      const session = createSession({
+        username,
+        displayName: authData.displayName,
         email: authData.email,
-        start_date: startDate,
-        target_end_date: endDate,
-        current_day: 1,
-        shields_remaining: 1,
-        status: 'active',
-        referred_by: referredBy || null,
+        startDate,
         rules: configuredRules,
-      };
+        referredBy,
+      });
 
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('75_user_session', JSON.stringify(userPayload));
-      }
-
-      router.push(`/user/${userPayload.username}`);
+      saveSession(session);
+      router.push(`/user/${session.username}`);
     } catch (err) {
       console.error('Signup error:', err);
-      alert('Signup failed. Please try again.');
+      alert(t('onboarding.signupFailed'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="modal-backdrop" onClick={onClose}>
+    <ModalPortal isOpen={isOpen} onClose={onClose}>
+      <AnimatePresence>
+        {isOpen && (
+          <div className="modal-backdrop" onClick={onClose}>
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -79,43 +86,32 @@ export default function OnboardingModal({
             className="modal-content"
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '620px' }}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('onboarding.title')}
           >
-            {/* Modal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                 <Flame size={24} color="var(--accent-orange)" />
-                <h3 style={{ fontSize: '1.35rem' }}>Join the 75 Challenge</h3>
+                <h3 style={{ fontSize: '1.35rem' }}>{t('onboarding.title')}</h3>
               </div>
               <button
                 onClick={onClose}
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                aria-label="Close modal"
+                aria-label={t('onboarding.close')}
               >
                 <X size={20} />
               </button>
             </div>
 
             {referredBy && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.65rem 0.85rem',
-                  backgroundColor: 'rgba(0, 229, 255, 0.12)',
-                  border: '1px solid rgba(0, 229, 255, 0.3)',
-                  borderRadius: 'var(--radius-md)',
-                  color: 'var(--accent-cyan)',
-                  fontSize: '0.85rem',
-                  marginBottom: '1rem',
-                }}
-              >
+              <div className="notice notice-info" style={{ marginBottom: '1rem' }}>
                 <Users size={16} />
-                <span>Squad Referral: Joining with <strong>@{referredBy}</strong></span>
+                <span>{t('onboarding.referral', { username: referredBy })}</span>
               </div>
             )}
 
-            {/* Step Navigation Tabs */}
+            {/* Step tabs */}
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
               <button
                 type="button"
@@ -123,7 +119,7 @@ export default function OnboardingModal({
                 className={`btn btn-sm ${activeStep === 'rules' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{ flex: 1 }}
               >
-                1. Rules & Schedule
+                {t('onboarding.stepRules')}
               </button>
               <button
                 type="button"
@@ -132,33 +128,26 @@ export default function OnboardingModal({
                 style={{ flex: 1 }}
                 disabled={configuredRules.length < 2}
               >
-                2. Account & Launch
+                {t('onboarding.stepAuth')}
               </button>
             </div>
 
             {activeStep === 'rules' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                {/* Date Selection Box */}
                 <div
                   className="glass-card"
-                  style={{
-                    padding: '1rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.6rem',
-                    backgroundColor: 'var(--bg-tertiary)',
-                  }}
+                  style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', backgroundColor: 'var(--bg-tertiary)' }}
                 >
                   <div className="input-group" style={{ marginBottom: 0 }}>
                     <label className="input-label" htmlFor="modal-start-date">
-                      Choose Your Start Date
+                      {t('onboarding.startDateLabel')}
                     </label>
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                       <input
                         id="modal-start-date"
                         type="date"
                         className="input-field"
-                        style={{ flex: 1 }}
+                        style={{ flex: '1 1 180px' }}
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
                       />
@@ -173,26 +162,13 @@ export default function OnboardingModal({
                         }}
                       >
                         <Calendar size={16} color="var(--accent-orange)" />
-                        <span>Finish: <strong>{endDate}</strong></span>
+                        <span>{t('onboarding.finish', { date: endDate })}</span>
                       </div>
                     </div>
 
-                    {/* Non-blocking Dec 31 Info Notice */}
+                    {/* Non-blocking notice when the 75 days run past 31 December */}
                     {infoNotice && (
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.4rem',
-                          marginTop: '0.5rem',
-                          padding: '0.4rem 0.65rem',
-                          borderRadius: 'var(--radius-sm)',
-                          backgroundColor: 'rgba(0, 229, 255, 0.1)',
-                          border: '1px solid rgba(0, 229, 255, 0.25)',
-                          color: 'var(--accent-cyan)',
-                          fontSize: '0.78rem',
-                        }}
-                      >
+                      <div className="notice notice-info" style={{ marginTop: '0.5rem', fontSize: '0.78rem' }}>
                         <Info size={14} />
                         <span>{infoNotice}</span>
                       </div>
@@ -200,11 +176,7 @@ export default function OnboardingModal({
                   </div>
                 </div>
 
-                {/* Embedded Rule Customizer */}
-                <RuleCustomizer
-                  rules={configuredRules}
-                  onChange={(updated) => onRulesChange && onRulesChange(updated)}
-                />
+                <RuleCustomizer rules={configuredRules} onChange={(updated) => onRulesChange?.(updated)} />
 
                 <button
                   type="button"
@@ -213,7 +185,7 @@ export default function OnboardingModal({
                   style={{ width: '100%', marginTop: '0.5rem' }}
                   disabled={configuredRules.length < 2}
                 >
-                  Continue to Registration
+                  {t('onboarding.continue')}
                 </button>
               </div>
             ) : (
@@ -222,27 +194,30 @@ export default function OnboardingModal({
                   style={{
                     padding: '0.75rem 1rem',
                     borderRadius: 'var(--radius-md)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    backgroundColor: 'var(--chip-bg)',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
+                    gap: '0.75rem',
+                    flexWrap: 'wrap',
                     fontSize: '0.85rem',
                   }}
                 >
-                  <span>Start: <strong>{startDate}</strong> → Finish: <strong>{endDate}</strong></span>
-                  <span style={{ color: 'var(--accent-cyan)' }}>1 Shield included</span>
+                  <span>{t('onboarding.summary', { start: startDate, end: endDate })}</span>
+                  <span style={{ color: 'var(--accent-cyan)' }}>{t('onboarding.shieldIncluded')}</span>
                 </div>
 
                 <SimpleAuthForm
                   onSubmit={handleSignupAndCommit}
-                  submitButtonText="Join 75 Challenge"
+                  submitButtonText={t('onboarding.submit')}
                   loading={loading}
                 />
               </div>
             )}
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </ModalPortal>
   );
 }

@@ -8,6 +8,7 @@ import {
   validateChallengeDates,
   generate75DayDates,
 } from '@/lib/date-utils';
+import { translate } from '@/lib/i18n';
 
 describe('Date & Time Utilities', () => {
   describe('getEffectiveLogDate & formatDate', () => {
@@ -53,14 +54,31 @@ describe('Date & Time Utilities', () => {
       const result = validateChallengeDates('2026-09-01');
       expect(result.valid).toBe(true);
       expect(result.endDate).toBe('2026-11-14');
-      expect(result.infoNotice).toBeUndefined();
+      expect(result.infoNoticeKey).toBeUndefined();
     });
 
-    it('allows joining and shows infoNotice when end date exceeds Dec 31', () => {
+    it('still allows joining when the 75 days run past Dec 31, with a notice', () => {
       const result = validateChallengeDates('2026-10-25');
       expect(result.valid).toBe(true);
       expect(result.endDate).toBe('2027-01-07');
-      expect(result.infoNotice).toContain('new year');
+      expect(result.infoNoticeKey).toBe('dates.crossesYearEnd');
+      expect(result.infoNoticeVars).toEqual({ date: '2027-01-07' });
+    });
+
+    it('renders the year-end notice in both languages', () => {
+      const result = validateChallengeDates('2026-10-25');
+      const key = result.infoNoticeKey!;
+
+      expect(translate('en', key, result.infoNoticeVars)).toContain('2027-01-07');
+      expect(translate('en', key, result.infoNoticeVars)).toContain('31 December');
+      expect(translate('de', key, result.infoNoticeVars)).toContain('2027-01-07');
+      expect(translate('de', key, result.infoNoticeVars)).toContain('31. Dezember');
+    });
+
+    it('rejects an empty start date', () => {
+      const result = validateChallengeDates('');
+      expect(result.valid).toBe(false);
+      expect(result.errorKey).toBe('dates.invalid');
     });
   });
 

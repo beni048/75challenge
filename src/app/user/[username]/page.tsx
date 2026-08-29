@@ -1,95 +1,81 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import ConsistencyHeatmap from '@/components/ConsistencyHeatmap';
 import DailyChecklist from '@/components/DailyChecklist';
 import MilestoneCard from '@/components/MilestoneCard';
 import ShieldModal from '@/components/ShieldModal';
-import { Rule, DailyLog, evaluateUserChallenge, UserChallengeProfile } from '@/lib/streak-engine';
-import { DEFAULT_75_HARD_RULES } from '@/components/RuleCustomizer';
-import { getEffectiveLogDate } from '@/lib/date-utils';
-import { Flame, Shield, Calendar, Award, Share2, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+import { DailyLog } from '@/lib/streak-engine';
+import { calculateCurrentDay, getEffectiveLogDate } from '@/lib/date-utils';
+import { Share2, ArrowRight } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
+import { useSession } from '@/components/useSession';
+import { applyShield, resetToDayOne, upsertLog } from '@/lib/session';
 
 export default function UserProfilePage() {
   const params = useParams();
-  const username = (params?.username as string) || 'warrior';
-
-  const currentYear = new Date().getFullYear();
-  const [profile, setProfile] = useState<UserChallengeProfile>({
-    id: 'user-1',
-    username: username,
-    display_name: username.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
-    start_date: `${currentYear}-09-01`,
-    target_end_date: `${currentYear}-11-14`,
-    current_day: 14,
-    shields_remaining: 1,
-    status: 'active',
-  });
-
-  const [rules, setRules] = useState<Rule[]>(DEFAULT_75_HARD_RULES);
-  const [logs, setLogs] = useState<DailyLog[]>([
-    { log_date: '2026-09-01', status: 'completed' },
-    { log_date: '2026-09-02', status: 'completed' },
-    { log_date: '2026-09-03', status: 'completed' },
-    { log_date: '2026-09-04', status: 'completed' },
-    { log_date: '2026-09-05', status: 'completed' },
-  ]);
+  const routeUsername = (params?.username as string) || '';
+  const { t } = useI18n();
+  const { session, ready, saveSession } = useSession();
 
   const [isShieldModalOpen, setIsShieldModalOpen] = useState(false);
-  const [missedDate, setMissedDate] = useState<string>('2026-09-06');
+  const [missedDate, setMissedDate] = useState<string>(getEffectiveLogDate());
   const [activeTab, setActiveTab] = useState<'dashboard' | 'story'>('dashboard');
 
-  useEffect(() => {
-    // Read local session if present
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('75_user_session');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          setProfile((prev) => ({
-            ...prev,
-            ...parsed,
-          }));
-          if (parsed.rules) setRules(parsed.rules);
-        } catch (e) {
-          console.error(e);
-        }
-      }
-    }
-  }, []);
+  if (!ready) return <div style={{ minHeight: '60vh' }} />;
+
+  // Only the signed-in participant's own challenge is stored on this device.
+  if (!session || (routeUsername && session.username !== routeUsername)) {
+    return (
+      <div className="container" style={{ padding: '4rem 1.5rem', maxWidth: '520px', textAlign: 'center' }}>
+        <div className="glass-card" style={{ padding: '2rem' }}>
+          <h2 style={{ fontSize: '1.4rem', marginBottom: '0.75rem' }}>{t('account.notLoggedIn')}</h2>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '1.25rem' }}>
+            <Link href="/login" className="btn btn-secondary">
+              {t('nav.login')}
+            </Link>
+            <Link href="/join" className="btn btn-primary">
+              {t('nav.join')} <ArrowRight size={16} />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // The day counter is always derived from the start date, never stored, so a
+  // fresh account is on Day 1 with an empty grid.
+  const currentDay = calculateCurrentDay(session.start_date);
+  const today = getEffectiveLogDate();
+  const todaysLog = session.logs.find((log) => log.log_date === today);
 
   const handleSaveLog = (newLog: DailyLog) => {
-    setLogs((prev) => {
-      const filtered = prev.filter((l) => l.log_date !== newLog.log_date);
-      return [...filtered, newLog];
-    });
-    alert(`Log for ${newLog.log_date} locked in as ${newLog.status.toUpperCase()}!`);
+    saveSession(upsertLog(session, newLog));
+    alert(t('profile.loggedAlert', { date: newLog.log_date, status: newLog.status }));
+  };
+
+  const handleReportFailure = (dateToReport: string) => {
+    setMissedDate(dateToReport);
+    setIsShieldModalOpen(true);
   };
 
   const handleUseShield = () => {
-    setProfile((prev) => ({ ...prev, shields_remaining: 0 }));
-    setLogs((prev) => [...prev, { log_date: missedDate, status: 'shielded' }]);
+    saveSession(applyShield(session, missedDate));
     setIsShieldModalOpen(false);
-    alert('Streak Shield successfully deployed! Day marked as shielded.');
+    alert(t('profile.shieldAlert'));
   };
 
   const handleHardReset = () => {
-    setProfile((prev) => ({
-      ...prev,
-      current_day: 1,
-      shields_remaining: 1,
-      start_date: getEffectiveLogDate(),
-    }));
-    setLogs([]);
+    saveSession(resetToDayOne(session));
     setIsShieldModalOpen(false);
-    alert('Hard Reset acknowledged. Starting from Day 1.');
+    alert(t('profile.resetAlert'));
   };
 
   return (
     <div className="container" style={{ padding: '2.5rem 1.5rem', maxWidth: '980px' }}>
-      {/* Profile Banner */}
+      {/* Profile banner */}
       <div
         className="glass-card"
         style={{
@@ -100,7 +86,7 @@ export default function UserProfilePage() {
           alignItems: 'center',
           flexWrap: 'wrap',
           gap: '1.5rem',
-          background: 'linear-gradient(135deg, rgba(23,27,38,0.9) 0%, rgba(17,20,28,0.95) 100%)',
+          background: 'var(--gradient-dark)',
           border: '1px solid var(--border-medium)',
         }}
       >
@@ -109,6 +95,7 @@ export default function UserProfilePage() {
             style={{
               width: '64px',
               height: '64px',
+              flexShrink: 0,
               borderRadius: 'var(--radius-full)',
               background: 'var(--gradient-fire)',
               display: 'flex',
@@ -116,99 +103,97 @@ export default function UserProfilePage() {
               justifyContent: 'center',
               fontSize: '1.75rem',
               fontWeight: 900,
-              color: '#fff',
+              color: 'var(--text-on-accent)',
               boxShadow: 'var(--glow-orange)',
             }}
           >
-            {profile.display_name.charAt(0)}
+            {session.display_name.charAt(0).toUpperCase()}
           </div>
 
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <h2 style={{ fontSize: '1.75rem' }}>{profile.display_name}</h2>
-              <span className="badge badge-fire">Active Attempt</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <h2 style={{ fontSize: '1.75rem' }}>{session.display_name}</h2>
+              <span className="badge badge-fire">{t('profile.activeAttempt')}</span>
             </div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              @{profile.username} • Started: {profile.start_date} • Target Finish: {profile.target_end_date}
+              {t('profile.meta', {
+                username: session.username,
+                start: session.start_date,
+                end: session.target_end_date,
+              })}
             </p>
           </div>
         </div>
 
-        {/* Challenge Stats */}
         <div style={{ display: 'flex', gap: '1.5rem' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--accent-orange)' }}>
-              {profile.current_day}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Day of 75</div>
+            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--accent-orange)' }}>{currentDay}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('profile.dayOf75')}</div>
           </div>
 
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--accent-cyan)' }}>
-              {profile.shields_remaining}
+              {session.shields_remaining}
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Shields Left</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('profile.shieldsLeft')}</div>
           </div>
 
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--accent-green)' }}>
-              {rules.length}
+              {session.rules.length}
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Active Rules</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('profile.activeRules')}</div>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <button
           onClick={() => setActiveTab('dashboard')}
           className={`btn ${activeTab === 'dashboard' ? 'btn-primary' : 'btn-secondary'}`}
         >
-          Daily Matrix & 75-Day Grid
+          {t('profile.tabDashboard')}
         </button>
 
         <button
           onClick={() => setActiveTab('story')}
           className={`btn ${activeTab === 'story' ? 'btn-primary' : 'btn-secondary'}`}
         >
-          <Share2 size={16} /> 9:16 Instagram Story Exporter
+          <Share2 size={16} /> {t('profile.tabStory')}
         </button>
       </div>
 
       {activeTab === 'dashboard' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          {/* Consistency Heatmap */}
-          <ConsistencyHeatmap
-            startDate={profile.start_date}
-            logs={logs}
-            currentDay={profile.current_day}
-          />
+          <ConsistencyHeatmap startDate={session.start_date} logs={session.logs} currentDay={currentDay} />
 
-          {/* Daily Logging Matrix */}
           <DailyChecklist
-            rules={rules}
+            key={today}
+            rules={session.rules}
+            logDate={today}
+            existingLog={todaysLog}
             onSaveLog={handleSaveLog}
+            onReportFailure={handleReportFailure}
           />
         </div>
       ) : (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
           <MilestoneCard
-            displayName={profile.display_name}
-            username={profile.username}
-            dayNumber={profile.current_day}
-            completedRules={rules.map((r) => r.title)}
-            shieldsRemaining={profile.shields_remaining}
-            streakDays={profile.current_day}
+            displayName={session.display_name}
+            username={session.username}
+            dayNumber={currentDay}
+            completedRules={session.rules.map((r) => r.title)}
+            shieldsRemaining={session.shields_remaining}
+            streakDays={session.logs.filter((l) => l.status !== 'failed').length}
           />
         </div>
       )}
 
-      {/* Shield Decision Modal */}
       <ShieldModal
         isOpen={isShieldModalOpen}
         missedDate={missedDate}
-        shieldsRemaining={profile.shields_remaining}
+        shieldsRemaining={session.shields_remaining}
         onUseShield={handleUseShield}
         onHardReset={handleHardReset}
         onClose={() => setIsShieldModalOpen(false)}

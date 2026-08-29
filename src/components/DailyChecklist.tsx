@@ -6,6 +6,7 @@ import { compressImageToWebP } from '@/lib/image-compressor';
 import { getEffectiveLogDate } from '@/lib/date-utils';
 import { Check, Upload, Sparkles, AlertTriangle } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { useI18n } from '@/lib/i18n';
 
 interface DailyChecklistProps {
   rules: Rule[];
@@ -22,6 +23,7 @@ export default function DailyChecklist({
   onSaveLog,
   onReportFailure,
 }: DailyChecklistProps) {
+  const { t } = useI18n();
   const [completedRuleIds, setCompletedRuleIds] = useState<string[]>(
     existingLog?.rule_checks?.filter((c) => c.is_completed).map((c) => c.rule_id) || []
   );
@@ -45,11 +47,14 @@ export default function DailyChecklist({
       const result = await compressImageToWebP(file);
       setPhotoPreview(result.previewUrl);
       setCompressionStats(
-        `Optimized: ${result.originalSizeKB} KB → ${result.compressedSizeKB} KB (WebP)`
+        t('checklist.compressionStats', {
+          before: result.originalSizeKB,
+          after: result.compressedSizeKB,
+        })
       );
     } catch (err) {
       console.error('Image compression error:', err);
-      alert('Could not compress photo.');
+      alert(t('checklist.compressionFailed'));
     } finally {
       setIsCompressing(false);
     }
@@ -57,123 +62,122 @@ export default function DailyChecklist({
 
   const allRulesDone = rules.length > 0 && completedRuleIds.length === rules.length;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    // An incomplete day is never recorded silently — the user decides whether it
+    // counts as missed, and the shield prompt takes over from there.
     if (!allRulesDone) {
-      const confirmIncomplete = confirm(
-        'You have unchecked rules. Do you want to report this day as missed / incomplete?'
-      );
-      if (!confirmIncomplete) return;
-
-      if (onReportFailure) {
-        onReportFailure(logDate);
-        return;
-      }
-    } else {
-      confetti({
-        particleCount: 40,
-        spread: 60,
-        origin: { y: 0.7 },
-        colors: ['#10b981', '#00e5ff', '#ff5a1f'],
-      });
+      if (!confirm(t('checklist.confirmIncomplete'))) return;
+      onReportFailure?.(logDate);
+      return;
     }
 
-    const log: DailyLog = {
+    confetti({
+      particleCount: 40,
+      spread: 60,
+      origin: { y: 0.7 },
+      colors: ['#10b981', '#00e5ff', '#ff5a1f'],
+    });
+
+    onSaveLog({
       log_date: logDate,
-      status: allRulesDone ? 'completed' : 'failed',
+      status: 'completed',
       photo_url: photoPreview,
       caption: caption.trim() || null,
       rule_checks: rules.map((r) => ({
         rule_id: r.id,
         is_completed: completedRuleIds.includes(r.id),
       })),
-    };
-
-    onSaveLog(log);
+    });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="glass-card" style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <form
+      onSubmit={handleSubmit}
+      className="glass-card"
+      style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
         <div>
-          <h3 style={{ fontSize: '1.25rem', marginBottom: '0.2rem' }}>Daily Check-In Matrix</h3>
+          <h3 style={{ fontSize: '1.25rem', marginBottom: '0.2rem' }}>{t('checklist.title')}</h3>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-            Logging for: <strong>{logDate}</strong>
+            {t('checklist.loggingFor', { date: logDate })}
           </p>
         </div>
 
-        <span
-          className={`badge ${allRulesDone ? 'badge-success' : 'badge-fire'}`}
-          style={{ fontSize: '0.75rem' }}
-        >
-          {completedRuleIds.length} / {rules.length} Complete
+        <span className={`badge ${allRulesDone ? 'badge-success' : 'badge-fire'}`} style={{ fontSize: '0.75rem' }}>
+          {t('checklist.progress', { done: completedRuleIds.length, total: rules.length })}
         </span>
       </div>
 
-      {/* Rules Checkboxes */}
+      {/* Rule checkboxes */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
         {rules.map((rule) => {
           const isDone = completedRuleIds.includes(rule.id);
           return (
-            <div
+            <button
               key={rule.id}
+              type="button"
               onClick={() => toggleRule(rule.id)}
+              aria-pressed={isDone}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.85rem',
                 padding: '0.85rem 1rem',
                 borderRadius: 'var(--radius-md)',
-                backgroundColor: isDone ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-tertiary)',
-                border: isDone ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid var(--border-subtle)',
+                backgroundColor: isDone ? 'var(--accent-green-soft)' : 'var(--bg-tertiary)',
+                border: isDone ? '1px solid var(--accent-green-soft-border)' : '1px solid var(--border-subtle)',
                 cursor: 'pointer',
+                textAlign: 'left',
+                font: 'inherit',
                 transition: 'all 0.18s ease',
               }}
             >
-              <div
+              <span
                 style={{
                   width: '22px',
                   height: '22px',
+                  flexShrink: 0,
                   borderRadius: '6px',
                   border: isDone ? 'none' : '2px solid var(--border-medium)',
                   backgroundColor: isDone ? 'var(--accent-green)' : 'transparent',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#fff',
+                  color: 'var(--text-on-accent)',
                 }}
               >
                 {isDone && <Check size={16} strokeWidth={3} />}
-              </div>
+              </span>
 
               <span
                 style={{
                   fontWeight: 600,
                   fontSize: '0.92rem',
-                  color: isDone ? '#fff' : 'var(--text-secondary)',
+                  color: isDone ? 'var(--text-primary)' : 'var(--text-secondary)',
                   textDecoration: isDone ? 'line-through' : 'none',
-                  opacity: isDone ? 0.9 : 1,
                 }}
               >
                 {rule.title}
               </span>
-            </div>
+            </button>
           );
         })}
       </div>
 
-      {/* Photo Upload with Client-Side WebP Compression */}
+      {/* Proof photo, compressed client-side to WebP */}
       <div className="input-group" style={{ marginBottom: 0 }}>
-        <label className="input-label">Daily Proof Photo (Auto-compressed to WebP &lt; 200 KB)</label>
-        
+        <label className="input-label">{t('checklist.photoLabel')}</label>
+
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <label
             className="btn btn-secondary btn-sm"
             style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
           >
             <Upload size={16} />
-            <span>{photoPreview ? 'Change Photo' : 'Upload Proof Photo'}</span>
+            <span>{photoPreview ? t('checklist.photoChange') : t('checklist.photoUpload')}</span>
             <input
               type="file"
               accept="image/*"
@@ -185,57 +189,53 @@ export default function DailyChecklist({
 
           {isCompressing && (
             <span style={{ fontSize: '0.8rem', color: 'var(--accent-orange)' }}>
-              Compressing image on canvas...
+              {t('checklist.compressing')}
             </span>
           )}
 
           {compressionStats && !isCompressing && (
-            <span style={{ fontSize: '0.78rem', color: 'var(--accent-green)' }}>
-              ✓ {compressionStats}
-            </span>
+            <span style={{ fontSize: '0.78rem', color: 'var(--accent-green)' }}>✓ {compressionStats}</span>
           )}
         </div>
 
         {photoPreview && (
           <div style={{ marginTop: '0.75rem', borderRadius: 'var(--radius-md)', overflow: 'hidden', maxWidth: '240px' }}>
-            <img src={photoPreview} alt="Proof" style={{ width: '100%', height: 'auto', display: 'block' }} />
+            {/* eslint-disable-next-line @next/next/no-img-element -- local preview
+                of a just-compressed blob: URL; nothing for next/image to optimize. */}
+            <img src={photoPreview} alt={t('checklist.photoAlt')} style={{ width: '100%', height: 'auto', display: 'block' }} />
           </div>
         )}
       </div>
 
-      {/* Caption Field */}
+      {/* Caption */}
       <div className="input-group" style={{ marginBottom: 0 }}>
         <label className="input-label" htmlFor="log-caption">
-          Daily Reflection or Workout Notes
+          {t('checklist.captionLabel')}
         </label>
         <textarea
           id="log-caption"
           className="input-field"
           rows={2}
-          placeholder="How was today's discipline? Share thoughts with the squad..."
+          placeholder={t('checklist.captionPlaceholder')}
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
         />
       </div>
 
       <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-        <button
-          type="submit"
-          className="btn btn-primary"
-          style={{ flex: 1, padding: '0.9rem 1.5rem', fontWeight: 700 }}
-        >
+        <button type="submit" className="btn btn-primary" style={{ flex: '1 1 200px', padding: '0.9rem 1.5rem', fontWeight: 700 }}>
           <Sparkles size={18} />
-          {allRulesDone ? 'Lock In Completed Day' : 'Save Check-In'}
+          {allRulesDone ? t('checklist.submitComplete') : t('checklist.submitPartial')}
         </button>
 
         {onReportFailure && (
           <button
             type="button"
             onClick={() => onReportFailure(logDate)}
-            className="btn btn-secondary"
-            style={{ color: '#ff5252', borderColor: 'rgba(255, 23, 68, 0.3)', padding: '0.9rem 1.2rem' }}
+            className="btn btn-danger"
+            style={{ padding: '0.9rem 1.2rem' }}
           >
-            <AlertTriangle size={16} /> Report Missed Day
+            <AlertTriangle size={16} /> {t('checklist.reportMissed')}
           </button>
         )}
       </div>

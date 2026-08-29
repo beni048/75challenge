@@ -1,13 +1,14 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
-// Mock canvas and window methods for tests
+// JSDOM implements neither canvas rendering nor WebP encoding, so the image
+// compression path needs both stubbed before any component renders.
 if (typeof window !== 'undefined') {
   HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
     drawImage: vi.fn(),
-  }) as any;
+  }) as unknown as HTMLCanvasElement['getContext'];
 
-  HTMLCanvasElement.prototype.toBlob = vi.fn((callback: (blob: Blob | null) => void) => {
+  HTMLCanvasElement.prototype.toBlob = vi.fn((callback: BlobCallback) => {
     callback(new Blob(['mock-data'], { type: 'image/webp' }));
-  }) as any;
+  }) as unknown as HTMLCanvasElement['toBlob'];
 }
