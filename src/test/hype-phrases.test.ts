@@ -71,4 +71,11 @@ describe('Hype phrase library', () => {
     expect(localizedHypePhrase(phrase, 'en', { days: 40 })).toBe('40 days in? Genuinely impressive.');
     expect(localizedHypePhrase(phrase, 'de', { days: 40 })).toBe('40 Tage durch? Ehrlich stark.');
   });
+
+  it('uses Swiss orthography — ss, never ß', () => {
+    // The whole app is consistent on this; a stray ß from a copy-paste would
+    // be the only one in the codebase.
+    const offenders = HYPE_PHRASES.filter((p) => p.de.includes('\u00df'));
+    expect(offenders.map((p) => p.id)).toEqual([]);
+  });
 });

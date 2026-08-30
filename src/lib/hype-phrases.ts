@@ -66,7 +66,7 @@ export const HYPE_PHRASES: HypePhrase[] = [
   { id: 'iron-will',             en: 'That willpower is unreal',                       de: 'Diese Willenskraft ist unreal' },
   { id: 'stat-line',             en: 'The stats don’t lie: absolute unit',        de: 'Die Zahlen lügen nicht: absolute Einheit' },
   { id: 'grinding-quietly',      en: 'Grinding in silence, results are loud',          de: 'Leise geschuftet, laute Ergebnisse' },
-  { id: 'menace',                en: 'A menace to mediocrity',                         de: 'Eine Gefahr für Mittelmäßigkeit' },
+  { id: 'menace',                en: 'A menace to mediocrity',                         de: 'Der Mittelmässigkeit ein Graus' },
   { id: 'plot-twist',            en: 'Plot twist: they never miss',                    de: 'Plottwist: verpasst nie einen Tag' },
   { id: 'inner-peace',           en: 'The inner peace of someone with a streak',       de: 'Der innere Frieden eines Streak-Halters' },
   { id: 'certified-cracked',     en: 'Certified cracked, no cap',                      de: 'Certified cracked, kein Cap' },
