@@ -133,11 +133,14 @@ export default function ChallengersPage() {
                     <div className="challenger-row-display-name">{entry.displayName}</div>
                     <div className="challenger-row-username">@{entry.username}</div>
                   </div>
-                  <span className="challenger-row-day">{t('feed.dayOf75', { day })}</span>
+                  <span className="challenger-row-day" title={t('feed.dayOf75', { day })}>
+                    {t('challengers.dayShort', { day })}
+                  </span>
                 </Link>
 
                 {!isSelf && (
                   <FollowToggle
+                    compact
                     hidden={hiddenIds.has(entry.id)}
                     busy={followBusyId === entry.id}
                     onToggle={() => handleToggleFollow(entry.id)}

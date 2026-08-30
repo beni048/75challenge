@@ -1394,6 +1394,16 @@ a {
   flex: 1;
 }
 
+.challenger-row-display-name,
+.challenger-row-username {
+  /* Truncate rather than push. min-width:0 on the parent lets the column
+     shrink, but without this the text itself still overflows and collides
+     with the day badge — see start.md §12. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .challenger-row-display-name {
   font-weight: 700;
   font-size: 0.95rem;
@@ -1404,11 +1414,18 @@ a {
   color: var(--text-muted);
 }
 
+/* A compact pill: "1/75" instead of "Day 1 of 75", so it cannot crowd the name
+   next to it at any width. flex-shrink:0 keeps it whole. */
 .challenger-row-day {
+  flex-shrink: 0;
   color: var(--accent-orange);
-  font-weight: 600;
-  font-size: 0.85rem;
+  font-weight: 700;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  background: var(--chip-bg);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-full);
 }
 
 @media (min-width: 640px) {
@@ -2706,3 +2723,15 @@ a {
   color: var(--text-muted);
 }
 
+
+/* Icon-only follow toggle for dense rows. The label lives in aria-label/title
+   rather than on screen, so a long display name never has to compete with it. */
+.follow-toggle {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.follow-toggle.is-following {
+  color: var(--accent-orange);
+  border-color: var(--accent-orange);
+}

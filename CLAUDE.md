@@ -51,9 +51,16 @@ CSS, not Tailwind** — there is no `sm:` / `md:` / `lg:`. The equivalent is:
    may be rounded — never a few px of margin with a radius.
 10. **The gutter is one token, `--gutter`.** Full-bleed elements offset by
    `calc(var(--gutter) * -1)`; never hardcode `-1rem` to cancel it.
-11. **Wide content scrolls inside its own box**, never widening the page. The
+11. **Text must never collide with a neighbour.** A name next to a badge needs
+   all three: `min-width: 0` on the flexible column, `overflow:hidden;
+   text-overflow:ellipsis; white-space:nowrap` on its text, and
+   `flex-shrink: 0` on the fixed element. The first alone is not enough.
+12. **In a dense row, prefer a symbol to a label** — `1|75` not "Day 1 of 75",
+   an icon-only button not "Following". Keep the full wording in `aria-label`
+   and `title`.
+13. **Wide content scrolls inside its own box**, never widening the page. The
    body must never scroll sideways.
-12. **Verify at 360px width** before calling any UI work done.
+14. **Verify at 360px width** before calling any UI work done.
 
 ### 🌍 Everything exists in English AND German (`start.md` §11)
 

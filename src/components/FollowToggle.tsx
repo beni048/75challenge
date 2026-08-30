@@ -9,6 +9,12 @@ interface FollowToggleProps {
   hidden: boolean;
   onToggle: () => void;
   busy?: boolean;
+  /**
+   * Icon-only. Use in a dense row (the challenger directory) where a label
+   * would crowd the name beside it — the accessible name still carries the
+   * full meaning via aria-label and title (start.md §12).
+   */
+  compact?: boolean;
 }
 
 /**
@@ -18,18 +24,31 @@ interface FollowToggleProps {
  * component works both for a single profile (one lookup) and a directory
  * page (one bulk lookup for the whole list, no per-card query).
  */
-export default function FollowToggle({ hidden, onToggle, busy = false }: FollowToggleProps) {
+export default function FollowToggle({
+  hidden,
+  onToggle,
+  busy = false,
+  compact = false,
+}: FollowToggleProps) {
   const { t } = useI18n();
+  const label = hidden ? t('network.follow') : t('network.following');
 
   return (
     <button
       type="button"
       onClick={onToggle}
       disabled={busy}
-      className={`btn btn-sm ${hidden ? 'btn-secondary' : 'btn-primary'}`}
+      aria-label={label}
+      title={label}
+      aria-pressed={!hidden}
+      className={
+        compact
+          ? `icon-btn follow-toggle${hidden ? '' : ' is-following'}`
+          : `btn btn-sm ${hidden ? 'btn-secondary' : 'btn-primary'}`
+      }
     >
-      {hidden ? <UserPlus size={15} /> : <UserCheck size={15} />}
-      {hidden ? t('network.follow') : t('network.following')}
+      {hidden ? <UserPlus size={16} /> : <UserCheck size={16} />}
+      {!compact && label}
     </button>
   );
 }

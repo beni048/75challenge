@@ -489,9 +489,20 @@ same idea expressed in our own system: base rules are the phone layout, and
    it so modals never hug the edge. Never hardcode `-1rem` to cancel a gutter —
    it silently desyncs the moment the gutter changes, which is exactly how
    modals ended up 12px from the edge with rounded corners.
-10. **Wide content scrolls in its own box** (`.scroll-x`, or `overflow-x: auto`),
+10. **Text must never collide or be clipped by a neighbour.** In any row that
+   puts variable-length content (a display name) next to fixed content (a
+   badge, a button), all three of these are required — `min-width: 0` on the
+   flexible column alone is not enough, because the *text* still overflows:
+   - the flexible column gets `min-width: 0`,
+   - its text gets `overflow: hidden; text-overflow: ellipsis; white-space: nowrap`,
+   - the fixed element gets `flex-shrink: 0`.
+11. **In a dense row, prefer a symbol to a label.** A compact badge (`1|75`,
+   not "Day 1 of 75") and an icon-only button (a follow icon, not "Following")
+   keep a row readable at 360px. The meaning must still be reachable — put the
+   full wording in `aria-label` and `title`, never drop it entirely.
+12. **Wide content scrolls in its own box** (`.scroll-x`, or `overflow-x: auto`),
    never widening the page. The body must never scroll horizontally.
-11. **Modals are near-full-screen sheets on mobile** and floating cards from
+13. **Modals are near-full-screen sheets on mobile** and floating cards from
    `sm` up — see `.modal-content`.
 
 ### Verifying

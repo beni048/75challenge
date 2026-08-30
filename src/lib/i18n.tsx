@@ -455,6 +455,7 @@ const en = {
   'challengers.title': 'Challengers',
   'challengers.empty': 'Nobody has joined yet.',
   'challengers.loadMore': 'Load more',
+  'challengers.dayShort': '{day}|75',
 
   // Other people's profiles
   'profile.viewing': "{name}'s challenge",
@@ -932,6 +933,7 @@ const de: Record<TranslationKey, string> = {
   'feed.resetAnnouncement': '{name} fängt neu an – zurück auf Tag 1.',
   'challengers.title': 'Challenger',
   'challengers.empty': 'Hier ist noch niemand.',
+  'challengers.dayShort': '{day}|75',
   'challengers.loadMore': 'Mehr laden',
 
   'profile.viewing': 'Challenge von {name}',
