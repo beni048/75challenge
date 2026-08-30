@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { STATIC_MOCK_FEED_POSTS, localizedCaption, localizedRules } from '@/lib/feed';
-import { Flame, Shield, Users, ArrowRight, CheckCircle2, Award, HeartHandshake, Sparkles } from 'lucide-react';
+import { Flame, Shield, Users, ArrowRight, CheckCircle2, Award, HeartHandshake, Sparkles, ShieldCheck } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { CHALLENGE_DEADLINE } from '@/lib/challenge-goal';
 import { formatLongDate } from '@/lib/date-utils';
@@ -123,8 +123,18 @@ export default function LandingPreview() {
                         @{post.user.username} • {t('feed.dayOf75', { day: post.day_number })}
                       </span>
                     </div>
-                    <span className={`badge ${post.status === 'completed' ? 'badge-success' : 'badge-shield'}`}>
-                      {post.status === 'completed' ? t('feed.statusCompleted') : t('feed.statusShielded')}
+                    {/* Same icon-first treatment as the real feed card, so the
+                        preview matches what a visitor will actually see. */}
+                    <span
+                      className={`badge badge-status ${
+                        post.status === 'completed' ? 'badge-success' : 'badge-shield'
+                      }`}
+                      title={post.status === 'completed' ? t('feed.statusCompleted') : t('feed.statusShielded')}
+                    >
+                      {post.status === 'completed' ? <CheckCircle2 size={14} /> : <ShieldCheck size={14} />}
+                      <span className="badge-status-text">
+                        {post.status === 'completed' ? t('feed.statusCompleted') : t('feed.statusShielded')}
+                      </span>
                     </span>
                   </div>
 

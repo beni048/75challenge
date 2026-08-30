@@ -600,6 +600,10 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  /* A badge is a label, not a paragraph — it must never wrap onto a second
+     line. If it does not fit, the text is too long for the row (start.md §12). */
+  white-space: nowrap;
+  flex-shrink: 0;
   padding: 0.25rem 0.65rem;
   font-size: 0.75rem;
   font-weight: 700;
@@ -2734,4 +2738,28 @@ a {
 .follow-toggle.is-following {
   color: var(--accent-orange);
   border-color: var(--accent-orange);
+}
+
+/* Status chip on a feed card: symbol only on a phone, symbol + wording once
+   there is room. The accessible name is on the badge itself, so hiding the
+   visible text costs a screen-reader user nothing. */
+.badge-status-text {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .badge-status-text {
+    display: inline;
+  }
+}
+
+/* Keep it a clean circle while it is icon-only. */
+.badge-status {
+  padding: 0.3rem;
+}
+
+@media (min-width: 480px) {
+  .badge-status {
+    padding: 0.25rem 0.65rem;
+  }
 }

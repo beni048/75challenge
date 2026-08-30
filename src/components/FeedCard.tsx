@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { FeedPost, localizedCaption, localizedRules } from '@/lib/feed';
 import HypeButton from './HypeButton';
-import { CheckCircle2, UserMinus, UserCheck, RotateCcw } from 'lucide-react';
+import { CheckCircle2, UserMinus, UserCheck, RotateCcw, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
 import { getHypePhrase, localizedHypePhrase } from '@/lib/hype-phrases';
@@ -103,9 +103,25 @@ export default function FeedCard({ post, isOwnPost = false, onUnfollow, onReact 
         </div>
 
         <div className="feed-card-head-actions">
-          <span className={`badge ${post.status === 'completed' ? 'badge-success' : 'badge-shield'}`}>
-            {post.status === 'completed' ? t('feed.statusCompleted') : t('feed.statusShielded')}
-          </span>
+          {/* Icon always, wording only where there is room. The label stays on
+              aria-label, so nothing is lost when the text is hidden
+              (start.md §12). */}
+          {(() => {
+            const done = post.status === 'completed';
+            const label = done ? t('feed.statusCompleted') : t('feed.statusShielded');
+            return (
+              <span
+                className={`badge badge-status ${done ? 'badge-success' : 'badge-shield'}`}
+                title={label}
+                aria-label={label}
+              >
+                {done ? <CheckCircle2 size={14} /> : <ShieldCheck size={14} />}
+                <span className="badge-status-text" aria-hidden="true">
+                  {label}
+                </span>
+              </span>
+            );
+          })()}
 
           {!isOwnPost && (
             <button
