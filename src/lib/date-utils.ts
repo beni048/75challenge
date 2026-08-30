@@ -38,6 +38,19 @@ export function getEffectiveLogDate(timezone: string, now: Date = new Date()): s
 }
 
 /**
+ * All IANA zone names the runtime knows about, for a timezone picker.
+ * `Intl.supportedValuesOf` isn't in every runtime this can render under
+ * (older Safari) — callers fall back to just their own detected zone.
+ */
+export function getSupportedTimezones(): string[] {
+  try {
+    return typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Formats a Date object to YYYY-MM-DD string.
  */
 export function formatDate(date: Date): string {

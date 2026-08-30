@@ -18,6 +18,7 @@ import { useI18n, LOCALES, LOCALE_LABELS } from '@/lib/i18n';
 import { useTheme } from '@/lib/theme';
 import { useChallenge } from './ChallengeProvider';
 import { signOut } from '@/lib/auth';
+import Avatar from './Avatar';
 
 /**
  * Closes a popover on an outside click or Escape, the way a native menu
@@ -133,14 +134,20 @@ function useAccountActions(username: string, onDone: () => void): AccountAction[
   ];
 }
 
-function AccountMenu({ username, displayName }: { username: string; displayName: string }) {
+function AccountMenu({
+  username,
+  displayName,
+  avatarUrl,
+}: {
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+}) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
   const wrapperRef = useDismissable<HTMLDivElement>(open, close);
   const actions = useAccountActions(username, close);
-
-  const initial = (displayName || username).charAt(0).toUpperCase();
 
   return (
     <div ref={wrapperRef} style={{ position: 'relative' }}>
@@ -154,7 +161,7 @@ function AccountMenu({ username, displayName }: { username: string; displayName:
         title={t('nav.account')}
         className="nav-avatar"
       >
-        {initial}
+        <Avatar url={avatarUrl} displayName={displayName} username={username} />
       </button>
 
       {open && (
@@ -267,7 +274,11 @@ export default function SiteHeader() {
           <ThemeToggle />
           {authLinks(true)}
           {!loading && session && challenge && (
-            <AccountMenu username={challenge.username} displayName={challenge.displayName} />
+            <AccountMenu
+              username={challenge.username}
+              displayName={challenge.displayName}
+              avatarUrl={challenge.avatarUrl}
+            />
           )}
         </nav>
 

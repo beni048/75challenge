@@ -2,23 +2,37 @@
 
 import React, { useState } from 'react';
 import { Rule } from '@/lib/streak-engine';
-import { validateChallengeDates, formatDate, formatLongDate } from '@/lib/date-utils';
-import SimpleAuthForm from './SimpleAuthForm';
+import { validateChallengeDates, formatDate, formatLongDate, getSupportedTimezones } from '@/lib/date-utils';
+import SimpleAuthForm, { SimpleAuthFormData } from './SimpleAuthForm';
 import RuleCustomizer from './RuleCustomizer';
 import ModalPortal from './ModalPortal';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Calendar, Flame, Users, Info, ArrowLeft, ArrowRight,
-  ListChecks, RefreshCw, ShieldCheck, Scale, RotateCcw, User as UserIcon,
+  ListChecks, RefreshCw, ShieldCheck, Scale, RotateCcw, User as UserIcon, MapPin, Globe2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { savePendingSignup, clearPendingSignup } from '@/lib/pending-signup';
 import { useChallenge } from './ChallengeProvider';
 import { createChallenge } from '@/lib/db/profile';
+import { uploadAvatar } from '@/lib/db/avatar';
 import { signUp } from '@/lib/auth';
 import { useToast } from './Toast';
 import { MIN_RULES, MAX_RULES, hasEnoughRules } from '@/lib/rules-policy';
+
+const DETECTED_TIMEZONE = (() => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return 'UTC';
+  }
+})();
+
+const TIMEZONE_OPTIONS: string[] = (() => {
+  const supported = getSupportedTimezones();
+  return supported.length > 0 ? supported : [DETECTED_TIMEZONE];
+})();
 
 /**
  * Four sequential steps. Splitting them keeps each screen to one decision,
@@ -72,6 +86,8 @@ export default function OnboardingModal({
 
   const [step, setStep] = useState<Step>('learn');
   const [startDate, setStartDate] = useState(formatDate(new Date()));
+  const [timezone, setTimezone] = useState(DETECTED_TIMEZONE);
+  const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
   const [resumeName, setResumeName] = useState('');
 
@@ -87,11 +103,7 @@ export default function OnboardingModal({
   const goTo = (next: Step) => setStep(next);
   const goBack = () => setStep(STEP_ORDER[Math.max(0, stepIndex - 1)]);
 
-  const handleSignupAndCommit = async (authData: {
-    displayName: string;
-    email: string;
-    password: string;
-  }) => {
+  const handleSignupAndCommit = async (authData: SimpleAuthFormData) => {
     if (!hasEnoughRules(configuredRules.length)) {
       toast.error(t('onboarding.minRulesAlert', { min: MIN_RULES }));
       return;
@@ -108,10 +120,15 @@ export default function OnboardingModal({
       }
 
       // Park the chosen habits and start date either way, so they survive an
-      // email-confirmation round trip.
+      // email-confirmation round trip. The avatar can't come along — see
+      // pending-signup.ts's documented limitation — it's re-addable from
+      // Account settings afterwards.
       savePendingSignup({
         displayName: authData.displayName,
+        username: authData.username,
         startDate,
+        timezone,
+        location: location.trim() || null,
         rules: configuredRules,
         referredByUsername: referredBy ?? null,
       });
@@ -126,10 +143,22 @@ export default function OnboardingModal({
         return;
       }
 
+      // Upload the avatar now, while a session already exists, so its durable
+      // URL can be written in the same createChallenge call below.
+      let avatarUrl: string | null = null;
+      if (authData.avatarBlob) {
+        const uploaded = await uploadAvatar(result.userId, authData.avatarBlob);
+        if (uploaded.data) avatarUrl = uploaded.data;
+      }
+
       const created = await createChallenge({
         userId: result.userId,
         displayName: authData.displayName,
+        username: authData.username,
         startDate,
+        timezone,
+        location: location.trim() || null,
+        avatarUrl,
         rules: configuredRules,
         referredByUsername: referredBy ?? null,
       });
@@ -185,6 +214,8 @@ export default function OnboardingModal({
       userId: session.user.id,
       displayName: resumeName.trim(),
       startDate,
+      timezone,
+      location: location.trim() || null,
       rules: configuredRules,
       referredByUsername: referredBy ?? null,
     });
@@ -324,6 +355,47 @@ export default function OnboardingModal({
                       <span>{infoNotice}</span>
                     </div>
                   )}
+
+                  <div className="input-group" style={{ marginBottom: 0 }}>
+                    <label className="input-label" htmlFor="modal-timezone">
+                      {t('onboarding.timezoneLabel')}
+                    </label>
+                    <div className="field-with-icon">
+                      <select
+                        id="modal-timezone"
+                        className="input-field"
+                        value={timezone}
+                        onChange={(e) => setTimezone(e.target.value)}
+                      >
+                        {TIMEZONE_OPTIONS.map((tz) => (
+                          <option key={tz} value={tz}>
+                            {tz}
+                          </option>
+                        ))}
+                      </select>
+                      <Globe2 size={18} className="field-icon" />
+                    </div>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                      {t('onboarding.timezoneHint')}
+                    </p>
+                  </div>
+
+                  <div className="input-group" style={{ marginBottom: 0 }}>
+                    <label className="input-label" htmlFor="modal-location">
+                      {t('onboarding.locationLabel')}
+                    </label>
+                    <div className="field-with-icon">
+                      <input
+                        id="modal-location"
+                        type="text"
+                        className="input-field"
+                        placeholder={t('onboarding.locationPlaceholder')}
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                      />
+                      <MapPin size={18} className="field-icon" />
+                    </div>
+                  </div>
 
                   <button type="button" onClick={() => goTo('rules')} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
                     {t('onboarding.dateCta')} <ArrowRight size={18} />

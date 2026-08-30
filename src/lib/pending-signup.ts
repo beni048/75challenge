@@ -19,9 +19,17 @@ const KEY = '75_pending_signup';
 
 export interface PendingSignup {
   displayName: string;
+  /** User-chosen, already normalized — must survive the round trip verbatim. */
+  username: string;
   startDate: string;
+  timezone: string;
+  location: string | null;
   rules: Rule[];
   referredByUsername: string | null;
+  // Deliberately no avatar field: a File/Blob can't survive JSON + localStorage.
+  // If email confirmation interrupts signup, the chosen picture is lost and the
+  // person can add one afterwards from Account settings — a minor gap, not
+  // worth the complexity of persisting binary data through this bridge.
 }
 
 export function savePendingSignup(pending: PendingSignup): void {
@@ -37,11 +45,16 @@ export function loadPendingSignup(): PendingSignup | null {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<PendingSignup>;
-    if (!parsed.displayName || !parsed.startDate || !Array.isArray(parsed.rules)) return null;
+    if (!parsed.displayName || !parsed.username || !parsed.startDate || !Array.isArray(parsed.rules)) {
+      return null;
+    }
 
     return {
       displayName: parsed.displayName,
+      username: parsed.username,
       startDate: parsed.startDate,
+      timezone: parsed.timezone ?? 'UTC',
+      location: parsed.location ?? null,
       rules: parsed.rules,
       referredByUsername: parsed.referredByUsername ?? null,
     };

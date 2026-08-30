@@ -122,6 +122,18 @@ export interface CreateChallengeInput {
    * rather than leaving every new account on the DB's 'UTC' default.
    */
   timezone?: string;
+  location?: string | null;
+  /** Already uploaded (via uploadAvatar) before this call — a durable Storage URL, never a blob: preview. */
+  avatarUrl?: string | null;
+  /**
+   * Already normalized via toUsernameSlug (SimpleAuthForm does this). When
+   * provided, it's a deliberate choice the user typed or accepted — tried
+   * exactly once, and a collision is reported back clearly rather than
+   * silently retried under a different name they never chose. Omitted only
+   * by callers with no signup form in front of them (handleResumeSetup),
+   * which keep the old auto-derive-with-suffix behavior below.
+   */
+  username?: string;
 }
 
 /**
@@ -157,15 +169,19 @@ export async function createChallenge(input: CreateChallengeInput): Promise<DbRe
       referredById = referrer?.id ?? null;
     }
 
-    // `username` is unique. Try the plain slug first, then suffix it until the
-    // insert stops colliding (Postgres unique violation is code 23505).
+    // `username` is unique. An explicit, user-chosen username is tried once —
+    // a collision there is reported back, not silently renamed. Only the
+    // auto-derived fallback (no explicit username supplied) retries with a
+    // numeric suffix, since nobody deliberately chose that exact string.
     const base = toUsernameSlug(input.displayName);
     const timezone = input.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const explicitUsername = input.username;
     let user: UserRow | null = null;
     let lastError: unknown = null;
+    const maxAttempts = explicitUsername ? 1 : 5;
 
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const username = attempt === 0 ? base : `${base}_${attempt + 1}`;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const username = explicitUsername ?? (attempt === 0 ? base : `${base}_${attempt + 1}`);
       const { data, error } = await supabase
         .from('users')
         .insert({
@@ -178,6 +194,8 @@ export async function createChallenge(input: CreateChallengeInput): Promise<DbRe
           status: 'active',
           referred_by_id: referredById,
           timezone,
+          location: input.location ?? null,
+          avatar_url: input.avatarUrl ?? null,
         })
         .select()
         .single();
@@ -197,6 +215,9 @@ export async function createChallenge(input: CreateChallengeInput): Promise<DbRe
         const existing = await fetchChallengeById(input.userId);
         if (existing.data) {
           return ok(existing.data);
+        }
+        if (explicitUsername) {
+          return fail(new Error('That username is taken. Please choose another.'));
         }
         continue; // genuine username collision — retry with the next suffix
       }
@@ -325,7 +346,13 @@ export async function consumeRulesChange(): Promise<DbResult<true>> {
 /** Updates the editable parts of a profile. */
 export async function updateProfile(
   userId: string,
-  fields: { displayName?: string }
+  fields: {
+    displayName?: string;
+    avatarUrl?: string | null;
+    location?: string | null;
+    timezone?: string;
+    secretRulesVisibility?: 'placeholder' | 'hidden';
+  }
 ): Promise<DbResult<UserRow>> {
   try {
     const supabase = createClient();
@@ -333,6 +360,10 @@ export async function updateProfile(
       .from('users')
       .update({
         ...(fields.displayName ? { display_name: fields.displayName } : {}),
+        ...(fields.avatarUrl !== undefined ? { avatar_url: fields.avatarUrl } : {}),
+        ...(fields.location !== undefined ? { location: fields.location } : {}),
+        ...(fields.timezone ? { timezone: fields.timezone } : {}),
+        ...(fields.secretRulesVisibility ? { secret_rules_visibility: fields.secretRulesVisibility } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId)

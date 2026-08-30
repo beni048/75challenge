@@ -8,6 +8,7 @@ import DailyChecklist from '@/components/DailyChecklist';
 import DayLockedCard from '@/components/DayLockedCard';
 import MilestoneCard from '@/components/MilestoneCard';
 import ShieldModal from '@/components/ShieldModal';
+import Avatar from '@/components/Avatar';
 import { getRequiredRulesForDate } from '@/lib/streak-engine';
 import { calculateCurrentDay, getEffectiveLogDate } from '@/lib/date-utils';
 import { Share2, ArrowRight } from 'lucide-react';
@@ -204,7 +205,9 @@ export default function UserProfilePage() {
       {/* Profile banner */}
       <div className="glass-card profile-banner">
         <div className="profile-identity">
-          <div className="profile-avatar">{challenge.displayName.charAt(0).toUpperCase()}</div>
+          <div className="profile-avatar">
+            <Avatar url={challenge.avatarUrl} displayName={challenge.displayName} username={challenge.username} />
+          </div>
 
           <div style={{ minWidth: 0 }}>
             <div className="profile-name-row">
