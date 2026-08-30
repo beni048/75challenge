@@ -922,7 +922,7 @@ export function useI18n(): I18nContextValue {
     // get working English copy rather than crashing.
     return {
       locale: 'en',
-      setLocale: () => {},
+      setLocale: () => { },
       t: (key, vars) => translate('en', key, vars),
     };
   }

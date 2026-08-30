@@ -117,6 +117,17 @@ export interface CreateChallengeInput {
  *
  * A new challenge always starts on Day 1 with one shield and **no logs** —
  * see start.md §2 "Fresh Accounts Start Empty".
+ *
+ * Idempotent for "this exact user already has a challenge": two independent
+ * callers can legitimately race here (OnboardingModal creates the challenge
+ * directly after an immediate-session signup, while ChallengeProvider's own
+ * auth listener reacts to the same signUp() call and may attempt the same
+ * creation from pending-signup data). Without this, the loser hits a `23505`
+ * unique-violation on the `id` primary key, the retry loop below mistakes it
+ * for a username collision (pointless — a new username doesn't fix a
+ * duplicate id), exhausts its attempts, and returns null — which can stomp a
+ * correct value the winner already set. Fetching-on-conflict makes both
+ * callers converge on the same row instead.
  */
 export async function createChallenge(input: CreateChallengeInput): Promise<DbResult<Challenge>> {
   try {
@@ -162,8 +173,20 @@ export async function createChallenge(input: CreateChallengeInput): Promise<DbRe
         break;
       }
       lastError = error;
-      // Only a username collision is worth retrying.
-      if (error.code !== '23505') break;
+
+      if (error.code === '23505') {
+        // Could be a duplicate `id` (a concurrent caller already created this
+        // exact user's challenge) or a duplicate `username` (a genuine
+        // collision with someone else). Check which by fetching this user's
+        // own row first — if it exists, treat that as success rather than
+        // continuing to retry a username that was never the actual problem.
+        const existing = await fetchChallengeById(input.userId);
+        if (existing.data) {
+          return ok(existing.data);
+        }
+        continue; // genuine username collision — retry with the next suffix
+      }
+      break; // not a unique-violation at all — no point retrying
     }
 
     if (!user) return fail(lastError ?? new Error('Could not create challenge'));

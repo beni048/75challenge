@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
-import { savePendingSignup } from '@/lib/pending-signup';
+import { savePendingSignup, clearPendingSignup } from '@/lib/pending-signup';
 import { useChallenge } from './ChallengeProvider';
 import { createChallenge } from '@/lib/db/profile';
 import { signUp } from '@/lib/auth';
@@ -68,7 +68,7 @@ export default function OnboardingModal({
   const router = useRouter();
   const { t, locale } = useI18n();
   const toast = useToast();
-  const { session, refresh } = useChallenge();
+  const { session, setChallenge } = useChallenge();
 
   const [step, setStep] = useState<Step>('learn');
   const [startDate, setStartDate] = useState(formatDate(new Date()));
@@ -141,6 +141,15 @@ export default function OnboardingModal({
         return;
       }
 
+      // Push the complete, correct result into shared context *before*
+      // navigating, so the destination page's first render already has full
+      // data — regardless of whether ChallengeProvider's own auth-listener is
+      // independently racing to do the same thing right now (see the
+      // "Immediate hotfix" note in this codebase's history: without this, the
+      // profile page could render with an empty rules array until refreshed).
+      setChallenge(created.data);
+      clearPendingSignup();
+
       onClose();
       router.push(`/user/${created.data.username}`);
     } catch (err) {
@@ -186,7 +195,7 @@ export default function OnboardingModal({
       return;
     }
 
-    await refresh();
+    setChallenge(created.data);
     onClose();
     router.push(`/user/${created.data.username}`);
   };
