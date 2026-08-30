@@ -428,6 +428,8 @@ export default function UserProfilePage() {
                   logs={challenge.logs.map((log) => ({ log_date: log.log_date, status: log.status }))}
                   currentDay={currentDay}
                   today={today}
+                  selectedDate={logDate}
+                  onSelectDate={setSelectedDate}
                 />
               )}
 
@@ -447,7 +449,7 @@ export default function UserProfilePage() {
                     />
                   )}
                   {isFutureDay ? (
-                    <DayLockedCard reason="rest-day" logDate={logDate} />
+                    <DayLockedCard reason="future" logDate={logDate} />
                   ) : lockedReason ? (
                     <DayLockedCard reason={lockedReason} logDate={logDate} />
                   ) : (

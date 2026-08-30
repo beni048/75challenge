@@ -853,24 +853,28 @@ a {
   }
 }
 
-/* Section rhythm — noticeably tighter on a phone. */
+/* Section rhythm — noticeably tighter on a phone.
+   padding-BLOCK only: these are vertical-rhythm utilities and are routinely
+   combined with .container, whose horizontal gutter they must never reset.
+   The 4-side shorthand here is what once left every `container page` screen
+   flush against the viewport edge. */
 .section {
-  padding: 2rem 0;
+  padding-block: 2rem;
 }
 
 @media (min-width: 768px) {
   .section {
-    padding: 3.5rem 0;
+    padding-block: 3.5rem;
   }
 }
 
 .page {
-  padding: 1.5rem 0 2rem;
+  padding-block: 1.5rem 2rem;
 }
 
 @media (min-width: 768px) {
   .page {
-    padding: 2.5rem 0 3rem;
+    padding-block: 2.5rem 3rem;
   }
 }
 
@@ -1467,7 +1471,7 @@ a {
 .story-wrap {
   display: flex;
   justify-content: center;
-  padding: 0.5rem 0;
+  padding-block: 0.5rem;
 }
 
 .story-wrap > * {

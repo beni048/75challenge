@@ -416,6 +416,8 @@ const en = {
     'You completed every rule for {date}. Nothing more to do — come back tomorrow to keep the streak going.',
   'day.shieldedTitle': 'This day is protected',
   'day.shieldedBody': 'You used your Streak Shield for {date}. Come back tomorrow.',
+  'day.futureTitle': 'This day has not arrived yet',
+  'day.futureBody': 'You can log {date} once it gets here. Until then, today is the one that counts.',
   'day.restDayTitle': 'No rules scheduled today',
   'day.restDayBody': 'Enjoy the rest day — your streak is safe.',
 
@@ -892,6 +894,8 @@ const de: Record<TranslationKey, string> = {
     'Am {date} hast du alles abgehakt. Mehr gibt es heute nicht zu tun – bis morgen.',
   'day.shieldedTitle': 'Dieser Tag ist geschützt',
   'day.shieldedBody': 'Für den {date} hast du dein Schild eingesetzt. Bis morgen.',
+  'day.futureTitle': 'Dieser Tag ist noch nicht dran',
+  'day.futureBody': 'Den {date} kannst du eintragen, sobald er da ist. Bis dahin zählt heute.',
   'day.restDayTitle': 'Heute steht nichts an',
   'day.restDayBody': 'Geniess den Ruhetag – deine Serie läuft weiter.',
   'common.loading': 'Lädt ...',

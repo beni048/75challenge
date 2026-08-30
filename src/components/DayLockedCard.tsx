@@ -9,14 +9,19 @@
  */
 
 import React from 'react';
-import { CheckCircle2, ShieldCheck, Moon } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, Moon, CalendarClock } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
-export type LockedReason = 'completed' | 'shielded' | 'rest-day';
+export type LockedReason = 'completed' | 'shielded' | 'rest-day' | 'future';
 
 const PRESENTATION: Record<
   LockedReason,
-  { icon: React.ReactNode; tint: string; titleKey: 'day.doneTitle' | 'day.shieldedTitle' | 'day.restDayTitle'; bodyKey: 'day.doneBody' | 'day.shieldedBody' | 'day.restDayBody' }
+  {
+    icon: React.ReactNode;
+    tint: string;
+    titleKey: 'day.doneTitle' | 'day.shieldedTitle' | 'day.restDayTitle' | 'day.futureTitle';
+    bodyKey: 'day.doneBody' | 'day.shieldedBody' | 'day.restDayBody' | 'day.futureBody';
+  }
 > = {
   completed: {
     icon: <CheckCircle2 size={30} />,
@@ -35,6 +40,14 @@ const PRESENTATION: Record<
     tint: 'var(--accent-purple)',
     titleKey: 'day.restDayTitle',
     bodyKey: 'day.restDayBody',
+  },
+  // A day that has not arrived yet. Distinct from a rest day: there IS work
+  // scheduled, it simply cannot be logged before it happens.
+  future: {
+    icon: <CalendarClock size={30} />,
+    tint: 'var(--accent-orange)',
+    titleKey: 'day.futureTitle',
+    bodyKey: 'day.futureBody',
   },
 };
 

@@ -12,9 +12,16 @@ interface ConsistencyHeatmapProps {
   currentDay: number;
   /** The profile owner's own today (timezone-aware) — computed once by the caller. */
   today: string;
+  /**
+   * Owner-only. When provided each cell becomes selectable, so the grid can
+   * drive the check-in form below exactly like the focused day picker does.
+   * Omitted on someone else's profile, where the grid is read-only.
+   */
+  selectedDate?: string;
+  onSelectDate?: (date: string) => void;
 }
 
-export default function ConsistencyHeatmap({ startDate, logs, currentDay, today }: ConsistencyHeatmapProps) {
+export default function ConsistencyHeatmap({ startDate, logs, currentDay, today, selectedDate, onSelectDate }: ConsistencyHeatmapProps) {
   const { t } = useI18n();
   const dates = generate75DayDates(startDate);
 
@@ -76,15 +83,26 @@ export default function ConsistencyHeatmap({ startDate, logs, currentDay, today 
             statusLabel = t('heatmap.statusFailed');
           }
 
+          const interactive = Boolean(onSelectDate);
+          const isSelected = selectedDate === dateStr;
+          const Cell = interactive ? 'button' : 'div';
+
           return (
-            <div
+            <Cell
               key={dateStr}
+              type={interactive ? 'button' : undefined}
+              onClick={interactive ? () => onSelectDate!(dateStr) : undefined}
+              aria-pressed={interactive ? isSelected : undefined}
               title={t('heatmap.tooltip', { day: dayNum, date: dateStr, status: statusLabel })}
               style={{
                 aspectRatio: '1/1',
                 borderRadius: 'var(--radius-sm)',
                 backgroundColor: bgColor,
-                border: isToday ? '2px solid var(--accent-orange)' : `1px solid ${borderColor}`,
+                border: isSelected
+                  ? '2px solid var(--text-primary)'
+                  : isToday
+                    ? '2px solid var(--accent-orange)'
+                    : `1px solid ${borderColor}`,
                 boxShadow: isToday ? '0 0 10px var(--accent-orange-glow)' : 'none',
                 display: 'flex',
                 flexDirection: 'column',
@@ -93,12 +111,14 @@ export default function ConsistencyHeatmap({ startDate, logs, currentDay, today 
                 fontSize: '0.65rem',
                 fontWeight: 700,
                 color: isToday ? 'var(--accent-orange-light)' : 'var(--text-muted)',
-                cursor: 'default',
+                cursor: interactive ? 'pointer' : 'default',
+                padding: 0,
+                fontFamily: 'inherit',
               }}
             >
               <span>{dayNum}</span>
-              {icon && <div style={{ marginTop: '1px' }}>{icon}</div>}
-            </div>
+              {icon && <span style={{ marginTop: '1px', display: 'flex' }}>{icon}</span>}
+            </Cell>
           );
         })}
       </div>
