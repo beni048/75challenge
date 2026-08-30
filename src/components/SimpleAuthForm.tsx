@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Mail, Lock, User as UserIcon, AtSign, Upload, AlertCircle, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, AtSign, Upload, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { PASSWORD_MIN_LENGTH, isPasswordLongEnough } from '@/lib/password';
 import { toUsernameSlug } from '@/lib/db/profile';
 import { compressImageToWebP } from '@/lib/image-compressor';
 import Avatar from './Avatar';
+import { useToast } from './Toast';
 
 export interface SimpleAuthFormData {
   displayName: string;
@@ -34,10 +35,10 @@ export default function SimpleAuthForm({
   loading = false,
 }: SimpleAuthFormProps) {
   const { t } = useI18n();
+  const toast = useToast();
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   // The username field tracks the display name live until the user actually
   // edits it themselves — same derive-unless-overridden pattern used for the
@@ -80,20 +81,19 @@ export default function SimpleAuthForm({
 
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(null);
 
     if (!displayName.trim()) {
-      setError(t('auth.nameRequired'));
+      toast.error(t('auth.nameRequired'));
       return;
     }
 
     if (!email.trim() || !email.includes('@')) {
-      setError(t('auth.emailInvalid'));
+      toast.error(t('auth.emailInvalid'));
       return;
     }
 
     if (!isPasswordLongEnough(password)) {
-      setError(t('auth.passwordShort', { min: PASSWORD_MIN_LENGTH }));
+      toast.error(t('auth.passwordShort', { min: PASSWORD_MIN_LENGTH }));
       return;
     }
 
@@ -106,19 +106,12 @@ export default function SimpleAuthForm({
         avatarBlob: avatar?.blob ?? null,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('auth.failed'));
+      toast.error(err instanceof Error ? err.message : t('auth.failed'));
     }
   };
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }} id="auth-form">
-      {error && (
-        <div className="notice notice-error" role="alert">
-          <AlertCircle size={18} />
-          <span>{error}</span>
-        </div>
-      )}
-
       {/* Optional avatar — falls back to the initial-letter bubble everywhere
           else in the app if skipped, so nothing here is required. */}
       <div className="input-group" style={{ marginBottom: 0, alignItems: 'center' }}>

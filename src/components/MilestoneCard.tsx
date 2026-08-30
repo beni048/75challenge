@@ -5,6 +5,7 @@ import { exportElementAsImage } from '@/lib/export-utils';
 import { Flame, Shield, CheckCircle2, Download, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useI18n } from '@/lib/i18n';
+import { useToast } from './Toast';
 
 interface MilestoneCardProps {
   displayName: string;
@@ -26,6 +27,7 @@ export default function MilestoneCard({
   quote,
 }: MilestoneCardProps) {
   const { t } = useI18n();
+  const toast = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -48,7 +50,7 @@ export default function MilestoneCard({
       });
     } catch (err) {
       console.error('Failed to export story card:', err);
-      alert('Could not download image. Please take a screenshot!');
+      toast.error(t('milestone.exportFailed'));
     } finally {
       setIsExporting(false);
     }

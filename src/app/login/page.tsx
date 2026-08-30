@@ -3,30 +3,28 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, AlertCircle, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { signIn, sendPasswordReset } from '@/lib/auth';
+import { useToast } from '@/components/Toast';
 
 type Mode = 'login' | 'forgot';
 
 export default function LoginPage() {
   const { t } = useI18n();
   const router = useRouter();
+  const toast = useToast();
 
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   const handleLogin = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(null);
-    setNotice(null);
 
     if (!email.trim() || !password) {
-      setError(t('login.needBoth'));
+      toast.error(t('login.needBoth'));
       return;
     }
 
@@ -35,7 +33,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (!result.ok) {
-      setError(t(result.errorKey ?? 'login.failed', result.errorVars));
+      toast.error(t(result.errorKey ?? 'login.failed', result.errorVars));
       return;
     }
 
@@ -48,11 +46,9 @@ export default function LoginPage() {
 
   const handleForgot = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(null);
-    setNotice(null);
 
     if (!email.trim()) {
-      setError(t('forgot.needEmail'));
+      toast.error(t('forgot.needEmail'));
       return;
     }
 
@@ -61,10 +57,10 @@ export default function LoginPage() {
     setLoading(false);
 
     if (!result.ok) {
-      setError(t(result.errorKey ?? 'auth.failed', result.errorVars));
+      toast.error(t(result.errorKey ?? 'auth.failed', result.errorVars));
       return;
     }
-    setNotice(t('forgot.sent', { email: email.trim() }));
+    toast.success(t('forgot.sent', { email: email.trim() }));
   };
 
   return (
@@ -76,20 +72,6 @@ export default function LoginPage() {
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', marginBottom: '1.5rem' }}>
           {mode === 'login' ? t('login.subtitle') : t('forgot.desc')}
         </p>
-
-        {error && (
-          <div className="notice notice-error" style={{ marginBottom: '1rem' }} role="alert">
-            <AlertCircle size={18} />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {notice && (
-          <div className="notice notice-success" style={{ marginBottom: '1rem' }} role="status">
-            <CheckCircle2 size={18} />
-            <span>{notice}</span>
-          </div>
-        )}
 
         <form onSubmit={mode === 'login' ? handleLogin : handleForgot}>
           <div className="input-group">
@@ -156,11 +138,7 @@ export default function LoginPage() {
           {mode === 'login' ? (
             <button
               type="button"
-              onClick={() => {
-                setMode('forgot');
-                setError(null);
-                setNotice(null);
-              }}
+              onClick={() => setMode('forgot')}
               style={{ background: 'none', border: 'none', color: 'var(--accent-cyan)', cursor: 'pointer', font: 'inherit' }}
             >
               {t('login.forgot')}
@@ -168,11 +146,7 @@ export default function LoginPage() {
           ) : (
             <button
               type="button"
-              onClick={() => {
-                setMode('login');
-                setError(null);
-                setNotice(null);
-              }}
+              onClick={() => setMode('login')}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',

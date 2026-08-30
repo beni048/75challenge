@@ -665,17 +665,6 @@ a {
 }
 
 /*
- * The landing page is server-rendered so crawlers and the first paint get real
- * marketing content. A signed-in visitor gets the feed instead, but only after
- * hydration reads localStorage — so the pre-paint init script stamps
- * `data-session` on <html> and this rule hides the marketing view immediately,
- * with no flash in between.
- */
-[data-session='in'] .landing-gate {
-  display: none;
-}
-
-/*
  * =========================================================================
  * MOBILE-FIRST LAYOUT UTILITIES
  * =========================================================================

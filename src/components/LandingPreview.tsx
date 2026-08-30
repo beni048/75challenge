@@ -11,11 +11,13 @@ import { formatLongDate } from '@/lib/date-utils';
 
 /**
  * Public landing page, in reading order:
- *   hero → what the community looks like → how it works → CTA
+ *   hero → how it works → what the community looks like → closing CTA
  *
- * The feed preview comes before the explanation deliberately: seeing real
- * people mid-challenge is more persuasive than being told the rules first.
- * Nothing in the preview is interactive — visitors join before they can react.
+ * This reverses an earlier, deliberate choice to put the feed preview first
+ * (on the theory that seeing real people mid-challenge is more persuasive
+ * than being told the rules first) — an explicit product decision, not a
+ * regression. Nothing in the preview is interactive — visitors join before
+ * they can react.
  */
 export default function LandingPreview() {
   const { t, locale } = useI18n();
@@ -59,6 +61,27 @@ export default function LandingPreview() {
             {/* The shared finish line — what makes this a group effort. */}
             <p className="landing-cta-sub">{t('hero.goal', { deadline })}</p>
           </div>
+        </div>
+      </section>
+
+      {/* ---------------- How it works ---------------- */}
+      <section className="container landing-section">
+        <div className="landing-section-head">
+          <span className="landing-eyebrow">{t('howItWorks.eyebrow')}</span>
+          <h2 className="h-section">{t('howItWorks.title')}</h2>
+          <p className="landing-section-lede">{t('howItWorks.lede')}</p>
+        </div>
+
+        <div className="card-grid landing-pillars">
+          {pillars.map((pillar) => (
+            <div key={pillar.title} className="glass-card pillar-card">
+              <div className="pillar-card-head">
+                {pillar.icon}
+                <h3 className="pillar-card-title">{pillar.title}</h3>
+              </div>
+              <p className="pillar-card-body">{pillar.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -142,27 +165,8 @@ export default function LandingPreview() {
         </div>
       </section>
 
-      {/* ---------------- How it works ---------------- */}
+      {/* ---------------- Closing CTA ---------------- */}
       <section className="container landing-section">
-        <div className="landing-section-head">
-          <span className="landing-eyebrow">{t('howItWorks.eyebrow')}</span>
-          <h2 className="h-section">{t('howItWorks.title')}</h2>
-          <p className="landing-section-lede">{t('howItWorks.lede')}</p>
-        </div>
-
-        <div className="card-grid landing-pillars">
-          {pillars.map((pillar) => (
-            <div key={pillar.title} className="glass-card pillar-card">
-              <div className="pillar-card-head">
-                {pillar.icon}
-                <h3 className="pillar-card-title">{pillar.title}</h3>
-              </div>
-              <p className="pillar-card-body">{pillar.desc}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* ---------------- Closing CTA ---------------- */}
         <div className="landing-closing">
           <Link href="/join" className="btn btn-primary btn-lg landing-cta-btn">
             {t('hero.cta')} <ArrowRight size={20} />

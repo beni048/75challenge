@@ -6,6 +6,7 @@ import { Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { PASSWORD_MIN_LENGTH, isPasswordLongEnough } from '@/lib/password';
 import { updatePassword, hasSupabaseSession } from '@/lib/auth';
+import { useToast } from '@/components/Toast';
 
 /**
  * Landing page for the emailed password-reset link.
@@ -16,13 +17,13 @@ import { updatePassword, hasSupabaseSession } from '@/lib/auth';
  */
 export default function ResetPasswordPage() {
   const { t } = useI18n();
+  const toast = useToast();
 
   const [checking, setChecking] = useState(true);
   const [recoveryReady, setRecoveryReady] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
   useEffect(() => {
@@ -52,14 +53,13 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(null);
 
     if (!isPasswordLongEnough(password)) {
-      setError(t('auth.passwordShort', { min: PASSWORD_MIN_LENGTH }));
+      toast.error(t('auth.passwordShort', { min: PASSWORD_MIN_LENGTH }));
       return;
     }
     if (password !== confirmPassword) {
-      setError(t('reset.mismatch'));
+      toast.error(t('reset.mismatch'));
       return;
     }
 
@@ -68,7 +68,7 @@ export default function ResetPasswordPage() {
     setLoading(false);
 
     if (!result.ok) {
-      setError(t(result.errorKey ?? 'auth.failed', result.errorVars));
+      toast.error(t(result.errorKey ?? 'auth.failed', result.errorVars));
       return;
     }
     setDone(true);
@@ -106,13 +106,6 @@ export default function ResetPasswordPage() {
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', marginBottom: '1.5rem' }}>
               {t('reset.desc')}
             </p>
-
-            {error && (
-              <div className="notice notice-error" style={{ marginBottom: '1rem' }} role="alert">
-                <AlertCircle size={18} />
-                <span>{error}</span>
-              </div>
-            )}
 
             <form onSubmit={handleSubmit}>
               <div className="input-group">

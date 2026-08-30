@@ -329,6 +329,8 @@ const en = {
   'feed.hypedByTwo': 'Hyped by {name} and {name2}',
   'feed.hypedByMany': 'Hyped by {name} and {count} others',
 
+  'milestone.exportFailed': 'Could not download the image — try taking a screenshot instead.',
+
   // Help & feedback
   'help.trigger': 'Help & Feedback',
   'help.intro':
@@ -785,6 +787,8 @@ const de: Record<TranslationKey, string> = {
   'feed.hypedBySingle': 'Gehyped von {name}',
   'feed.hypedByTwo': 'Gehyped von {name} und {name2}',
   'feed.hypedByMany': 'Gehyped von {name} und {count} weiteren',
+
+  'milestone.exportFailed': 'Bild konnte nicht heruntergeladen werden — mach stattdessen einen Screenshot.',
 
   'help.trigger': 'Hilfe & Feedback',
   'help.intro':

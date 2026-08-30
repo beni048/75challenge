@@ -232,7 +232,7 @@ Multi-tap reaction buttons with animations:
 
 ### Landing Page (`/`)
 `/` serves two audiences:
-- **Signed out**, in this order: **hero → feed preview → how it works → closing CTA**. The feed preview sits *above* the explanation on purpose — seeing real people mid-challenge is more persuasive than being told the rules first. Do not move "How it works" back above the feed. The preview is illustrative only: nothing in it is clickable.
+- **Signed out**, in this order: **hero → how it works → feed preview → closing CTA**. This reverses an earlier deliberate choice (feed preview above the explanation, on the theory that seeing real people mid-challenge is more persuasive than being told the rules first) — a later, explicit product decision put the explanation first instead. The preview is illustrative only: nothing in it is clickable.
 - **Signed in** — the community feed *is* the landing page. There is no separate "Community Feed" nav link.
 
 ### Header
