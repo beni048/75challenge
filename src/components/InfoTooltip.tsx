@@ -1,7 +1,12 @@
 'use client';
 
 /**
- * A small "(i)" button that opens an explanation on tap. Deliberately
+ * A small "(i)" button that opens an explanation on tap.
+ *
+ * Renders ONLY phrasing content (span/button, never div): it sits inside a
+ * <p> in RuleCustomizer and inside a <label> in AccountClient, both of which
+ * reject flow content. A <div> here is a hydration error, not just invalid
+ * markup. The CSS gives the spans their display values. Deliberately
  * tap-triggered, not hover-only — hover doesn't exist on touch devices, and
  * this app is mobile-first (start.md §12).
  */
@@ -21,7 +26,7 @@ export default function InfoTooltip({ label, text }: { label: string; text: stri
   // a narrow screen (see start.md §12 rule 10: no popover may render partly
   // off-screen).
   const [align, setAlign] = useState<'left' | 'right'>('left');
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLSpanElement>(null);
   const close = useCallback(() => setOpen(false), []);
 
   const handleTriggerClick = () => {
@@ -52,7 +57,7 @@ export default function InfoTooltip({ label, text }: { label: string; text: stri
   }, [open, close]);
 
   return (
-    <div ref={ref} className="info-tooltip">
+    <span ref={ref} className="info-tooltip">
       <button
         type="button"
         className="icon-btn info-tooltip-trigger"
@@ -65,13 +70,13 @@ export default function InfoTooltip({ label, text }: { label: string; text: stri
       </button>
 
       {open && (
-        <div className={`info-tooltip-popover align-${align}`} role="tooltip">
+        <span className={`info-tooltip-popover align-${align}`} role="tooltip">
           <span>{text}</span>
           <button type="button" onClick={close} aria-label={label} className="info-tooltip-close">
             <X size={14} />
           </button>
-        </div>
+        </span>
       )}
-    </div>
+    </span>
   );
 }

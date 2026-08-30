@@ -479,9 +479,19 @@ same idea expressed in our own system: base rules are the phone layout, and
 6. **Touch targets ≥ 44px** under `@media (pointer: coarse)`. Already applied to
    `.btn`, `.icon-btn`, `.menu-item` and the language switch.
 7. **Use `dvh`, not `vh`.** Mobile browser chrome makes `100vh` overflow.
-8. **Wide content scrolls in its own box** (`.scroll-x`, or `overflow-x: auto`),
+8. **Rounded corners and the viewport edge are mutually exclusive.** A box is
+   either *full-bleed* — flush to both edges with `border-radius: 0` — or it
+   *keeps the gutter* and may be rounded. A rounded box touching the edge
+   reads as broken, and a full-bleed box with a radius shows two odd notches.
+   Never a hair of margin: either zero, or the full gutter.
+9. **The gutter is one token, `--gutter`.** `.container` pads by it, full-bleed
+   elements offset by `calc(var(--gutter) * -1)`, and `.modal-backdrop` pads by
+   it so modals never hug the edge. Never hardcode `-1rem` to cancel a gutter —
+   it silently desyncs the moment the gutter changes, which is exactly how
+   modals ended up 12px from the edge with rounded corners.
+10. **Wide content scrolls in its own box** (`.scroll-x`, or `overflow-x: auto`),
    never widening the page. The body must never scroll horizontally.
-9. **Modals are near-full-screen sheets on mobile** and floating cards from
+11. **Modals are near-full-screen sheets on mobile** and floating cards from
    `sm` up — see `.modal-content`.
 
 ### Verifying

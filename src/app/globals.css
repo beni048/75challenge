@@ -99,6 +99,11 @@
    * `.container` creates a stacking context, so an in-place overlay could
    * otherwise be trapped beneath a later sibling such as the footer.
    */
+  /* The page gutter. One value so the container, full-bleed cards and modals
+     all agree — a hardcoded -1rem somewhere silently breaks the moment this
+     changes. See start.md §12. */
+  --gutter: 1.25rem;
+
   --z-base: 1;
   --z-fab: 40;
   --z-nav: 50;
@@ -291,15 +296,14 @@ a {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  /* 1rem gutters on a phone; 1.5rem is wasteful below ~380px. */
-  padding: 0 1rem;
+  padding-inline: var(--gutter);
   position: relative;
   z-index: var(--z-base);
 }
 
 @media (min-width: 480px) {
-  .container {
-    padding: 0 1.5rem;
+  :root {
+    --gutter: 1.5rem;
   }
 }
 
@@ -326,14 +330,10 @@ a {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  /* Full-bleed on a phone, so it must have NO radius — a rounded box touching
+     the viewport edge reads as broken. See start.md §12. */
   border-radius: 0;
-  margin-inline: -1rem;
-}
-
-@media (min-width: 480px) {
-  .feed-card {
-    margin-inline: -1.5rem;
-  }
+  margin-inline: calc(var(--gutter) * -1);
 }
 
 @media (min-width: 640px) {
@@ -2182,7 +2182,9 @@ a {
   align-items: center;
   justify-content: center;
   z-index: var(--z-modal);
-  padding: 0.75rem;
+  /* Rounded corners, so it keeps the page gutter rather than hugging the
+     edge. */
+  padding: var(--gutter);
 }
 
 @media (min-width: 480px) {
@@ -2561,4 +2563,15 @@ a {
 .profile-focus .day-window {
   width: 100%;
   max-width: 380px;
+}
+
+/* Hint line under the habit list, explaining the secret toggle. Its layout
+   lives here rather than inline so it can carry a media query (§12). */
+.secret-hint {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
 }

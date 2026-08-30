@@ -46,9 +46,14 @@ CSS, not Tailwind** — there is no `sm:` / `md:` / `lg:`. The equivalent is:
    `2.5rem` heading overflows a 360px screen.
 7. **Touch targets ≥ 44px** on coarse pointers.
 8. **`dvh`, never `vh`** — mobile browser chrome makes `100vh` overflow.
-9. **Wide content scrolls inside its own box**, never widening the page. The
+9. **Rounded corners never touch the viewport edge.** A box is either
+   full-bleed (`border-radius: 0`, flush to both edges) or keeps the gutter and
+   may be rounded — never a few px of margin with a radius.
+10. **The gutter is one token, `--gutter`.** Full-bleed elements offset by
+   `calc(var(--gutter) * -1)`; never hardcode `-1rem` to cancel it.
+11. **Wide content scrolls inside its own box**, never widening the page. The
    body must never scroll sideways.
-10. **Verify at 360px width** before calling any UI work done.
+12. **Verify at 360px width** before calling any UI work done.
 
 ### 🌍 Everything exists in English AND German (`start.md` §11)
 

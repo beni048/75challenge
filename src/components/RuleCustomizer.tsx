@@ -135,7 +135,7 @@ export default function RuleCustomizer({ rules, onChange, hideHeading = false }:
         <span>{t('rules.recommendation')}</span>
       </div>
 
-      <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+      <p className="secret-hint">
         <Lock size={14} />
         <span>{t('rules.secretExplain')}</span>
         <InfoTooltip label={t('rules.secretInfoLabel')} text={t('rules.secretInfoText')} />
