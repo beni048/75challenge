@@ -50,6 +50,23 @@ there. Once you have contracted, that door is shut.
 
 **Never run a Contract migration in the same session as its Expand.**
 
+### Before contracting, grep — do not assume
+
+A column being *logically* superseded is not the same as being *unreferenced*.
+This project's own 0007 originally proposed dropping `users.shields_remaining`
+because shield availability had become derived from `commitment_level`; the
+column's value genuinely no longer mattered. But four call sites still *wrote*
+it, and the drop would have broken signup, shield-spend and reset.
+
+So the precondition for every Contract is a literal search, not a judgement:
+
+```
+grep -rn "<column_or_table>" src/
+```
+
+Empty means safe. Anything else means the Contract is blocked on a code change
+that has to ship, and settle, first.
+
 ---
 
 ## 2. Every migration file must
