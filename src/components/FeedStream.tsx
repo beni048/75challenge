@@ -8,7 +8,7 @@ import { Flame, Users, Info } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useChallenge } from './ChallengeProvider';
 import { useToast } from './Toast';
-import { fetchFeed, addReaction } from '@/lib/db/feed';
+import { fetchFeed, hypePost } from '@/lib/db/feed';
 import { hideFromFeed, unhideFromFeed } from '@/lib/db/network';
 import { getEffectiveLogDate } from '@/lib/date-utils';
 
@@ -95,7 +95,7 @@ export default function FeedStream() {
     // Preview posts are not real rows, so there is nothing to react to.
     if (postId.startsWith('mock-post-')) return;
 
-    const result = await addReaction(postId, viewerId, phraseId);
+    const result = await hypePost(postId, viewerId, phraseId);
     if (result.error) toast.error(result.error);
   };
 

@@ -66,6 +66,9 @@ export interface DailyLogRow {
   updated_at: string;
   /** Non-null when this log was written as part of a multi-day catch-up — see pending-days.ts. */
   batch_id: string | null;
+  /** The one phrase claimed for this post by whoever hyped it first (0008). */
+  hype_phrase_id: string | null;
+  hype_claimed_by: string | null;
 }
 
 export interface LogRuleCheckRow {
@@ -79,6 +82,11 @@ export interface LogRuleCheckRow {
  * `phrase_id` actually resolves to in each locale. There is deliberately no
  * free-text field: a phrase id always points at a curated, bilingual entry,
  * never user-authored text (start.md §7 — no downvotes, no comments).
+ */
+/**
+ * One row per person who hyped a post. Since 0008 the SENTENCE lives on
+ * daily_logs (claimed by the first hyper); a reaction row now just means
+ * "this person agrees". `phrase_id` is retained until 0007 drops it.
  */
 export interface ReactionRow {
   log_id: string;

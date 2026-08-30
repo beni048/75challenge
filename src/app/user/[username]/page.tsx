@@ -30,7 +30,7 @@ import { fetchChallengeByUsername } from '@/lib/db/profile';
 import { spendShield, restartChallenge } from '@/lib/db/profile';
 import { saveDailyLog, catchUpDays } from '@/lib/db/logs';
 import { uploadProofPhoto } from '@/lib/db/photos';
-import { fetchUserFeedPosts, addReaction } from '@/lib/db/feed';
+import { fetchUserFeedPosts, hypePost } from '@/lib/db/feed';
 import { fetchHiddenUserIds, hideFromFeed, unhideFromFeed } from '@/lib/db/network';
 import type { FeedPost } from '@/lib/feed';
 import type { Challenge } from '@/lib/db/types';
@@ -134,7 +134,7 @@ export default function UserProfilePage() {
 
   const handleReactToPost = async (postId: string, phraseId: string) => {
     if (!session) return;
-    const result = await addReaction(postId, session.user.id, phraseId);
+    const result = await hypePost(postId, session.user.id, phraseId);
     if (result.error) toast.error(result.error);
   };
 
@@ -304,6 +304,10 @@ export default function UserProfilePage() {
   const rulesDueToday = getRequiredRulesForDate(rules, logDate);
   const selectedLog = challenge.logs.find((log) => log.log_date === logDate) ?? null;
   const isFutureDay = logDate > today;
+  // The window can be scrolled to the day before day 1 or after day 75. Those
+  // are not part of the challenge and must never render a check-in form.
+  const challengeEndDate = challenge.targetEndDate;
+  const isOutsideChallenge = logDate < challenge.startDate || logDate > challengeEndDate;
   const daySlots = buildDayWindow(logDate, challenge.startDate, today, challenge.logs);
   const percent = completionPercent(challenge.logs);
   const pendingDates = isOwnProfile ? getPendingDates(challenge.startDate, rules, challenge.logs, today) : [];
@@ -448,7 +452,9 @@ export default function UserProfilePage() {
                       onReportMissed={handleReportFailure}
                     />
                   )}
-                  {isFutureDay ? (
+                  {isOutsideChallenge ? (
+                    <DayLockedCard reason="outside" logDate={logDate} />
+                  ) : isFutureDay ? (
                     <DayLockedCard reason="future" logDate={logDate} />
                   ) : lockedReason ? (
                     <DayLockedCard reason={lockedReason} logDate={logDate} />

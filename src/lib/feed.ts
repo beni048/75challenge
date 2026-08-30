@@ -32,12 +32,19 @@ export interface FeedPost {
   completed_rules: string[];
   total_rules: number;
   created_at: string;
-  /** Distinct people who have hyped this post. */
+  /** Everyone who has hyped this post — the claimer plus everyone agreeing. */
   hypeCount: number;
-  /** This viewer's own hype phrase id on this post, or null if they haven't hyped it. */
-  myHypePhraseId?: string | null;
-  /** Distinct people who reacted, most recent first — for "Hyped by X and N others". */
-  reactors?: { username: string; displayName: string }[];
+  /**
+   * The single phrase claimed for this post by whoever hyped it first, and who
+   * that was. Null until somebody hypes it. Everyone after agrees with this
+   * sentence rather than adding their own (see migration 0008).
+   */
+  hypePhraseId?: string | null;
+  hypeClaimedBy?: { username: string; displayName: string } | null;
+  /** True when the viewer has already hyped — so the button reads "agreed". */
+  viewerHasHyped?: boolean;
+  /** Everyone who agreed, most recent first, excluding the claimer. */
+  agreedBy?: { username: string; displayName: string }[];
   is_mock?: boolean;
   /** Preview-post copy, per locale. Absent on real user posts. */
   caption_i18n?: Record<Locale, string>;

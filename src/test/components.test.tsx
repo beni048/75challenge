@@ -71,27 +71,63 @@ describe('UI Components', () => {
       expect(screen.getByText('8')).toBeInTheDocument();
     });
 
-    it('increments the count optimistically on first tap, with a curated phrase id', () => {
-      const handleReact = vi.fn();
-      render(<HypeButton hypeCount={5} dayNumber={34} onReact={handleReact} />);
+    it('opens the slot machine instead of sending, when nobody has claimed yet', () => {
+      // The first hyper must see the sentence BEFORE it goes out — tapping
+      // alone must not commit anything.
+      const handleHype = vi.fn();
+      render(<HypeButton hypeCount={5} dayNumber={34} onHype={handleHype} />);
 
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(screen.getByRole('button', { name: /5/ }));
 
-      expect(screen.getByText('6')).toBeInTheDocument();
-      expect(handleReact).toHaveBeenCalledTimes(1);
-      expect(typeof handleReact.mock.calls[0][0]).toBe('string');
+      expect(handleHype).not.toHaveBeenCalled();
+      expect(screen.getByText('5')).toBeInTheDocument();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
-    it('re-rolls to a phrase (not a second increment) when the viewer already hyped this post', () => {
-      const handleReact = vi.fn();
-      render(<HypeButton hypeCount={5} dayNumber={34} myPhraseId="you-are-a-god" onReact={handleReact} />);
+    it('sends the rolled phrase and increments only once confirmed', () => {
+      const handleHype = vi.fn();
+      render(<HypeButton hypeCount={5} dayNumber={34} onHype={handleHype} />);
 
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(screen.getByRole('button', { name: /5/ }));
+      fireEvent.click(screen.getByText('Send it'));
 
-      // Already-hyped, so the count does not move — only the phrase changes.
-      expect(screen.getByText('5')).toBeInTheDocument();
-      expect(handleReact).toHaveBeenCalledTimes(1);
-      expect(handleReact.mock.calls[0][0]).not.toBe('you-are-a-god');
+      expect(handleHype).toHaveBeenCalledTimes(1);
+      expect(typeof handleHype.mock.calls[0][0]).toBe('string');
+      expect(screen.getByText('6')).toBeInTheDocument();
+    });
+
+    it('agrees in one tap with the already-claimed phrase, no slot machine', () => {
+      const handleHype = vi.fn();
+      render(
+        <HypeButton
+          hypeCount={5}
+          dayNumber={34}
+          claimedPhraseId="en-001"
+          onHype={handleHype}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /5/ }));
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(handleHype).toHaveBeenCalledWith('en-001');
+      expect(screen.getByText('6')).toBeInTheDocument();
+    });
+
+    it('cannot be hyped twice by the same viewer', () => {
+      const handleHype = vi.fn();
+      render(
+        <HypeButton
+          hypeCount={5}
+          dayNumber={34}
+          claimedPhraseId="en-001"
+          hasHyped
+          onHype={handleHype}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /5/ }));
+      expect(handleHype).not.toHaveBeenCalled();
     });
   });
 

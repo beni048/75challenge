@@ -6,6 +6,7 @@ import HypeButton from './HypeButton';
 import { CheckCircle2, UserMinus, UserCheck, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
+import { getHypePhrase, localizedHypePhrase } from '@/lib/hype-phrases';
 
 interface FeedCardProps {
   post: FeedPost;
@@ -58,15 +59,20 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
     : localizedCaption(post, locale);
   const rules = localizedRules(post, locale);
 
-  const reactors = post.reactors ?? [];
-  const hypedByLine =
-    reactors.length === 0
+  // One sentence per post, claimed by whoever hyped first; everyone after
+  // agrees with it. Rendered in the language it was sent in — it is a quote
+  // from a person, not app copy (see hype-phrases.ts).
+  const claimedPhrase = post.hypePhraseId ? getHypePhrase(post.hypePhraseId) : undefined;
+  const claimedText = claimedPhrase
+    ? localizedHypePhrase(claimedPhrase, { days: post.day_number })
+    : null;
+  const agreed = post.agreedBy ?? [];
+  const agreeLine =
+    agreed.length === 0
       ? null
-      : reactors.length === 1
-        ? t('feed.hypedBySingle', { name: reactors[0].displayName })
-        : reactors.length === 2
-          ? t('feed.hypedByTwo', { name: reactors[0].displayName, name2: reactors[1].displayName })
-          : t('feed.hypedByMany', { name: reactors[0].displayName, count: reactors.length - 1 });
+      : agreed.length === 1
+        ? t('hype.agreedOne', { name: agreed[0].displayName })
+        : t('hype.agreedMany', { name: agreed[0].displayName, count: agreed.length - 1 });
 
   return (
     <div className="glass-card feed-card">
@@ -138,14 +144,23 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
         <HypeButton
           hypeCount={post.hypeCount}
           dayNumber={post.day_number}
-          myPhraseId={post.myHypePhraseId}
-          onReact={(phraseId) => onReact && onReact(post.id, phraseId)}
+          claimedPhraseId={post.hypePhraseId}
+          hasHyped={post.viewerHasHyped}
+          onHype={(phraseId) => onReact && onReact(post.id, phraseId)}
         />
 
         {post.is_mock && <span className="feed-card-preview-note">{t('feed.previewPost')}</span>}
       </div>
 
-      {hypedByLine && <p className="feed-card-hyped-by">{hypedByLine}</p>}
+      {claimedText && (
+        <div className="feed-card-hype">
+          <p className="feed-card-hype-line">
+            <strong>{t('hype.says', { name: post.hypeClaimedBy?.displayName ?? '' })}</strong>{' '}
+            <span className="feed-card-hype-quote">“{claimedText}”</span>
+          </p>
+          {agreeLine && <p className="feed-card-hype-agree">{agreeLine}</p>}
+        </div>
+      )}
     </div>
   );
 }

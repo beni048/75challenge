@@ -9,18 +9,22 @@
  */
 
 import React from 'react';
-import { CheckCircle2, ShieldCheck, Moon, CalendarClock } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, Moon, CalendarClock, CalendarX } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
-export type LockedReason = 'completed' | 'shielded' | 'rest-day' | 'future';
+export type LockedReason = 'completed' | 'shielded' | 'rest-day' | 'future' | 'outside';
 
 const PRESENTATION: Record<
   LockedReason,
   {
     icon: React.ReactNode;
     tint: string;
-    titleKey: 'day.doneTitle' | 'day.shieldedTitle' | 'day.restDayTitle' | 'day.futureTitle';
-    bodyKey: 'day.doneBody' | 'day.shieldedBody' | 'day.restDayBody' | 'day.futureBody';
+    titleKey:
+      | 'day.doneTitle' | 'day.shieldedTitle' | 'day.restDayTitle'
+      | 'day.futureTitle' | 'day.outsideTitle';
+    bodyKey:
+      | 'day.doneBody' | 'day.shieldedBody' | 'day.restDayBody'
+      | 'day.futureBody' | 'day.outsideBody';
   }
 > = {
   completed: {
@@ -43,6 +47,13 @@ const PRESENTATION: Record<
   },
   // A day that has not arrived yet. Distinct from a rest day: there IS work
   // scheduled, it simply cannot be logged before it happens.
+  // Before day 1 or after day 75 — not part of this attempt at all.
+  outside: {
+    icon: <CalendarX size={30} />,
+    tint: 'var(--text-muted)',
+    titleKey: 'day.outsideTitle',
+    bodyKey: 'day.outsideBody',
+  },
   future: {
     icon: <CalendarClock size={30} />,
     tint: 'var(--accent-orange)',

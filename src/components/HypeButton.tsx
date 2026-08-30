@@ -1,81 +1,81 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+/**
+ * Hype: the first person to react *claims* a sentence for the post, everyone
+ * after agrees with it.
+ *
+ * Two deliberately different interactions, because the two situations are
+ * different:
+ *
+ *  - **Nobody has hyped yet** — a slot machine opens. A random phrase appears,
+ *    you re-roll until one fits, and nothing is sent until you confirm. You
+ *    always see the sentence *before* it goes out.
+ *  - **Somebody already claimed it** — one tap to agree. No decision to make;
+ *    the twelfth person wants to show support, not compose.
+ *
+ * Still no free text and no negative reaction (start.md §7): every sentence
+ * comes from the curated pool in src/lib/hype-phrases.ts.
+ */
+
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Dices, Check } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
-import { pickRandomHypePhrase, getHypePhrase, localizedHypePhrase } from '@/lib/hype-phrases';
+import { pickRandomHypePhrase, localizedHypePhrase, type HypePhrase } from '@/lib/hype-phrases';
 import { resolveCssColors } from '@/lib/theme-colors';
 
 interface HypeButtonProps {
-  /** Distinct people who have hyped this post so far. */
+  /** Everyone who has hyped: the claimer plus everyone agreeing. */
   hypeCount: number;
-  /**
-   * The day this post is about. Some phrases interpolate it ("Day {days}?!"),
-   * and it comes from the POST rather than the viewer so every viewer sees the
-   * same sentence the sender did.
-   */
+  /** The day this post is about — some phrases interpolate it ("Tag {days}?!"). */
   dayNumber: number;
-  /** This viewer's own phrase id, if they've already hyped this post. */
-  myPhraseId?: string | null;
-  onReact?: (phraseId: string) => void;
+  /** The sentence already claimed for this post, if any. */
+  claimedPhraseId?: string | null;
+  /** Whether this viewer has already hyped, so the button reads as done. */
+  hasHyped?: boolean;
+  /** Fires with the phrase to claim, or the claimed one when agreeing. */
+  onHype?: (phraseId: string) => void;
 }
 
-/**
- * One button, not four: hype is a single tap that picks a random witty
- * phrase rather than a choice of four fixed emoji (start.md §7 — still no
- * user-authored text, still no negative reaction, just curated variety).
- * Tapping again re-rolls to a different phrase instead of adding a tally,
- * since a hype is a statement, not a like count.
- */
 export default function HypeButton({
-  hypeCount: initialCount,
+  hypeCount,
   dayNumber,
-  myPhraseId: initialPhraseId,
-  onReact,
+  claimedPhraseId = null,
+  hasHyped = false,
+  onHype,
 }: HypeButtonProps) {
   const { t, locale } = useI18n();
 
-  // Adjusted during render, not in an effect (React's own recommended pattern
-  // for "reset local state when a prop changes" — an effect here would cause
-  // an extra render pass and trips the set-state-in-effect lint rule). This is
-  // what makes the button re-sync if the server-fetched props change under it
-  // — e.g. a feed reload — which the old implementation never did and could
-  // show a stale optimistic count forever.
-  const [prevInitialCount, setPrevInitialCount] = useState(initialCount);
-  const [count, setCount] = useState(initialCount);
-  if (initialCount !== prevInitialCount) {
-    setPrevInitialCount(initialCount);
-    setCount(initialCount);
+  // Adjusted during render rather than in an effect (React's own recommended
+  // pattern for "reset local state when a prop changes"). This is what lets the
+  // button re-sync when the feed refetches, instead of showing a stale
+  // optimistic count forever.
+  const [prevCount, setPrevCount] = useState(hypeCount);
+  const [count, setCount] = useState(hypeCount);
+  if (hypeCount !== prevCount) {
+    setPrevCount(hypeCount);
+    setCount(hypeCount);
   }
 
-  const normalizedInitialPhraseId = initialPhraseId ?? null;
-  const [prevInitialPhraseId, setPrevInitialPhraseId] = useState(normalizedInitialPhraseId);
-  const [myPhraseId, setMyPhraseId] = useState<string | null>(normalizedInitialPhraseId);
-  if (normalizedInitialPhraseId !== prevInitialPhraseId) {
-    setPrevInitialPhraseId(normalizedInitialPhraseId);
-    setMyPhraseId(normalizedInitialPhraseId);
+  const [prevHasHyped, setPrevHasHyped] = useState(hasHyped);
+  const [hyped, setHyped] = useState(hasHyped);
+  if (hasHyped !== prevHasHyped) {
+    setPrevHasHyped(hasHyped);
+    setHyped(hasHyped);
   }
 
-  const [popupText, setPopupText] = useState<string | null>(null);
+  // Non-null only while the slot machine is open — i.e. before anything is sent.
+  const [rolling, setRolling] = useState<HypePhrase | null>(null);
 
-  useEffect(() => {
-    if (!popupText) return;
-    const timer = setTimeout(() => setPopupText(null), 2200);
-    return () => clearTimeout(timer);
-  }, [popupText]);
+  const isClaimed = claimedPhraseId !== null;
 
-  const handleTap = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    const alreadyHyped = myPhraseId !== null;
-    const phrase = pickRandomHypePhrase(myPhraseId);
+  const commit = (phraseId: string, el: HTMLElement) => {
+    if (!hyped) setCount((prev) => prev + 1);
+    setHyped(true);
+    setRolling(null);
 
-    if (!alreadyHyped) setCount((prev) => prev + 1);
-    setMyPhraseId(phrase.id);
-    setPopupText(localizedHypePhrase(phrase, locale, { days: dayNumber }));
-
-    const rect = e.currentTarget.getBoundingClientRect();
+    const rect = el.getBoundingClientRect();
     confetti({
       particleCount: 20,
       spread: 50,
@@ -88,44 +88,68 @@ export default function HypeButton({
       disableForReducedMotion: true,
     });
 
-    onReact?.(phrase.id);
+    onHype?.(phraseId);
   };
 
-  const myPhraseText = myPhraseId
-    ? localizedHypePhrase(getHypePhrase(myPhraseId) ?? { id: myPhraseId, en: '', de: '' }, locale, {
-        days: dayNumber,
-      })
-    : null;
+  const handlePrimary = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (hyped) return;
+
+    if (isClaimed) {
+      // Agreeing: nothing to choose, so it lands immediately.
+      commit(claimedPhraseId, e.currentTarget);
+      return;
+    }
+    // Claiming: open the slot machine rather than sending straight away.
+    setRolling(pickRandomHypePhrase(locale));
+  };
 
   return (
-    <div className="hype-button-wrap">
+    <div className="hype-wrap">
       <motion.button
         type="button"
-        whileTap={{ scale: 1.15 }}
-        onClick={handleTap}
-        className={`btn btn-secondary btn-sm hype-button${myPhraseId ? ' is-active' : ''}`}
-        title={myPhraseText ? t('hype.reroll') : t('hype.give')}
-        aria-pressed={myPhraseId !== null}
+        whileTap={{ scale: 1.12 }}
+        onClick={handlePrimary}
+        disabled={hyped}
+        className={`btn btn-secondary btn-sm hype-button${hyped ? ' is-active' : ''}`}
+        aria-pressed={hyped}
+        title={hyped ? t('hype.alreadyHyped') : isClaimed ? t('hype.agree') : t('hype.beFirst')}
       >
-        <Sparkles size={16} />
+        {hyped ? <Check size={15} /> : <Sparkles size={15} />}
         <span className="hype-button-count">{count}</span>
       </motion.button>
 
-      {myPhraseText && !popupText && <span className="hype-my-phrase">“{myPhraseText}”</span>}
+      {!hyped && !rolling && (
+        <span className="hype-hint">{isClaimed ? t('hype.agree') : t('hype.beFirst')}</span>
+      )}
 
-      <AnimatePresence>
-        {popupText && (
-          <motion.span
-            initial={{ opacity: 0, y: 6, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.2 }}
-            className="hype-popup"
-          >
-            “{popupText}”
-          </motion.span>
-        )}
-      </AnimatePresence>
+      {/* The slot machine. Only ever seen by the person claiming the post. */}
+      {rolling && (
+        <div className="hype-roller" role="dialog" aria-label={t('hype.beFirst')}>
+          <p className="hype-roller-phrase">“{localizedHypePhrase(rolling, { days: dayNumber })}”</p>
+
+          <div className="hype-roller-actions">
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => setRolling(pickRandomHypePhrase(locale, rolling.id))}
+            >
+              <Dices size={15} /> {t('hype.reroll')}
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={(e) => commit(rolling.id, e.currentTarget)}
+            >
+              {t('hype.send')}
+            </button>
+          </div>
+
+          <button type="button" className="hype-roller-cancel" onClick={() => setRolling(null)}>
+            {t('common.cancel')}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

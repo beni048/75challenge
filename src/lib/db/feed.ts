@@ -40,6 +40,8 @@ interface FeedRow {
   caption: string | null;
   created_at: string;
   batch_id: string | null;
+  hype_phrase_id: string | null;
+  hype_claimed_by: string | null;
   users: { username: string; display_name: string; start_date: string } | null;
   log_rule_checks: { rule_id: string; is_completed: boolean }[];
   reactions: {
@@ -62,21 +64,28 @@ function toFeedPost(row: FeedRow, viewerId: string | null, ruleTitles: RuleTitle
   // One reaction per (log, sender) is enforced in the database (migration
   // 0006), so this map is really just "index by sender" — but the dedupe
   // stays defensive rather than assuming the constraint always held.
-  const reactorsById = new Map<string, { username: string; displayName: string; updatedAt: string }>();
-  let myHypePhraseId: string | null = null;
+  const hypersById = new Map<string, { username: string; displayName: string; updatedAt: string }>();
+  let viewerHasHyped = false;
 
   for (const reaction of row.reactions ?? []) {
-    if (reaction.sender_id === viewerId) myHypePhraseId = reaction.phrase_id;
+    if (reaction.sender_id === viewerId) viewerHasHyped = true;
 
-    if (reaction.users && (!reactorsById.has(reaction.sender_id) || reaction.updated_at > reactorsById.get(reaction.sender_id)!.updatedAt)) {
-      reactorsById.set(reaction.sender_id, {
+    if (reaction.users && (!hypersById.has(reaction.sender_id) || reaction.updated_at > hypersById.get(reaction.sender_id)!.updatedAt)) {
+      hypersById.set(reaction.sender_id, {
         username: reaction.users.username,
         displayName: reaction.users.display_name,
         updatedAt: reaction.updated_at,
       });
     }
   }
-  const reactors = Array.from(reactorsById.values())
+
+  // The claimer is named separately ("Pascal says …"), so everyone else is
+  // listed as agreeing rather than being counted twice.
+  const claimerId = row.hype_claimed_by;
+  const claimer = claimerId ? hypersById.get(claimerId) ?? null : null;
+  const agreedBy = Array.from(hypersById.entries())
+    .filter(([id]) => id !== claimerId)
+    .map(([, v]) => v)
     .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
     .map(({ username, displayName }) => ({ username, displayName }));
 
@@ -103,9 +112,11 @@ function toFeedPost(row: FeedRow, viewerId: string | null, ruleTitles: RuleTitle
     completed_rules: completedRules,
     total_rules: visibleChecks.length,
     created_at: row.created_at,
-    hypeCount: reactors.length,
-    myHypePhraseId,
-    reactors,
+    hypeCount: hypersById.size,
+    hypePhraseId: row.hype_phrase_id,
+    hypeClaimedBy: claimer ? { username: claimer.username, displayName: claimer.displayName } : null,
+    viewerHasHyped,
+    agreedBy,
     ...(batchCount && batchCount > 1 ? { batchCount } : {}),
   };
 }
@@ -148,6 +159,7 @@ export async function fetchFeed(
       .from('daily_logs')
       .select(
         `id, user_id, log_date, status, photo_url, caption, created_at, batch_id,
+         hype_phrase_id, hype_claimed_by,
          users ( username, display_name, start_date ),
          log_rule_checks ( rule_id, is_completed ),
          reactions ( phrase_id, sender_id, updated_at, users:sender_id ( username, display_name ) )`
@@ -210,6 +222,10 @@ export async function fetchFeed(
         total_rules: 0,
         created_at: row.created_at,
         hypeCount: 0,
+        hypePhraseId: null,
+        hypeClaimedBy: null,
+        viewerHasHyped: false,
+        agreedBy: [],
       }));
 
     // Rule titles never come from the raw `rules` table here — that table's
@@ -288,6 +304,7 @@ export async function fetchUserFeedPosts(userId: string, viewerId: string | null
       .from('daily_logs')
       .select(
         `id, user_id, log_date, status, photo_url, caption, created_at, batch_id,
+         hype_phrase_id, hype_claimed_by,
          users ( username, display_name, start_date ),
          log_rule_checks ( rule_id, is_completed ),
          reactions ( phrase_id, sender_id, updated_at, users:sender_id ( username, display_name ) )`
@@ -328,31 +345,52 @@ export async function fetchUserFeedPosts(userId: string, viewerId: string | null
 }
 
 /**
- * Records (or replaces) this sender's hype on a post — one phrase per person
- * per post, enforced by `unique (log_id, sender_id)` (migration 0006). A
- * second call from the same sender re-rolls their phrase rather than
- * incrementing a tally: a hype is a statement, not a like count.
+ * Hype a post: claim the sentence if nobody has yet, otherwise agree with the
+ * one already there.
  *
- * `phraseId` must be a real src/lib/hype-phrases.ts id — the CHECK constraint
- * only bounds its length, so callers are responsible for only ever sending an
- * id from that curated list (never free text — start.md §7).
+ * The claim is decided by the database (`claim_hype_phrase`, migration 0008),
+ * not here, so two people tapping in the same instant cannot both believe they
+ * were first — the loser is handed what was actually claimed and simply agrees
+ * with it.
+ *
+ * `candidatePhraseId` must be a real src/lib/hype-phrases.ts id; the CHECK
+ * constraint only bounds its length, so never pass free text (start.md §7).
  */
-export async function addReaction(logId: string, senderId: string, phraseId: string): Promise<DbResult<true>> {
+export async function hypePost(
+  logId: string,
+  senderId: string,
+  candidatePhraseId: string
+): Promise<DbResult<{ phraseId: string; didClaim: boolean }>> {
   try {
     const supabase = createClient();
 
-    const { error } = await supabase.from('reactions').upsert(
+    const { data, error } = await supabase.rpc('claim_hype_phrase', {
+      target_log_id: logId,
+      candidate_phrase_id: candidatePhraseId,
+      claimer: senderId,
+    });
+    if (error) return fail(error);
+
+    const claim = (data ?? [])[0] as
+      | { phrase_id: string; claimed_by: string; did_claim: boolean }
+      | undefined;
+    if (!claim) return fail(new Error('Could not hype this post'));
+
+    // The reaction row now means only "this person agrees" — the sentence
+    // itself lives on the post. phrase_id is still written so the previous app
+    // version keeps working until 0007 drops that column.
+    const { error: agreeError } = await supabase.from('reactions').upsert(
       {
         log_id: logId,
         sender_id: senderId,
-        phrase_id: phraseId,
+        phrase_id: claim.phrase_id,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'log_id,sender_id' }
     );
+    if (agreeError) return fail(agreeError);
 
-    if (error) return fail(error);
-    return ok(true);
+    return ok({ phraseId: claim.phrase_id, didClaim: claim.did_claim });
   } catch (error) {
     return fail(error);
   }

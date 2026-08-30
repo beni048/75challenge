@@ -366,11 +366,17 @@ const en = {
   'feed.unfollowNamed': 'Unfollow {username}',
   'feed.previewPost': 'Preview Post',
   'feed.photoAlt': 'Daily check-in photo',
-  'feed.hypedBySingle': 'Hyped by {name}',
-  'feed.hypedByTwo': 'Hyped by {name} and {name2}',
-  'feed.hypedByMany': 'Hyped by {name} and {count} others',
 
   'milestone.exportFailed': 'Could not download the image — try taking a screenshot instead.',
+
+  'hype.beFirst': 'Be the first to hype this',
+  'hype.agree': 'Agree',
+  'hype.alreadyHyped': 'You hyped this',
+  'hype.reroll': 'Another one',
+  'hype.send': 'Send it',
+  'hype.says': '{name} says:',
+  'hype.agreedOne': '{name} agrees',
+  'hype.agreedMany': '{name} and {count} others agree',
 
   // Help & feedback
   'help.trigger': 'Help & Feedback',
@@ -392,8 +398,6 @@ const en = {
   'preview.sampleBadge': 'Sample',
 
   // Hype (src/lib/hype-phrases.ts owns the actual phrase text)
-  'hype.give': 'Hype this',
-  'hype.reroll': 'Try another phrase',
 
   // 9:16 story card
   'story.shieldReady': 'Shield Ready',
@@ -416,6 +420,8 @@ const en = {
     'You completed every rule for {date}. Nothing more to do — come back tomorrow to keep the streak going.',
   'day.shieldedTitle': 'This day is protected',
   'day.shieldedBody': 'You used your Streak Shield for {date}. Come back tomorrow.',
+  'day.outsideTitle': 'Outside your 75 days',
+  'day.outsideBody': '{date} falls before your start date or after your finish, so there is nothing to log.',
   'day.futureTitle': 'This day has not arrived yet',
   'day.futureBody': 'You can log {date} once it gets here. Until then, today is the one that counts.',
   'day.restDayTitle': 'No rules scheduled today',
@@ -854,10 +860,16 @@ const de: Record<TranslationKey, string> = {
   'feed.unfollowNamed': '{username} ausblenden',
   'feed.previewPost': 'Beispiel',
   'feed.photoAlt': 'Foto vom Tages-Check-in',
-  'feed.hypedBySingle': '{name} feiert das',
-  'feed.hypedByTwo': '{name} und {name2} feiern das',
-  'feed.hypedByMany': '{name} und {count} weitere feiern das',
   'milestone.exportFailed': 'Das Bild liess sich nicht laden – mach einfach einen Screenshot.',
+  'hype.beFirst': 'Sei der Erste',
+  'hype.agree': 'Sehe ich auch so',
+  'hype.alreadyHyped': 'Du hast gehypt',
+  'hype.reroll': 'Noch einer',
+  'hype.send': 'Abschicken',
+  'hype.says': '{name} sagt:',
+  'hype.agreedOne': '{name} sieht das genauso',
+  'hype.agreedMany': '{name} und {count} andere sehen das genauso',
+
   'help.trigger': 'Hilfe & Feedback',
   'help.intro':
     'Fragen, Bug gefunden oder eine Idee? Schreib direkt dem Team.',
@@ -874,8 +886,6 @@ const de: Record<TranslationKey, string> = {
   'preview.subtitle':
     'Leute haken ihre Tage ab, teilen was, wenn ihnen danach ist, und pushen sich gegenseitig. Keine Downvotes, keine Kommentarspalte zum Moderieren.',
   'preview.sampleBadge': 'Beispiel',
-  'hype.give': 'Feiern',
-  'hype.reroll': 'Anderen Spruch',
   'story.shieldReady': 'Schild bereit',
   'story.shieldUsed': 'Schild genutzt',
   'story.milestone': 'Heute',
@@ -894,6 +904,8 @@ const de: Record<TranslationKey, string> = {
     'Am {date} hast du alles abgehakt. Mehr gibt es heute nicht zu tun – bis morgen.',
   'day.shieldedTitle': 'Dieser Tag ist geschützt',
   'day.shieldedBody': 'Für den {date} hast du dein Schild eingesetzt. Bis morgen.',
+  'day.outsideTitle': 'Ausserhalb deiner 75 Tage',
+  'day.outsideBody': 'Der {date} liegt vor deinem Start oder nach deinem Ziel – da gibt es nichts einzutragen.',
   'day.futureTitle': 'Dieser Tag ist noch nicht dran',
   'day.futureBody': 'Den {date} kannst du eintragen, sobald er da ist. Bis dahin zählt heute.',
   'day.restDayTitle': 'Heute steht nichts an',

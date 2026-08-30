@@ -2579,3 +2579,103 @@ a {
   font-size: 0.82rem;
   color: var(--text-muted);
 }
+
+/* ---------------------------------------------------------------------------
+   Hype — the claim/agree control and the sentence the card shows.
+   --------------------------------------------------------------------------- */
+.hype-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.hype-button.is-active {
+  border-color: var(--accent-orange);
+  color: var(--accent-orange);
+}
+
+.hype-button-count {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hype-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* The slot machine. Anchored above the button so it never pushes the card
+   layout around as you re-roll. */
+.hype-roller {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  z-index: var(--z-menu);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  box-shadow: var(--modal-shadow);
+}
+
+.hype-roller-phrase {
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--text-primary);
+  line-height: 1.4;
+  /* Phrases vary a lot in length; a min-height stops the popover jumping
+     between re-rolls. */
+  min-height: 2.6em;
+  display: flex;
+  align-items: center;
+}
+
+.hype-roller-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.hype-roller-actions .btn {
+  flex: 1;
+}
+
+.hype-roller-cancel {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  cursor: pointer;
+  align-self: center;
+}
+
+/* The claimed sentence, as shown to everyone. */
+.feed-card-hype {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.feed-card-hype-line {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+.feed-card-hype-quote {
+  font-style: italic;
+}
+
+.feed-card-hype-agree {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}

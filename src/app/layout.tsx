@@ -40,7 +40,11 @@ export default function RootLayout({
     // suppressHydrationWarning keeps React from complaining about that rewrite.
     <html lang="en" data-theme="dark" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/* suppressHydrationWarning: the content is a compile-time constant, so
+            it can never legitimately differ between server and client. The only
+            thing that rewrites it is a browser extension injecting its own
+            `src` — which is not something we can or should try to reconcile. */}
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>
         <Providers>
