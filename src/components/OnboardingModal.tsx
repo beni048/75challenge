@@ -98,6 +98,17 @@ export default function OnboardingModal({
   const [loading, setLoading] = useState(false);
   const [resumeName, setResumeName] = useState('');
   const [commitmentLevel, setCommitmentLevel] = useState<CommitmentLevel>(DEFAULT_COMMITMENT_LEVEL);
+  /**
+   * Set the moment signUp() succeeds.
+   *
+   * The account step branches on `session`, and signing up CREATES a session —
+   * so without this the step swapped to the "you are already signed in" resume
+   * form for the instant between the auth call landing and router.push firing,
+   * flashing a second name field at someone who had just filled one in.
+   * The resume form is only ever for someone who arrived already
+   * authenticated, which this distinguishes.
+   */
+  const [justSignedUp, setJustSignedUp] = useState(false);
 
   const { endDate, infoNoticeKey, infoNoticeVars } = validateChallengeDates(startDate);
   const infoNotice = infoNoticeKey
@@ -120,6 +131,9 @@ export default function OnboardingModal({
     setLoading(true);
     try {
       const result = await signUp(authData.email, authData.password);
+
+      // Before any await that could let a re-render observe the new session.
+      if (result.ok) setJustSignedUp(true);
 
       if (!result.ok) {
         setLoading(false);
@@ -478,7 +492,7 @@ export default function OnboardingModal({
                     </span>
                   </div>
 
-                  {session ? (
+                  {session && !justSignedUp ? (
                     // Already authenticated with no challenge yet (§ handleResumeSetup) —
                     // finish setup against the existing session instead of signing up again.
                     <form onSubmit={handleResumeSetup} className="stack">
