@@ -120,10 +120,6 @@ export default function HypeButton({
         <span className="hype-button-count">{count}</span>
       </motion.button>
 
-      {!hyped && !rolling && (
-        <span className="hype-hint">{isClaimed ? t('hype.agree') : t('hype.beFirst')}</span>
-      )}
-
       {/* The slot machine. Only ever seen by the person claiming the post.
           A ModalPortal sheet rather than an in-place popover: `.container`
           creates a stacking context that traps an absolutely-positioned

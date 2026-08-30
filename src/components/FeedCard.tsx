@@ -153,8 +153,9 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
         ))}
       </div>
 
-      {/* Hype */}
-      <div className="feed-card-reactions">
+      {/* Hype — the button, the claimed sentence and who agrees are one unit,
+          so they sit in a single row rather than as separate blocks. */}
+      <div className="feed-card-hype">
         <HypeButton
           hypeCount={post.hypeCount}
           dayNumber={post.day_number}
@@ -167,18 +168,23 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
           }}
         />
 
+        <div className="feed-card-hype-text">
+          {claimedText ? (
+            <>
+              <p className="feed-card-hype-line">
+                <strong>{t('hype.says', { name: claimedName ?? t('hype.you') })}</strong>{' '}
+                <span className="feed-card-hype-quote">“{claimedText}”</span>
+              </p>
+              {agreeLine && <p className="feed-card-hype-agree">{agreeLine}</p>}
+            </>
+          ) : (
+            <span className="feed-card-hype-empty">{t('hype.beFirst')}</span>
+          )}
+        </div>
+
         {post.is_mock && <span className="feed-card-preview-note">{t('feed.previewPost')}</span>}
       </div>
 
-      {claimedText && (
-        <div className="feed-card-hype">
-          <p className="feed-card-hype-line">
-            <strong>{t('hype.says', { name: claimedName ?? t('hype.you') })}</strong>{' '}
-            <span className="feed-card-hype-quote">“{claimedText}”</span>
-          </p>
-          {agreeLine && <p className="feed-card-hype-agree">{agreeLine}</p>}
-        </div>
-      )}
     </div>
   );
 }

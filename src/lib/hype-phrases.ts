@@ -51,6 +51,16 @@ export const POOLS_FOR_LOCALE: Record<Locale, HypeLang[]> = {
 };
 
 export const HYPE_PHRASES: HypePhrase[] = [
+  // Ids that predate the language-pool rewrite. They are already stored in
+  // daily_logs.hype_phrase_id, so they must keep resolving — removing an id
+  // silently blanks the quote on every post that claimed it.
+  { id: 'legacy-fire', lang: 'en', text: 'On fire today' },
+  { id: 'legacy-beast', lang: 'en', text: 'Absolute machine' },
+  { id: 'legacy-launch', lang: 'en', text: 'Lift-off' },
+  { id: 'legacy-hype', lang: 'en', text: 'Hype' },
+  { id: 'built-different', lang: 'en', text: 'Built different' },
+  { id: 'level-up', lang: 'en', text: 'Levelled up' },
+  { id: 'discipline-flex', lang: 'en', text: 'The discipline is showing' },
   { id: 'en-001', lang: 'en', text: 'Absolute unit' },
   { id: 'en-002', lang: 'en', text: 'Certified machine' },
   { id: 'en-003', lang: 'en', text: 'You are a god' },

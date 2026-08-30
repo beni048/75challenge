@@ -85,3 +85,23 @@ describe('getHypePhrase', () => {
     expect(getHypePhrase('does-not-exist')).toBeUndefined();
   });
 });
+
+describe('Historical ids', () => {
+  // Regression: regenerating this file into language pools renumbered every id
+  // and orphaned six that were already stored in daily_logs.hype_phrase_id,
+  // blanking the quote on those posts. Ids are permanent — pin the ones known
+  // to exist in a live database so they can never be dropped again.
+  const STORED_IN_PRODUCTION = [
+    'legacy-fire',
+    'legacy-beast',
+    'legacy-launch',
+    'legacy-hype',
+    'built-different',
+    'level-up',
+    'discipline-flex',
+  ];
+
+  it.each(STORED_IN_PRODUCTION)('still resolves %s', (id) => {
+    expect(getHypePhrase(id)?.text).toBeTruthy();
+  });
+});
