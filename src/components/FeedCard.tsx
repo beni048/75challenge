@@ -25,6 +25,20 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
   // rather than showing a broken image on someone else's feed.
   const [photoFailed, setPhotoFailed] = useState(false);
 
+  // The claimed sentence is held locally as well as on the post, so it appears
+  // the instant you claim it rather than after the next feed refetch. Reset
+  // during render when the server value changes, per React's own pattern.
+  const [prevClaimed, setPrevClaimed] = useState(post.hypePhraseId ?? null);
+  const [claimedId, setClaimedId] = useState<string | null>(post.hypePhraseId ?? null);
+  const [claimedName, setClaimedName] = useState<string | null>(
+    post.hypeClaimedBy?.displayName ?? null
+  );
+  if ((post.hypePhraseId ?? null) !== prevClaimed) {
+    setPrevClaimed(post.hypePhraseId ?? null);
+    setClaimedId(post.hypePhraseId ?? null);
+    setClaimedName(post.hypeClaimedBy?.displayName ?? null);
+  }
+
   const handleToggleUnfollow = () => {
     const nextState = !isUnfollowed;
     setIsUnfollowed(nextState);
@@ -62,7 +76,7 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
   // One sentence per post, claimed by whoever hyped first; everyone after
   // agrees with it. Rendered in the language it was sent in — it is a quote
   // from a person, not app copy (see hype-phrases.ts).
-  const claimedPhrase = post.hypePhraseId ? getHypePhrase(post.hypePhraseId) : undefined;
+  const claimedPhrase = claimedId ? getHypePhrase(claimedId) : undefined;
   const claimedText = claimedPhrase
     ? localizedHypePhrase(claimedPhrase, { days: post.day_number })
     : null;
@@ -144,9 +158,13 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
         <HypeButton
           hypeCount={post.hypeCount}
           dayNumber={post.day_number}
-          claimedPhraseId={post.hypePhraseId}
+          claimedPhraseId={claimedId}
           hasHyped={post.viewerHasHyped}
-          onHype={(phraseId) => onReact && onReact(post.id, phraseId)}
+          onHype={(phraseId) => {
+            // Show it immediately; the server value takes over on next fetch.
+            if (!claimedId) setClaimedId(phraseId);
+            onReact?.(post.id, phraseId);
+          }}
         />
 
         {post.is_mock && <span className="feed-card-preview-note">{t('feed.previewPost')}</span>}
@@ -155,7 +173,7 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
       {claimedText && (
         <div className="feed-card-hype">
           <p className="feed-card-hype-line">
-            <strong>{t('hype.says', { name: post.hypeClaimedBy?.displayName ?? '' })}</strong>{' '}
+            <strong>{t('hype.says', { name: claimedName ?? t('hype.you') })}</strong>{' '}
             <span className="feed-card-hype-quote">“{claimedText}”</span>
           </p>
           {agreeLine && <p className="feed-card-hype-agree">{agreeLine}</p>}

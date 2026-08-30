@@ -20,7 +20,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Sparkles, Dices, Check } from 'lucide-react';
+import { Rocket, Dices } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { pickRandomHypePhrase, localizedHypePhrase, type HypePhrase } from '@/lib/hype-phrases';
 import { resolveCssColors } from '@/lib/theme-colors';
@@ -116,7 +116,7 @@ export default function HypeButton({
         aria-pressed={hyped}
         title={hyped ? t('hype.alreadyHyped') : isClaimed ? t('hype.agree') : t('hype.beFirst')}
       >
-        {hyped ? <Check size={15} /> : <Sparkles size={15} />}
+        <Rocket size={15} />
         <span className="hype-button-count">{count}</span>
       </motion.button>
 

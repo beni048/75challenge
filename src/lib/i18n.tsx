@@ -375,6 +375,7 @@ const en = {
   'hype.reroll': 'Another one',
   'hype.send': 'Send it',
   'hype.says': '{name} says:',
+  'hype.you': 'You',
   'hype.agreedOne': '{name} agrees',
   'hype.agreedMany': '{name} and {count} others agree',
 
@@ -866,6 +867,7 @@ const de: Record<TranslationKey, string> = {
   'hype.alreadyHyped': 'Du hast gehypt',
   'hype.reroll': 'Noch einer',
   'hype.send': 'Abschicken',
+  'hype.you': 'Du',
   'hype.says': '{name} sagt:',
   'hype.agreedOne': '{name} sieht das genauso',
   'hype.agreedMany': '{name} und {count} andere sehen das genauso',

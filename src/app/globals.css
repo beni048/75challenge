@@ -2594,6 +2594,13 @@ a {
 .hype-button.is-active {
   border-color: var(--accent-orange);
   color: var(--accent-orange);
+  background: var(--accent-orange-soft);
+}
+
+/* The rocket tips up once you have hyped, so "done" is legible without
+   swapping the icon for a checkmark (which read as "task complete"). */
+.hype-button.is-active svg {
+  transform: rotate(-15deg);
 }
 
 .hype-button-count {
