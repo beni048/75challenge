@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import { Rule, ScheduleType } from '@/lib/streak-engine';
-import { Plus, Trash2, AlertCircle, Lightbulb } from 'lucide-react';
+import { Plus, Trash2, AlertCircle, Lightbulb, Lock, Unlock } from 'lucide-react';
 import { useI18n, TranslationKey, translate, Locale } from '@/lib/i18n';
 import { MIN_RULES, MAX_RULES, canAddRule } from '@/lib/rules-policy';
+import InfoTooltip from './InfoTooltip';
 
 /** Rule ids are stable; only the title is localized at creation time. */
 const DEFAULT_RULE_KEYS: { id: string; key: TranslationKey }[] = [
@@ -71,6 +72,10 @@ export default function RuleCustomizer({ rules, onChange, hideHeading = false }:
     onChange(rules.filter((r) => r.id !== id));
   };
 
+  const handleToggleSecret = (id: string) => {
+    onChange(rules.map((r) => (r.id === id ? { ...r, is_secret: !r.is_secret } : r)));
+  };
+
   const handleUpdateSchedule = (id: string, type: ScheduleType) => {
     onChange(
       rules.map((r) =>
@@ -130,6 +135,12 @@ export default function RuleCustomizer({ rules, onChange, hideHeading = false }:
         <span>{t('rules.recommendation')}</span>
       </div>
 
+      <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <Lock size={14} />
+        <span>{t('rules.secretExplain')}</span>
+        <InfoTooltip label={t('rules.secretInfoLabel')} text={t('rules.secretInfoText')} />
+      </p>
+
       {rules.length < MIN_RULES && (
         <div className="notice notice-warn">
           <AlertCircle size={18} style={{ flexShrink: 0 }} />
@@ -154,6 +165,17 @@ export default function RuleCustomizer({ rules, onChange, hideHeading = false }:
                 placeholder={t('rules.titlePlaceholder')}
                 aria-label={t('rules.titleLabel', { index: idx + 1 })}
               />
+
+              <button
+                type="button"
+                onClick={() => handleToggleSecret(rule.id)}
+                className="icon-btn"
+                aria-pressed={Boolean(rule.is_secret)}
+                title={rule.is_secret ? t('rules.secretOn') : t('rules.secretOff')}
+                aria-label={rule.is_secret ? t('rules.secretOn') : t('rules.secretOff')}
+              >
+                {rule.is_secret ? <Lock size={16} color="var(--accent-orange)" /> : <Unlock size={16} />}
+              </button>
 
               <button
                 type="button"

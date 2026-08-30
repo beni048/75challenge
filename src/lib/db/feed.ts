@@ -36,11 +36,19 @@ interface FeedRow {
   caption: string | null;
   created_at: string;
   users: { username: string; display_name: string; start_date: string } | null;
-  log_rule_checks: { is_completed: boolean; rules: { title: string } | null }[];
+  log_rule_checks: { rule_id: string; is_completed: boolean }[];
   reactions: { reaction_type: ReactionType; reaction_count: number; sender_id: string }[];
 }
 
-function toFeedPost(row: FeedRow, viewerId: string | null): FeedPost {
+/**
+ * `rule_id -> title`, only for rules visible to the current viewer. A missing
+ * key means that rule is either not completed or, for a secret rule whose
+ * owner chose "hidden", deliberately omitted — never fall back to fetching
+ * the raw `rules` table to fill the gap.
+ */
+type RuleTitleMap = Map<string, string>;
+
+function toFeedPost(row: FeedRow, viewerId: string | null, ruleTitles: RuleTitleMap): FeedPost {
   const reactions = { fire: 0, beast: 0, launch: 0, hype: 0 };
   const mine: string[] = [];
 
@@ -49,9 +57,12 @@ function toFeedPost(row: FeedRow, viewerId: string | null): FeedPost {
     if (reaction.sender_id === viewerId) mine.push(reaction.reaction_type);
   }
 
-  const completedRules = (row.log_rule_checks ?? [])
-    .filter((check) => check.is_completed && check.rules)
-    .map((check) => check.rules!.title);
+  // A "hidden" secret rule (owner's own choice) is absent from ruleTitles
+  // entirely, and is dropped from both the completed list and the total
+  // count here — "hidden" means as if it doesn't exist, consistently on
+  // every surface, not just a blanked-out title.
+  const visibleChecks = (row.log_rule_checks ?? []).filter((check) => ruleTitles.has(check.rule_id));
+  const completedRules = visibleChecks.filter((check) => check.is_completed).map((check) => ruleTitles.get(check.rule_id)!);
 
   return {
     id: row.id,
@@ -67,7 +78,7 @@ function toFeedPost(row: FeedRow, viewerId: string | null): FeedPost {
     photo_url: row.photo_url,
     caption: row.caption,
     completed_rules: completedRules,
-    total_rules: (row.log_rule_checks ?? []).length,
+    total_rules: visibleChecks.length,
     created_at: row.created_at,
     reactions,
     user_reactions: mine,
@@ -100,7 +111,7 @@ export async function fetchFeed(viewerId: string | null, today: string): Promise
         .select(
           `id, user_id, log_date, status, photo_url, caption, created_at,
            users ( username, display_name, start_date ),
-           log_rule_checks ( is_completed, rules ( title ) ),
+           log_rule_checks ( rule_id, is_completed ),
            reactions ( reaction_type, reaction_count, sender_id )`
         )
         .in('status', ['completed', 'shielded'])
@@ -119,7 +130,25 @@ export async function fetchFeed(viewerId: string | null, today: string): Promise
     );
 
     const rows = (logsResult.data ?? []) as unknown as FeedRow[];
-    const posts = rows.filter((row) => !hidden.has(row.user_id)).map((row) => toFeedPost(row, viewerId));
+    const visibleRows = rows.filter((row) => !hidden.has(row.user_id));
+
+    // Rule titles never come from the raw `rules` table here — that table's
+    // RLS is `using (true)` (needed so owners can read their own rules the
+    // normal way), which would hand a secret rule's real title to any viewer.
+    // get_visible_rules masks/omits per that owner's own preference instead;
+    // one batched call per distinct poster on this page, not per row.
+    const distinctUserIds = Array.from(new Set(visibleRows.map((row) => row.user_id)));
+    const ruleTitles: RuleTitleMap = new Map();
+    await Promise.all(
+      distinctUserIds.map(async (userId) => {
+        const { data } = await supabase.rpc('get_visible_rules', { target_user_id: userId });
+        for (const rule of (data ?? []) as { id: string; title: string }[]) {
+          ruleTitles.set(rule.id, rule.title);
+        }
+      })
+    );
+
+    const posts = visibleRows.map((row) => toFeedPost(row, viewerId, ruleTitles));
 
     const totalUsers = typeof countResult.data === 'number' ? countResult.data : 0;
     const activeToday = new Set(

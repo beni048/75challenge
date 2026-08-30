@@ -1875,6 +1875,46 @@ a {
   color: var(--danger);
 }
 
+/* Info tooltip — tap-triggered, mobile-first (no hover-only affordances) */
+.info-tooltip {
+  position: relative;
+  display: inline-flex;
+}
+
+.info-tooltip-trigger {
+  color: var(--text-muted);
+}
+
+.info-tooltip-popover {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 0.4rem);
+  z-index: var(--z-menu);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: min(280px, 80vw);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  box-shadow: var(--modal-shadow);
+  padding: 0.65rem 0.75rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.info-tooltip-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  padding: 0;
+}
+
 /* Modal Backdrop */
 .modal-backdrop {
   position: fixed;

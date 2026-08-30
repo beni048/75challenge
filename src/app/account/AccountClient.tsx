@@ -18,6 +18,7 @@ import { getEffectiveLogDate, getSupportedTimezones } from '@/lib/date-utils';
 import { signOut, updatePassword, sendPasswordReset } from '@/lib/auth';
 import { Lock, ArrowRight, LogOut, RotateCcw, Info, CheckCircle2, Upload } from 'lucide-react';
 import Avatar from '@/components/Avatar';
+import InfoTooltip from '@/components/InfoTooltip';
 
 const TIMEZONE_OPTIONS: string[] = (() => {
   const supported = getSupportedTimezones();
@@ -55,6 +56,7 @@ export default function AccountClient() {
   const [editedName, setEditedName] = useState<string | null>(null);
   const [editedLocation, setEditedLocation] = useState<string | null>(null);
   const [editedTimezone, setEditedTimezone] = useState<string | null>(null);
+  const [editedSecretVisibility, setEditedSecretVisibility] = useState<'placeholder' | 'hidden' | null>(null);
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -94,6 +96,7 @@ export default function AccountClient() {
   const displayName = editedName ?? challenge.displayName;
   const locationValue = editedLocation ?? challenge.location ?? '';
   const timezoneValue = editedTimezone ?? challenge.timezone;
+  const secretVisibilityValue = editedSecretVisibility ?? challenge.secretRulesVisibility;
 
   // One adjustment per attempt, from day 8. The database enforces this too;
   // this is what lets the UI explain the state instead of just failing.
@@ -148,6 +151,7 @@ export default function AccountClient() {
       displayName: displayName.trim(),
       location: locationValue.trim() || null,
       timezone: timezoneValue,
+      secretRulesVisibility: secretVisibilityValue,
     });
     setBusy(false);
 
@@ -158,6 +162,7 @@ export default function AccountClient() {
     setEditedName(null);
     setEditedLocation(null);
     setEditedTimezone(null);
+    setEditedSecretVisibility(null);
     await refresh();
     toast.success(t('account.profileSaved'));
   };
@@ -451,6 +456,33 @@ export default function AccountClient() {
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
               {t('onboarding.timezoneHint')}
             </p>
+          </div>
+
+          <div className="input-group">
+            <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              {t('account.secretRulesLabel')}
+              <InfoTooltip label={t('rules.secretInfoLabel')} text={t('rules.secretInfoText')} />
+            </label>
+            <div className="stack stack-tight">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem' }}>
+                <input
+                  type="radio"
+                  name="secret-rules-visibility"
+                  checked={secretVisibilityValue === 'placeholder'}
+                  onChange={() => setEditedSecretVisibility('placeholder')}
+                />
+                {t('account.secretRulesPlaceholder')}
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem' }}>
+                <input
+                  type="radio"
+                  name="secret-rules-visibility"
+                  checked={secretVisibilityValue === 'hidden'}
+                  onChange={() => setEditedSecretVisibility('hidden')}
+                />
+                {t('account.secretRulesHidden')}
+              </label>
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>

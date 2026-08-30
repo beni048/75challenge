@@ -76,7 +76,16 @@ export async function fetchChallengeById(userId: string): Promise<DbResult<Chall
   }
 }
 
-/** Loads someone else's challenge by username, for their public profile page. */
+/**
+ * Loads someone else's challenge by username, for their public profile page.
+ *
+ * Rules come through `get_visible_rules`, never a raw `rules` select — the
+ * `rules_select` RLS policy is `using (true)` (any authenticated user can
+ * read any row) because that's also how the *owner's own* rules load, so a
+ * plain select here would hand a secret rule's real title to any visitor
+ * regardless of that owner's `secret_rules_visibility` choice. The RPC masks
+ * or omits secret rows server-side instead (see migration 0004).
+ */
 export async function fetchChallengeByUsername(
   username: string
 ): Promise<DbResult<Challenge | null>> {
@@ -93,7 +102,7 @@ export async function fetchChallengeByUsername(
     if (!user) return ok(null);
 
     const [rulesResult, logsResult] = await Promise.all([
-      supabase.from('rules').select('*').eq('user_id', user.id).order('position'),
+      supabase.rpc('get_visible_rules', { target_user_id: user.id }),
       // RLS hides other people's failed days, so a visitor sees only the
       // completed and shielded ones.
       supabase.from('daily_logs').select('*').eq('user_id', user.id).order('log_date'),
@@ -102,7 +111,12 @@ export async function fetchChallengeByUsername(
     if (rulesResult.error) return fail(rulesResult.error);
     if (logsResult.error) return fail(logsResult.error);
 
-    return ok(assemble(user, rulesResult.data ?? [], logsResult.data ?? []));
+    const rules: RuleRow[] = (rulesResult.data ?? []).map((r: Omit<RuleRow, 'user_id'>) => ({
+      ...r,
+      user_id: user.id,
+    }));
+
+    return ok(assemble(user, rules, logsResult.data ?? []));
   } catch (error) {
     return fail(error);
   }
@@ -271,6 +285,7 @@ export async function replaceRules(userId: string, rules: Rule[]): Promise<DbRes
           match.title !== rule.title ||
           match.schedule_type !== rule.schedule_type ||
           match.position !== index ||
+          match.is_secret !== (rule.is_secret ?? false) ||
           JSON.stringify(match.custom_days ?? []) !== JSON.stringify(rule.custom_days ?? []);
 
         if (changed) {
@@ -280,6 +295,7 @@ export async function replaceRules(userId: string, rules: Rule[]): Promise<DbRes
             schedule_type: rule.schedule_type,
             custom_days: rule.custom_days ?? [],
             position: index,
+            is_secret: rule.is_secret ?? false,
           });
         }
       } else {
@@ -291,9 +307,7 @@ export async function replaceRules(userId: string, rules: Rule[]): Promise<DbRes
           schedule_type: rule.schedule_type,
           custom_days: rule.custom_days ?? [],
           position: index,
-          // The secret-rules UI toggle lands separately; every rule starts
-          // non-secret until then.
-          is_secret: false,
+          is_secret: rule.is_secret ?? false,
         });
       }
     });

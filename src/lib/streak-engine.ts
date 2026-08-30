@@ -13,6 +13,7 @@ export interface Rule {
   title: string;
   schedule_type: ScheduleType;
   custom_days?: number[]; // 0 = Sun, 1 = Mon, ..., 6 = Sat
+  is_secret?: boolean;
 }
 
 export interface DailyLog {
