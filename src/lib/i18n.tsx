@@ -204,7 +204,7 @@ const en = {
   'auth.nameRequired': 'Display name is required.',
   'auth.usernameLabel': 'Username',
   'auth.usernamePlaceholder': 'ironspartan',
-  'auth.usernamePreview': 'Your profile: /user/{username}',
+  'auth.usernamePreview': 'Your profile: @{username}',
   'auth.avatarLabel': 'Profile Picture (optional)',
   'auth.avatarUpload': 'Add a photo',
   'auth.avatarChange': 'Change photo',
@@ -212,7 +212,6 @@ const en = {
   'auth.emailPlaceholder': 'you@example.com',
   'auth.emailInvalid': 'A valid email address is required.',
   'auth.passwordLabel': 'Password (min. {min} characters)',
-  'auth.passwordHint': 'Simple & Lenient',
   'auth.passwordShort': 'Password must be at least {min} characters long.',
   'auth.failed': 'Authentication failed. Please try again.',
   'auth.submitting': 'Committing Challenge...',
@@ -272,7 +271,7 @@ const en = {
   'commitment.legend': 'Commitment level',
   'commitment.stepTitle': 'How strict do you want this to be?',
   'commitment.stepIntro':
-    'This decides what happens on a day that does not go to plan. You are the only person this answers to — pick the one you will actually keep.',
+    'A shield covers one missed day, so your streak survives it. How many you get is up to you.',
   'commitment.stepCta': 'Continue to account',
   'commitment.locked': 'Your commitment level is set for this attempt. It resets if you start over.',
   'commitment.announce':
@@ -281,15 +280,15 @@ const en = {
   'commitment.purist.name': 'Purist',
   'commitment.purist.rule': 'No shields',
   'commitment.purist.desc':
-    'The original 75 Hard. Miss a day and you go back to Day 1, no exceptions.',
+    'Miss a day and you are back to Day 1. No exceptions.',
   'commitment.classic.name': 'Classic',
-  'commitment.classic.rule': 'One shield',
+  'commitment.classic.rule': '1 shield',
   'commitment.classic.desc':
-    'One missed day is covered across the whole 75. After that, a miss starts you over.',
+    'One missed day is covered. The next one restarts you.',
   'commitment.flex.name': 'Flex',
-  'commitment.flex.rule': 'Shield recharges',
+  'commitment.flex.rule': 'Recharges',
   'commitment.flex.desc':
-    'Start with one shield. Once you use it, another arrives {days} days later — so life can happen more than once.',
+    'One missed day is covered, and you get another shield every {days} days.',
   'commitment.shieldReturns': 'Your shield comes back in {days} days.',
 
   // Shield modal
@@ -715,7 +714,7 @@ const de: Record<TranslationKey, string> = {
   'auth.nameRequired': 'Wir brauchen einen Anzeigenamen.',
   'auth.usernameLabel': 'Benutzername',
   'auth.usernamePlaceholder': 'ironspartan',
-  'auth.usernamePreview': 'Dein Profil: /user/{username}',
+  'auth.usernamePreview': 'Dein Profil: @{username}',
   'auth.avatarLabel': 'Profilbild (optional)',
   'auth.avatarUpload': 'Foto hinzufügen',
   'auth.avatarChange': 'Foto ändern',
@@ -723,7 +722,6 @@ const de: Record<TranslationKey, string> = {
   'auth.emailPlaceholder': 'du@beispiel.com',
   'auth.emailInvalid': 'Diese E-Mail-Adresse sieht nicht richtig aus.',
   'auth.passwordLabel': 'Passwort (mind. {min} Zeichen)',
-  'auth.passwordHint': 'Kurz und schmerzlos',
   'auth.passwordShort': 'Mindestens {min} Zeichen, bitte.',
   'auth.failed': 'Hat nicht geklappt. Versuch es nochmal.',
   'auth.submitting': 'Deine Challenge startet ...',
@@ -777,7 +775,7 @@ const de: Record<TranslationKey, string> = {
   'commitment.legend': 'Commitment-Level',
   'commitment.stepTitle': 'Wie streng soll es werden?',
   'commitment.stepIntro':
-    'Das entscheidet, was an einem Tag passiert, der nicht läuft wie geplant. Du musst dich nur vor dir selbst verantworten – nimm das Level, das du wirklich durchziehst.',
+    'Ein Schild deckt einen verpassten Tag ab – deine Serie läuft weiter. Wie viele du hast, entscheidest du jetzt.',
   'commitment.stepCta': 'Weiter zum Konto',
   'commitment.locked': 'Dein Level steht für diesen Versuch fest. Beim Neustart kannst du es neu wählen.',
   'commitment.announce':
@@ -786,15 +784,15 @@ const de: Record<TranslationKey, string> = {
   'commitment.purist.name': 'Purist',
   'commitment.purist.rule': 'Keine Schilde',
   'commitment.purist.desc':
-    'Das originale 75 Hard. Ein verpasster Tag und du bist zurück auf Tag 1. Ohne Ausnahme.',
+    'Ein verpasster Tag und du bist zurück auf Tag 1. Ohne Ausnahme.',
   'commitment.classic.name': 'Classic',
-  'commitment.classic.rule': 'Ein Schild',
+  'commitment.classic.rule': '1 Schild',
   'commitment.classic.desc':
-    'Ein verpasster Tag ist über die ganzen 75 Tage abgedeckt. Danach fängst du wieder von vorn an.',
+    'Ein verpasster Tag ist abgedeckt. Beim nächsten startest du neu.',
   'commitment.flex.name': 'Flex',
-  'commitment.flex.rule': 'Schild lädt nach',
+  'commitment.flex.rule': 'Lädt nach',
   'commitment.flex.desc':
-    'Du startest mit einem Schild. Wenn du es einsetzt, kommt {days} Tage später das nächste – das Leben darf also öfter dazwischenkommen.',
+    'Ein verpasster Tag ist abgedeckt – und alle {days} Tage bekommst du ein neues Schild.',
   'commitment.shieldReturns': 'Dein Schild ist in {days} Tagen zurück.',
 
   'shield.title': 'Du hast einen verpassten Tag gemeldet',

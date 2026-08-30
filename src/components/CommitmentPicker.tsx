@@ -54,7 +54,7 @@ export default function CommitmentPicker({ value, onChange, disabled = false }: 
                 {t(`commitment.${level}.name` as TranslationKey)}
               </strong>
               <span className="commitment-card-rule">
-                {t(`commitment.${level}.rule` as TranslationKey)}
+                {t(`commitment.${level}.rule` as TranslationKey, { days: SHIELD_RECHARGE_DAYS })}
               </span>
             </span>
             <span className="commitment-card-body">

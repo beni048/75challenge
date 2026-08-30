@@ -205,9 +205,9 @@ export default function SimpleAuthForm({
           />
           <AtSign size={18} className="field-icon" />
         </div>
-        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
-          {t('auth.usernamePreview', { username: usernameSlug })}
-        </p>
+        {usernameRaw.trim() !== '' && (
+          <p className="field-hint">{t('auth.usernamePreview', { username: usernameSlug })}</p>
+        )}
       </div>
 
       <div className="input-group">
@@ -230,12 +230,9 @@ export default function SimpleAuthForm({
       </div>
 
       <div className="input-group">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
-          <label className="input-label" htmlFor="auth-password">
-            {t('auth.passwordLabel', { min: PASSWORD_MIN_LENGTH })}
-          </label>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('auth.passwordHint')}</span>
-        </div>
+        <label className="input-label" htmlFor="auth-password">
+          {t('auth.passwordLabel', { min: PASSWORD_MIN_LENGTH })}
+        </label>
         <div className="field-with-icon">
           <input
             id="auth-password"
