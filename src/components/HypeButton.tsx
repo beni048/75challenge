@@ -18,12 +18,13 @@
  */
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Sparkles, Dices, Check } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { pickRandomHypePhrase, localizedHypePhrase, type HypePhrase } from '@/lib/hype-phrases';
 import { resolveCssColors } from '@/lib/theme-colors';
+import ModalPortal from './ModalPortal';
 
 interface HypeButtonProps {
   /** Everyone who has hyped: the claimer plus everyone agreeing. */
@@ -123,33 +124,62 @@ export default function HypeButton({
         <span className="hype-hint">{isClaimed ? t('hype.agree') : t('hype.beFirst')}</span>
       )}
 
-      {/* The slot machine. Only ever seen by the person claiming the post. */}
-      {rolling && (
-        <div className="hype-roller" role="dialog" aria-label={t('hype.beFirst')}>
-          <p className="hype-roller-phrase">“{localizedHypePhrase(rolling, { days: dayNumber })}”</p>
+      {/* The slot machine. Only ever seen by the person claiming the post.
+          A ModalPortal sheet rather than an in-place popover: `.container`
+          creates a stacking context that traps an absolutely-positioned
+          overlay, and anchoring to this small button gave it the button's
+          width (start.md §13, rule 14). */}
+      <ModalPortal isOpen={rolling !== null} onClose={() => setRolling(null)}>
+        <AnimatePresence>
+          {rolling && (
+            <div className="modal-backdrop" onClick={() => setRolling(null)}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96, y: 16 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96, y: 16 }}
+                transition={{ duration: 0.18 }}
+                className="modal-content hype-roller"
+                onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-label={t('hype.beFirst')}
+              >
+                <p className="hype-roller-eyebrow">{t('hype.beFirst')}</p>
 
-          <div className="hype-roller-actions">
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => setRolling(pickRandomHypePhrase(locale, rolling.id))}
-            >
-              <Dices size={15} /> {t('hype.reroll')}
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={(e) => commit(rolling.id, e.currentTarget)}
-            >
-              {t('hype.send')}
-            </button>
-          </div>
+                <p className="hype-roller-phrase">
+                  “{localizedHypePhrase(rolling, { days: dayNumber })}”
+                </p>
 
-          <button type="button" className="hype-roller-cancel" onClick={() => setRolling(null)}>
-            {t('common.cancel')}
-          </button>
-        </div>
-      )}
+                <div className="hype-roller-actions">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setRolling(pickRandomHypePhrase(locale, rolling.id))}
+                  >
+                    <Dices size={16} /> {t('hype.reroll')}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={(e) => commit(rolling.id, e.currentTarget)}
+                  >
+                    {t('hype.send')}
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  className="hype-roller-cancel"
+                  onClick={() => setRolling(null)}
+                >
+                  {t('common.cancel')}
+                </button>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </ModalPortal>
+
     </div>
   );
 }

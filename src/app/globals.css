@@ -2583,8 +2583,8 @@ a {
 /* ---------------------------------------------------------------------------
    Hype — the claim/agree control and the sentence the card shows.
    --------------------------------------------------------------------------- */
+/* No position:relative — the roller is portalled to <body>, not anchored here. */
 .hype-wrap {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -2606,52 +2606,61 @@ a {
   color: var(--text-muted);
 }
 
-/* The slot machine. Anchored above the button so it never pushes the card
-   layout around as you re-roll. */
+/* The slot machine. A ModalPortal sheet, so it inherits .modal-content's
+   width, gutter and max-height rather than the tiny button it came from. */
 .hype-roller {
-  position: absolute;
-  bottom: calc(100% + 0.5rem);
-  left: 0;
-  right: 0;
-  z-index: var(--z-menu);
+  max-width: 420px;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  padding: 0.85rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-md);
-  box-shadow: var(--modal-shadow);
+  gap: 1rem;
+  text-align: center;
+}
+
+.hype-roller-eyebrow {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-orange);
+  font-weight: 700;
 }
 
 .hype-roller-phrase {
-  font-size: 0.95rem;
+  font-size: 1.25rem;
+  line-height: 1.35;
   font-style: italic;
   color: var(--text-primary);
-  line-height: 1.4;
-  /* Phrases vary a lot in length; a min-height stops the popover jumping
-     between re-rolls. */
-  min-height: 2.6em;
+  /* Phrases vary from two words to a full sentence; reserving space stops the
+     sheet jumping every time you re-roll. */
+  min-height: 3.6em;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
+/* Stacked on a phone so neither button is cramped; side by side from 480px. */
 .hype-roller-actions {
   display: flex;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.6rem;
 }
 
-.hype-roller-actions .btn {
-  flex: 1;
+@media (min-width: 480px) {
+  .hype-roller-actions {
+    flex-direction: row;
+  }
+
+  .hype-roller-actions .btn {
+    flex: 1;
+  }
 }
 
 .hype-roller-cancel {
   background: none;
   border: none;
-  padding: 0;
+  padding: 0.25rem;
   color: var(--text-muted);
   font-family: var(--font-body);
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   cursor: pointer;
   align-self: center;
 }
