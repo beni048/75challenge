@@ -11,6 +11,12 @@ import { resolveCssColors } from '@/lib/theme-colors';
 interface HypeButtonProps {
   /** Distinct people who have hyped this post so far. */
   hypeCount: number;
+  /**
+   * The day this post is about. Some phrases interpolate it ("Day {days}?!"),
+   * and it comes from the POST rather than the viewer so every viewer sees the
+   * same sentence the sender did.
+   */
+  dayNumber: number;
   /** This viewer's own phrase id, if they've already hyped this post. */
   myPhraseId?: string | null;
   onReact?: (phraseId: string) => void;
@@ -62,7 +68,7 @@ export default function HypeButton({ hypeCount: initialCount, myPhraseId: initia
 
     if (!alreadyHyped) setCount((prev) => prev + 1);
     setMyPhraseId(phrase.id);
-    setPopupText(localizedHypePhrase(phrase, locale));
+    setPopupText(localizedHypePhrase(phrase, locale, { days: dayNumber }));
 
     const rect = e.currentTarget.getBoundingClientRect();
     confetti({
@@ -81,7 +87,9 @@ export default function HypeButton({ hypeCount: initialCount, myPhraseId: initia
   };
 
   const myPhraseText = myPhraseId
-    ? localizedHypePhrase(getHypePhrase(myPhraseId) ?? { id: myPhraseId, en: '', de: '' }, locale)
+    ? localizedHypePhrase(getHypePhrase(myPhraseId) ?? { id: myPhraseId, en: '', de: '' }, locale, {
+        days: dayNumber,
+      })
     : null;
 
   return (

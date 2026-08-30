@@ -137,6 +137,7 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
       <div className="feed-card-reactions">
         <HypeButton
           hypeCount={post.hypeCount}
+          dayNumber={post.day_number}
           myPhraseId={post.myHypePhraseId}
           onReact={(phraseId) => onReact && onReact(post.id, phraseId)}
         />

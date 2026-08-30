@@ -72,6 +72,18 @@ describe('Hype phrase library', () => {
     expect(localizedHypePhrase(phrase, 'de', { days: 40 })).toBe('40 Tage durch? Ehrlich stark.');
   });
 
+  it('leaves no placeholder unsubstituted when rendered with the standard vars', () => {
+    // Regression: HypeButton rendered phrases without passing `days`, so
+    // "Day {days}?! Screenshot this" shipped to the feed with the braces
+    // visible. Every placeholder a phrase uses must be in this set.
+    for (const locale of ['en', 'de'] as const) {
+      for (const phrase of HYPE_PHRASES) {
+        const rendered = localizedHypePhrase(phrase, locale, { days: 34, name: 'Alex' });
+        expect(rendered, `${phrase.id} (${locale})`).not.toMatch(/\{\w+\}/);
+      }
+    }
+  });
+
   it('uses Swiss orthography — ss, never ß', () => {
     // The whole app is consistent on this; a stray ß from a copy-paste would
     // be the only one in the codebase.
