@@ -6,30 +6,39 @@ import { ArrowRight, Users } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useChallenge } from '@/components/ChallengeProvider';
 import Avatar from '@/components/Avatar';
+import FollowToggle from '@/components/FollowToggle';
 import { fetchAllChallengers, ChallengerListEntry } from '@/lib/db/profile';
+import { fetchHiddenUserIds, hideFromFeed, unhideFromFeed } from '@/lib/db/network';
 import { calculateCurrentDay, getEffectiveLogDate } from '@/lib/date-utils';
 
 const PAGE_SIZE = 20;
 
 export default function ChallengersPage() {
   const { t } = useI18n();
-  const { session, loading } = useChallenge();
+  const { session, challenge, loading } = useChallenge();
 
   const [entries, setEntries] = useState<ChallengerListEntry[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [loadingPage, setLoadingPage] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
+  // One bulk lookup for the whole page, not one query per card.
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
+  const [followBusyId, setFollowBusyId] = useState<string | null>(null);
+
   useEffect(() => {
     if (loading || !session) return;
     let active = true;
 
-    fetchAllChallengers(0, PAGE_SIZE).then((result) => {
-      if (!active) return;
-      setEntries(result.data?.entries ?? []);
-      setHasMore(result.data?.hasMore ?? false);
-      setLoadingPage(false);
-    });
+    Promise.all([fetchAllChallengers(0, PAGE_SIZE), fetchHiddenUserIds(session.user.id)]).then(
+      ([challengersResult, hiddenResult]) => {
+        if (!active) return;
+        setEntries(challengersResult.data?.entries ?? []);
+        setHasMore(challengersResult.data?.hasMore ?? false);
+        if (hiddenResult.data) setHiddenIds(hiddenResult.data);
+        setLoadingPage(false);
+      }
+    );
 
     return () => {
       active = false;
@@ -45,8 +54,37 @@ export default function ChallengersPage() {
     setHasMore(result.data.hasMore);
   };
 
+  const handleToggleFollow = async (targetId: string) => {
+    if (!session) return;
+    const wasHidden = hiddenIds.has(targetId);
+
+    // Optimistic.
+    setHiddenIds((prev) => {
+      const next = new Set(prev);
+      if (wasHidden) next.delete(targetId);
+      else next.add(targetId);
+      return next;
+    });
+    setFollowBusyId(targetId);
+
+    const result = wasHidden
+      ? await unhideFromFeed(session.user.id, targetId)
+      : await hideFromFeed(session.user.id, targetId);
+
+    setFollowBusyId(null);
+    if (result.error) {
+      // Revert.
+      setHiddenIds((prev) => {
+        const next = new Set(prev);
+        if (wasHidden) next.add(targetId);
+        else next.delete(targetId);
+        return next;
+      });
+    }
+  };
+
   if (loading) {
-    return <div style={{ minHeight: '60vh' }} />;
+    return <div style={{ minHeight: '60dvh' }} />;
   }
 
   if (!session) {
@@ -69,7 +107,7 @@ export default function ChallengersPage() {
 
   return (
     <div className="container page" style={{ maxWidth: '640px' }}>
-      <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+      <div className="challengers-head">
         <Users size={24} color="var(--accent-orange)" />
         <h1 className="h-page" style={{ marginBottom: 0 }}>
           {t('challengers.title')}
@@ -84,43 +122,28 @@ export default function ChallengersPage() {
         <div className="stack stack-tight">
           {entries.map((entry) => {
             const day = calculateCurrentDay(entry.startDate, getEffectiveLogDate(entry.timezone));
+            const isSelf = entry.id === challenge?.id;
             return (
-              <Link
-                key={entry.username}
-                href={`/user/${entry.username}`}
-                className="glass-card"
-                style={{
-                  padding: '0.85rem 1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.85rem',
-                  color: 'inherit',
-                }}
-              >
-                <div
-                  style={{
-                    width: '44px',
-                    height: '44px',
-                    flexShrink: 0,
-                    borderRadius: 'var(--radius-full)',
-                    background: 'var(--gradient-avatar)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 800,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <Avatar url={entry.avatarUrl} displayName={entry.displayName} username={entry.username} />
-                </div>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{entry.displayName}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>@{entry.username}</div>
-                </div>
-                <span style={{ color: 'var(--accent-orange)', fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                  {t('feed.dayOf75', { day })}
-                </span>
-              </Link>
+              <div key={entry.username} className="glass-card challenger-row">
+                <Link href={`/user/${entry.username}`} className="challenger-row-link">
+                  <div className="challenger-row-avatar">
+                    <Avatar url={entry.avatarUrl} displayName={entry.displayName} username={entry.username} />
+                  </div>
+                  <div className="challenger-row-name">
+                    <div className="challenger-row-display-name">{entry.displayName}</div>
+                    <div className="challenger-row-username">@{entry.username}</div>
+                  </div>
+                  <span className="challenger-row-day">{t('feed.dayOf75', { day })}</span>
+                </Link>
+
+                {!isSelf && (
+                  <FollowToggle
+                    hidden={hiddenIds.has(entry.id)}
+                    busy={followBusyId === entry.id}
+                    onToggle={() => handleToggleFollow(entry.id)}
+                  />
+                )}
+              </div>
             );
           })}
         </div>

@@ -89,6 +89,25 @@ every proof-photo upload fails at once.
   so the space becomes permanently unreclaimable.
 - A cleaned day **stays completed**; only the photo goes.
 
+### 🗄️ Never lose user data, never strand existing users (`supabase.md`)
+
+Two rules govern every schema change:
+
+1. **A migration must never destroy user data.** Split breaking changes into
+   **Expand** (additive: add column, backfill, relax old constraints — ships
+   with the feature) and **Contract** (`drop column`/`drop table` — a *later*
+   release). The gap between them is the rollback window. If a delete is
+   genuinely unavoidable, `create table X_backup_000N as select * from X`
+   first, in the same transaction.
+2. **Every new feature needs a path for existing users.** Backfill a value
+   that preserves their current behaviour exactly, *and* register an
+   announcement key in `users.acknowledged_updates` so they are actually
+   offered the new choice. A silently-defaulted user never chose anything.
+
+Also: wrap every migration in `begin; … commit;`, make it re-runnable, ship a
+verification query that returns zero rows when correct, and run the row-count
+query before and after. Full checklist in `supabase.md` §9.
+
 ### 🌿 Push to `dev`, never straight to `main` (`github.md`)
 
 All work lands on `dev` → `dev.75challenge.quest`. `main` →

@@ -12,7 +12,7 @@ import {
   ListChecks, RefreshCw, ShieldCheck, Scale, RotateCcw, User as UserIcon, MapPin, Globe2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useI18n } from '@/lib/i18n';
+import { useI18n, type TranslationKey } from '@/lib/i18n';
 import { savePendingSignup, clearPendingSignup } from '@/lib/pending-signup';
 import { useChallenge } from './ChallengeProvider';
 import { createChallenge } from '@/lib/db/profile';
@@ -20,6 +20,8 @@ import { uploadAvatar } from '@/lib/db/avatar';
 import { signUp } from '@/lib/auth';
 import { useToast } from './Toast';
 import { MIN_RULES, MAX_RULES, hasEnoughRules } from '@/lib/rules-policy';
+import CommitmentPicker from './CommitmentPicker';
+import { DEFAULT_COMMITMENT_LEVEL, type CommitmentLevel } from '@/lib/shield-policy';
 
 const DETECTED_TIMEZONE = (() => {
   try {
@@ -35,11 +37,13 @@ const TIMEZONE_OPTIONS: string[] = (() => {
 })();
 
 /**
- * Four sequential steps. Splitting them keeps each screen to one decision,
+ * Five sequential steps. Splitting them keeps each screen to one decision,
  * which matters most on a phone where everything else would need scrolling.
+ * Commitment sits after rules deliberately: you can only judge how much slack
+ * you want once you have seen what you just signed yourself up for.
  */
-type Step = 'learn' | 'date' | 'rules' | 'auth';
-const STEP_ORDER: Step[] = ['learn', 'date', 'rules', 'auth'];
+type Step = 'learn' | 'date' | 'rules' | 'commitment' | 'auth';
+const STEP_ORDER: Step[] = ['learn', 'date', 'rules', 'commitment', 'auth'];
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -90,6 +94,7 @@ export default function OnboardingModal({
   const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
   const [resumeName, setResumeName] = useState('');
+  const [commitmentLevel, setCommitmentLevel] = useState<CommitmentLevel>(DEFAULT_COMMITMENT_LEVEL);
 
   const { endDate, infoNoticeKey, infoNoticeVars } = validateChallengeDates(startDate);
   const infoNotice = infoNoticeKey
@@ -160,6 +165,7 @@ export default function OnboardingModal({
         location: location.trim() || null,
         avatarUrl,
         rules: configuredRules,
+        commitmentLevel,
         referredByUsername: referredBy ?? null,
       });
 
@@ -423,7 +429,7 @@ export default function OnboardingModal({
 
                   <button
                     type="button"
-                    onClick={() => goTo('auth')}
+                    onClick={() => goTo('commitment')}
                     className="btn btn-primary btn-lg"
                     style={{ width: '100%' }}
                     disabled={!hasEnoughRules(configuredRules.length)}
@@ -433,7 +439,28 @@ export default function OnboardingModal({
                 </div>
               )}
 
-              {/* ---------- Step 4: account ---------- */}
+              {/* ---------- Step 4: commitment level ---------- */}
+              {step === 'commitment' && (
+                <div className="stack">
+                  <div>
+                    <h3 className="h-page">{t('commitment.stepTitle')}</h3>
+                    <p className="onboarding-lede">{t('commitment.stepIntro')}</p>
+                  </div>
+
+                  <CommitmentPicker value={commitmentLevel} onChange={setCommitmentLevel} />
+
+                  <button
+                    type="button"
+                    onClick={() => goTo('auth')}
+                    className="btn btn-primary btn-lg"
+                    style={{ width: '100%' }}
+                  >
+                    {t('commitment.stepCta')} <ArrowRight size={18} />
+                  </button>
+                </div>
+              )}
+
+              {/* ---------- Step 5: account ---------- */}
               {step === 'auth' && (
                 <div className="stack">
                   <div className="onboarding-summary">
@@ -443,7 +470,9 @@ export default function OnboardingModal({
                         end: formatLongDate(endDate, locale),
                       })}
                     </span>
-                    <span style={{ color: 'var(--accent-cyan)' }}>{t('onboarding.shieldIncluded')}</span>
+                    <span style={{ color: 'var(--accent-cyan)' }}>
+                      {t(`commitment.${commitmentLevel}.name` as TranslationKey)}
+                    </span>
                   </div>
 
                   {session ? (

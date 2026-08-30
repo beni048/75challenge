@@ -7,6 +7,8 @@
 >
 > 🐙 **GIT & GITHUB OPERATIONS**: When performing any Git or GitHub work (branching, committing, pull requests), always consult the [GitHub Git Rules & Best Practices](file:///home/benjamin/workspace/github.com/beni048/75challenge/github.md) guidelines. This includes the **dev → production promotion rule**: all new work lands on `dev` (deployed to `dev.75challenge.quest`) first; `main` (deployed to `75challenge.quest`) only receives changes that have been tested on dev and explicitly approved by the user. Never push a feature straight to `main`.
 >
+> 🗄️ **DATABASE & SQL**: Before writing any migration, RLS policy, or `src/lib/db/` helper, read the [Supabase & SQL Rules](file:///home/benjamin/workspace/github.com/beni048/75challenge/supabase.md). Two rules override everything there: **(1) a migration must never destroy user data** — additive Expand first, destructive Contract only in a later release; and **(2) every new feature must give existing users a path onto it** — a behaviour-preserving backfill *plus* an explicit announcement, because a user who was silently defaulted never actually chose.
+>
 > 🧪 **TESTING & PRE-DEPLOYMENT RULES**: **ALWAYS** run tests (`npm test`) and type-check (`npm run build`) before pushing code or triggering deployments. Always consult the [Testing Rules & Best Practices](file:///home/benjamin/workspace/github.com/beni048/75challenge/testing.md) guide before modifying or adding tests.
 
 ---

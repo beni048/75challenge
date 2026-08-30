@@ -71,7 +71,7 @@ export default function AccountClient() {
   const [announceRestart, setAnnounceRestart] = useState(false);
   const [confirmRulesChange, setConfirmRulesChange] = useState(false);
 
-  if (loading) return <div style={{ minHeight: '60vh' }} />;
+  if (loading) return <div style={{ minHeight: '60dvh' }} />;
 
   if (!session || !challenge) {
     return (

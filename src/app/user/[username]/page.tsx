@@ -11,12 +11,12 @@ import ShieldModal from '@/components/ShieldModal';
 import Avatar from '@/components/Avatar';
 import StartCountdown from '@/components/StartCountdown';
 import CatchUpList from '@/components/CatchUpList';
-import FollowButton from '@/components/FollowButton';
-import FollowListModal from '@/components/FollowListModal';
+import FollowToggle from '@/components/FollowToggle';
 import FeedCard from '@/components/FeedCard';
 import { getRequiredRulesForDate } from '@/lib/streak-engine';
 import { calculateCurrentDay, getEffectiveLogDate, hasStarted } from '@/lib/date-utils';
 import { getPendingDates } from '@/lib/pending-days';
+import { hasShieldAvailable } from '@/lib/shield-policy';
 import { Share2, ArrowRight, Lock } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useChallenge } from '@/components/ChallengeProvider';
@@ -25,9 +25,8 @@ import { fetchChallengeByUsername } from '@/lib/db/profile';
 import { spendShield, restartChallenge } from '@/lib/db/profile';
 import { saveDailyLog, catchUpDays } from '@/lib/db/logs';
 import { uploadProofPhoto } from '@/lib/db/photos';
-import { fetchUserFeedPosts, addReaction, unfollowUser as hideFromFeed, refollowUser as unhideFromFeed } from '@/lib/db/feed';
-import { fetchFollowCounts, fetchFollowLists, FollowCounts, FollowListEntry } from '@/lib/db/follows';
-import type { ReactionType } from '@/components/HypeButton';
+import { fetchUserFeedPosts, addReaction } from '@/lib/db/feed';
+import { fetchHiddenUserIds, hideFromFeed, unhideFromFeed } from '@/lib/db/network';
 import type { FeedPost } from '@/lib/feed';
 import type { Challenge } from '@/lib/db/types';
 
@@ -67,30 +66,41 @@ export default function UserProfilePage() {
 
   const challenge = isOwnProfile ? ownChallenge : otherChallenge;
 
-  // Followers/following are only ever fetched for the signed-in viewer's own
-  // profile — RLS on user_follows returns nothing for anyone else's id
-  // anyway, but not even attempting the query for another profile is what
-  // keeps this "completely hidden elsewhere," not just empty-looking.
-  const [followCounts, setFollowCounts] = useState<FollowCounts | null>(null);
-  const [followLists, setFollowLists] = useState<{ followers: FollowListEntry[]; following: FollowListEntry[] } | null>(
-    null
-  );
-  const [followModal, setFollowModal] = useState<'followers' | 'following' | null>(null);
+  // Everyone follows everyone by default (start.md §5) — the only thing to
+  // know about someone else's profile is whether the viewer has hidden them.
+  const [isHidden, setIsHidden] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
 
   useEffect(() => {
-    if (!isOwnProfile || !challenge) return;
+    if (isOwnProfile || !challenge || !session) return;
     let active = true;
 
-    Promise.all([fetchFollowCounts(challenge.id), fetchFollowLists(challenge.id)]).then(([counts, lists]) => {
+    fetchHiddenUserIds(session.user.id).then((result) => {
       if (!active) return;
-      if (counts.data) setFollowCounts(counts.data);
-      if (lists.data) setFollowLists(lists.data);
+      if (result.data) setIsHidden(result.data.has(challenge.id));
     });
 
     return () => {
       active = false;
     };
-  }, [isOwnProfile, challenge]);
+  }, [isOwnProfile, challenge, session]);
+
+  const handleToggleFollow = async () => {
+    if (!challenge || !session) return;
+    const wasHidden = isHidden;
+    setIsHidden(!wasHidden); // optimistic
+    setFollowBusy(true);
+
+    const result = wasHidden
+      ? await unhideFromFeed(session.user.id, challenge.id)
+      : await hideFromFeed(session.user.id, challenge.id);
+
+    setFollowBusy(false);
+    if (result.error) {
+      setIsHidden(wasHidden); // revert
+      toast.error(result.error);
+    }
+  };
 
   // This participant's own check-in history — shown to every viewer, per the
   // profile restructure (start.md §6).
@@ -113,9 +123,9 @@ export default function UserProfilePage() {
     };
   }, [challenge, session?.user.id, postsReloadToken]);
 
-  const handleReactToPost = async (postId: string, type: ReactionType) => {
+  const handleReactToPost = async (postId: string, phraseId: string) => {
     if (!session) return;
-    const result = await addReaction(postId, session.user.id, type);
+    const result = await addReaction(postId, session.user.id, phraseId);
     if (result.error) toast.error(result.error);
   };
 
@@ -228,7 +238,7 @@ export default function UserProfilePage() {
   };
 
   if (loading) {
-    return <div style={{ minHeight: '60vh' }} />;
+    return <div style={{ minHeight: '60dvh' }} />;
   }
 
   // Profiles are for participants only (start.md §6).
@@ -270,6 +280,13 @@ export default function UserProfilePage() {
 
   const currentDay = calculateCurrentDay(challenge.startDate, today);
   const started = hasStarted(challenge.startDate, today);
+  // Derived from the chosen tier, never from the legacy shields_remaining
+  // counter — see src/lib/shield-policy.ts. A Purist is never offered one.
+  const shieldAvailable = hasShieldAvailable(
+    challenge.commitmentLevel,
+    challenge.lastShieldUsedAt,
+    today
+  );
   const rules = challenge.rules.map((rule) => ({
     id: rule.id,
     title: rule.title,
@@ -317,21 +334,10 @@ export default function UserProfilePage() {
             )}
           </div>
 
-          {!isOwnProfile && session && <FollowButton viewerId={session.user.id} targetId={challenge.id} />}
+          {!isOwnProfile && session && (
+            <FollowToggle hidden={isHidden} onToggle={handleToggleFollow} busy={followBusy} />
+          )}
         </div>
-
-        {/* Followers/following — own profile only. Not rendered-but-hidden:
-            the data itself is never fetched for anyone else's profile. */}
-        {isOwnProfile && followCounts && (
-          <div className="stack-row-sm" style={{ display: 'flex', gap: '1rem' }}>
-            <button type="button" onClick={() => setFollowModal('followers')} className="btn btn-secondary btn-sm">
-              {t('profile.followersCount', { count: followCounts.followers })}
-            </button>
-            <button type="button" onClick={() => setFollowModal('following')} className="btn btn-secondary btn-sm">
-              {t('profile.followingCount', { count: followCounts.following })}
-            </button>
-          </div>
-        )}
 
         <div className="profile-stats">
           <div className="profile-stat">
@@ -343,7 +349,7 @@ export default function UserProfilePage() {
 
           <div className="profile-stat">
             <div className="profile-stat-value" style={{ color: 'var(--accent-cyan)' }}>
-              {challenge.shieldsRemaining}
+              {shieldAvailable ? 1 : 0}
             </div>
             <div className="profile-stat-label">{t('profile.shieldsLeft')}</div>
           </div>
@@ -422,7 +428,7 @@ export default function UserProfilePage() {
                 username={challenge.username}
                 dayNumber={currentDay}
                 completedRules={challenge.rules.map((r) => r.title)}
-                shieldsRemaining={challenge.shieldsRemaining}
+                shieldsRemaining={shieldAvailable ? 1 : 0}
                 streakDays={challenge.logs.filter((l) => l.status !== 'failed').length}
               />
             </div>
@@ -430,25 +436,25 @@ export default function UserProfilePage() {
         </>
       )}
 
-      {/* Habits — via get_visible_rules for a non-owner viewer (already what
-          challenge.rules holds in that case, see fetchChallengeByUsername). */}
-      <div className="section">
-        <h3 className="h-section" style={{ marginBottom: '0.75rem' }}>
-          {t('profile.rulesTitle')}
-        </h3>
-        <div className="stack stack-tight">
-          {challenge.rules.map((rule) => (
-            <div
-              key={rule.id}
-              className="glass-card"
-              style={{ padding: '0.7rem 0.9rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}
-            >
-              {rule.is_secret && <Lock size={14} color="var(--accent-orange)" />}
-              <span style={{ fontSize: '0.9rem' }}>{rule.title}</span>
-            </div>
-          ))}
+      {/* Habits — visitor-only: the owner already knows what they're training
+          for, so this list is just noise on their own profile. Visible to
+          everyone else via get_visible_rules (already what challenge.rules
+          holds in that case, see fetchChallengeByUsername). */}
+      {!isOwnProfile && (
+        <div className="section">
+          <h3 className="h-section" style={{ marginBottom: '0.75rem' }}>
+            {t('profile.rulesTitle')}
+          </h3>
+          <div className="stack stack-tight">
+            {challenge.rules.map((rule) => (
+              <div key={rule.id} className="glass-card profile-rule-row">
+                {rule.is_secret && <Lock size={14} color="var(--accent-orange)" />}
+                <span>{rule.title}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* This participant's own check-in history. */}
       <div className="section">
@@ -471,21 +477,11 @@ export default function UserProfilePage() {
       <ShieldModal
         isOpen={isShieldModalOpen}
         missedDate={missedDate}
-        shieldsRemaining={challenge.shieldsRemaining}
+        shieldsRemaining={shieldAvailable ? 1 : 0}
         onUseShield={handleUseShield}
         onHardReset={handleHardReset}
         onClose={() => setIsShieldModalOpen(false)}
       />
-
-      {isOwnProfile && followLists && (
-        <FollowListModal
-          isOpen={followModal !== null}
-          onClose={() => setFollowModal(null)}
-          initialTab={followModal ?? 'followers'}
-          followers={followLists.followers}
-          following={followLists.following}
-        />
-      )}
     </div>
   );
 }

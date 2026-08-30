@@ -343,6 +343,132 @@ a {
   }
 }
 
+.feed-card-hidden {
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  opacity: 0.7;
+}
+
+.feed-card-hidden-note {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.feed-card-reset {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.feed-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.feed-card-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.feed-card-avatar {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--gradient-avatar);
+  border: 1px solid var(--border-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.feed-card-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.feed-card-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.feed-card-day {
+  color: var(--accent-orange);
+  font-weight: 600;
+}
+
+.feed-card-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.feed-card-caption {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.feed-card-photo {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--photo-backdrop);
+  border: 1px solid var(--border-subtle);
+  /* 4:5, matching how phones actually shoot — see .preview-card-photo. */
+  aspect-ratio: 4 / 5;
+}
+
+.feed-card-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.feed-card-rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.feed-card-reactions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 0.85rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.feed-card-preview-note {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.feed-card-hyped-by {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;
@@ -1039,6 +1165,56 @@ a {
   cursor: default;
 }
 
+/* Hype button — one tap, one witty phrase, not four fixed emoji. */
+.hype-button-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.hype-button {
+  border-radius: var(--radius-full);
+  gap: 0.4rem;
+}
+
+.hype-button.is-active {
+  background: var(--chip-bg-strong);
+  border-color: var(--accent-orange);
+  color: var(--accent-orange);
+}
+
+.hype-button-count {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.hype-my-phrase {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.hype-popup {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 0.4rem);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: 0.4rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-orange);
+  box-shadow: var(--modal-shadow);
+  white-space: nowrap;
+  max-width: 80vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: var(--z-menu);
+}
+
 @media (min-width: 640px) {
   .preview-card {
     padding: 1.5rem;
@@ -1171,6 +1347,73 @@ a {
 
 .profile-tabs .btn {
   flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.profile-rule-row {
+  padding: 0.7rem 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+}
+
+/* Challenger directory */
+.challengers-head {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.challenger-row {
+  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.challenger-row-link {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  color: inherit;
+  flex: 1;
+  min-width: 0;
+}
+
+.challenger-row-avatar {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--gradient-avatar);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  overflow: hidden;
+}
+
+.challenger-row-name {
+  min-width: 0;
+  flex: 1;
+}
+
+.challenger-row-display-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.challenger-row-username {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.challenger-row-day {
+  color: var(--accent-orange);
+  font-weight: 600;
+  font-size: 0.85rem;
   white-space: nowrap;
 }
 
@@ -1888,14 +2131,17 @@ a {
 
 .info-tooltip-popover {
   position: absolute;
-  left: 0;
   top: calc(100% + 0.4rem);
   z-index: var(--z-menu);
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
   width: max-content;
-  max-width: min(280px, 80vw);
+  /* Never wider than the viewport minus a margin on both sides — this is what
+     makes the max-width itself viewport-safe, independent of which edge it's
+     anchored from (start.md §12 rule 10). */
+  max-width: min(280px, calc(100vw - 2rem));
+  overflow-wrap: break-word;
   background: var(--bg-secondary);
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-md);
@@ -2018,4 +2264,99 @@ a {
   * {
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Feature announcements — the banner offering an existing account a newly
+   added choice (supabase.md §5).
+   --------------------------------------------------------------------------- */
+.announcement-wrap {
+  padding-top: 1rem;
+}
+
+.announcement {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.announcement-icon {
+  flex-shrink: 0;
+  color: var(--accent-orange);
+}
+
+/* Takes the row on a phone so the actions wrap beneath it, shares it from sm. */
+.announcement-body {
+  flex: 1 1 100%;
+}
+
+@media (min-width: 480px) {
+  .announcement-body {
+    flex: 1 1 auto;
+  }
+}
+
+.announcement-dismiss {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  padding: 0.25rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Commitment tier cards
+   --------------------------------------------------------------------------- */
+.commitment-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+.commitment-card:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.commitment-card.is-selected {
+  border-color: var(--accent-orange);
+  box-shadow: 0 0 0 1px var(--accent-orange-soft-border);
+}
+
+.commitment-card-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.commitment-card-name {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.commitment-card-rule {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: var(--chip-bg);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-full);
+}
+
+.commitment-card-body {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
 }

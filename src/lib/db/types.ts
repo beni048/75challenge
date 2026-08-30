@@ -9,8 +9,13 @@ import type { ScheduleType } from '../streak-engine';
 
 export type ChallengeStatus = 'active' | 'failed' | 'completed';
 export type LogStatus = 'completed' | 'shielded' | 'failed';
-export type ReactionType = 'fire' | 'beast' | 'launch' | 'hype';
 export type SecretRulesVisibility = 'placeholder' | 'hidden';
+/**
+ * How forgiving a shield is, chosen at signup and locked for the attempt.
+ * See src/lib/shield-policy.ts for what each tier actually does — this file
+ * only owns the wire shape.
+ */
+export type CommitmentLevel = 'purist' | 'classic' | 'flex';
 
 export interface UserRow {
   id: string;
@@ -32,6 +37,11 @@ export interface UserRow {
   avatar_url: string | null;
   /** How this user's secret rules appear to non-owners. See get_visible_rules(). */
   secret_rules_visibility: SecretRulesVisibility;
+  commitment_level: CommitmentLevel;
+  /** Date the current shield was spent, if any. Null = a shield is available (subject to tier — see shield-policy.ts). */
+  last_shield_used_at: string | null;
+  /** Feature-announcement keys already shown to this account — supabase.md §5. */
+  acknowledged_updates: string[];
 }
 
 export interface RuleRow {
@@ -64,17 +74,17 @@ export interface LogRuleCheckRow {
   is_completed: boolean;
 }
 
+/**
+ * One hype per person per post — see src/lib/hype-phrases.ts for what
+ * `phrase_id` actually resolves to in each locale. There is deliberately no
+ * free-text field: a phrase id always points at a curated, bilingual entry,
+ * never user-authored text (start.md §7 — no downvotes, no comments).
+ */
 export interface ReactionRow {
   log_id: string;
   sender_id: string;
-  reaction_type: ReactionType;
-  reaction_count: number;
-}
-
-export interface UserFollowRow {
-  follower_id: string;
-  followed_id: string;
-  created_at: string;
+  phrase_id: string;
+  updated_at: string;
 }
 
 export type ChallengeEventType = 'reset';
@@ -102,6 +112,10 @@ export interface Challenge {
   location: string | null;
   avatarUrl: string | null;
   secretRulesVisibility: SecretRulesVisibility;
+  commitmentLevel: CommitmentLevel;
+  lastShieldUsedAt: string | null;
+  /** Feature-announcement keys this account has already seen — supabase.md §5. */
+  acknowledgedUpdates: string[];
   rules: RuleRow[];
   logs: DailyLogRow[];
 }

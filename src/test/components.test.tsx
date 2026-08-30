@@ -66,26 +66,32 @@ describe('UI Components', () => {
   });
 
   describe('HypeButton', () => {
-    it('renders all four positive-only reaction buttons', () => {
-      const mockReactions = { fire: 5, beast: 3, launch: 2, hype: 8 };
-      render(<HypeButton postId="test-post" reactions={mockReactions} />);
-
-      expect(screen.getByText('5')).toBeInTheDocument();
-      expect(screen.getByText('3')).toBeInTheDocument();
-      expect(screen.getByText('2')).toBeInTheDocument();
+    it('renders the current hype count', () => {
+      render(<HypeButton hypeCount={8} />);
       expect(screen.getByText('8')).toBeInTheDocument();
     });
 
-    it('increments count optimistically on reaction tap', () => {
-      const mockReactions = { fire: 5, beast: 0, launch: 0, hype: 0 };
+    it('increments the count optimistically on first tap, with a curated phrase id', () => {
       const handleReact = vi.fn();
-      render(<HypeButton postId="test-post" reactions={mockReactions} onReact={handleReact} />);
+      render(<HypeButton hypeCount={5} onReact={handleReact} />);
 
-      const fireBtn = screen.getByTitle('Give Fire hype');
-      fireEvent.click(fireBtn);
+      fireEvent.click(screen.getByRole('button'));
 
       expect(screen.getByText('6')).toBeInTheDocument();
-      expect(handleReact).toHaveBeenCalledWith('fire');
+      expect(handleReact).toHaveBeenCalledTimes(1);
+      expect(typeof handleReact.mock.calls[0][0]).toBe('string');
+    });
+
+    it('re-rolls to a phrase (not a second increment) when the viewer already hyped this post', () => {
+      const handleReact = vi.fn();
+      render(<HypeButton hypeCount={5} myPhraseId="you-are-a-god" onReact={handleReact} />);
+
+      fireEvent.click(screen.getByRole('button'));
+
+      // Already-hyped, so the count does not move — only the phrase changes.
+      expect(screen.getByText('5')).toBeInTheDocument();
+      expect(handleReact).toHaveBeenCalledTimes(1);
+      expect(handleReact.mock.calls[0][0]).not.toBe('you-are-a-god');
     });
   });
 

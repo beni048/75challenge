@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { STATIC_MOCK_FEED_POSTS, localizedCaption, localizedRules } from '@/lib/feed';
-import { Flame, Shield, Users, ArrowRight, CheckCircle2, Award, HeartHandshake } from 'lucide-react';
+import { Flame, Shield, Users, ArrowRight, CheckCircle2, Award, HeartHandshake, Sparkles } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { CHALLENGE_DEADLINE } from '@/lib/challenge-goal';
 import { formatLongDate } from '@/lib/date-utils';
@@ -139,18 +139,9 @@ export default function LandingPreview() {
                   </div>
 
                   <div className="preview-card-reactions">
-                    {(
-                      [
-                        ['🔥', post.reactions.fire],
-                        ['💪', post.reactions.beast],
-                        ['🚀', post.reactions.launch],
-                        ['🙌', post.reactions.hype],
-                      ] as const
-                    ).map(([emoji, count]) => (
-                      <span key={emoji} className="btn btn-secondary btn-sm reaction-chip">
-                        {emoji} {count}
-                      </span>
-                    ))}
+                    <span className="btn btn-secondary btn-sm reaction-chip">
+                      <Sparkles size={14} /> {post.hypeCount}
+                    </span>
                   </div>
                 </div>
               );

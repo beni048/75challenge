@@ -1,114 +1,118 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { Sparkles } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
-
-export type ReactionType = 'fire' | 'beast' | 'launch' | 'hype';
-
-// Reaction names are product vocabulary and stay the same in every language.
-const REACTION_CONFIG: Record<ReactionType, { emoji: string; label: string; color: string }> = {
-  fire: { emoji: '🔥', label: 'Fire', color: 'var(--accent-orange)' },
-  beast: { emoji: '💪', label: 'Beast', color: 'var(--accent-green)' },
-  launch: { emoji: '🚀', label: 'Launch', color: 'var(--accent-cyan)' },
-  hype: { emoji: '🙌', label: 'Hype', color: 'var(--accent-purple)' },
-};
+import { pickRandomHypePhrase, getHypePhrase, localizedHypePhrase } from '@/lib/hype-phrases';
+import { resolveCssColors } from '@/lib/theme-colors';
 
 interface HypeButtonProps {
-  postId: string;
-  reactions: {
-    fire: number;
-    beast: number;
-    launch: number;
-    hype: number;
-  };
-  userReactions?: string[];
-  onReact?: (type: ReactionType) => void;
+  /** Distinct people who have hyped this post so far. */
+  hypeCount: number;
+  /** This viewer's own phrase id, if they've already hyped this post. */
+  myPhraseId?: string | null;
+  onReact?: (phraseId: string) => void;
 }
 
-export default function HypeButton({
-  reactions: initialReactions,
-  userReactions: initialUserReactions = [],
-  onReact,
-}: HypeButtonProps) {
-  const { t } = useI18n();
-  const [counts, setCounts] = useState(initialReactions);
-  const [activeReactions, setActiveReactions] = useState<string[]>(initialUserReactions);
+/**
+ * One button, not four: hype is a single tap that picks a random witty
+ * phrase rather than a choice of four fixed emoji (start.md §7 — still no
+ * user-authored text, still no negative reaction, just curated variety).
+ * Tapping again re-rolls to a different phrase instead of adding a tally,
+ * since a hype is a statement, not a like count.
+ */
+export default function HypeButton({ hypeCount: initialCount, myPhraseId: initialPhraseId, onReact }: HypeButtonProps) {
+  const { t, locale } = useI18n();
 
-  const handleTapReaction = (e: React.MouseEvent, type: ReactionType) => {
+  // Adjusted during render, not in an effect (React's own recommended pattern
+  // for "reset local state when a prop changes" — an effect here would cause
+  // an extra render pass and trips the set-state-in-effect lint rule). This is
+  // what makes the button re-sync if the server-fetched props change under it
+  // — e.g. a feed reload — which the old implementation never did and could
+  // show a stale optimistic count forever.
+  const [prevInitialCount, setPrevInitialCount] = useState(initialCount);
+  const [count, setCount] = useState(initialCount);
+  if (initialCount !== prevInitialCount) {
+    setPrevInitialCount(initialCount);
+    setCount(initialCount);
+  }
+
+  const normalizedInitialPhraseId = initialPhraseId ?? null;
+  const [prevInitialPhraseId, setPrevInitialPhraseId] = useState(normalizedInitialPhraseId);
+  const [myPhraseId, setMyPhraseId] = useState<string | null>(normalizedInitialPhraseId);
+  if (normalizedInitialPhraseId !== prevInitialPhraseId) {
+    setPrevInitialPhraseId(normalizedInitialPhraseId);
+    setMyPhraseId(normalizedInitialPhraseId);
+  }
+
+  const [popupText, setPopupText] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!popupText) return;
+    const timer = setTimeout(() => setPopupText(null), 2200);
+    return () => clearTimeout(timer);
+  }, [popupText]);
+
+  const handleTap = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
+    const alreadyHyped = myPhraseId !== null;
+    const phrase = pickRandomHypePhrase(myPhraseId);
 
-    // Optimistic UI update
-    setCounts((prev) => ({
-      ...prev,
-      [type]: prev[type] + 1,
-    }));
+    if (!alreadyHyped) setCount((prev) => prev + 1);
+    setMyPhraseId(phrase.id);
+    setPopupText(localizedHypePhrase(phrase, locale));
 
-    if (!activeReactions.includes(type)) {
-      setActiveReactions((prev) => [...prev, type]);
-    }
-
-    // Trigger celebratory canvas-confetti from button coordinates
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = (rect.left + rect.width / 2) / window.innerWidth;
-    const y = (rect.top + rect.height / 2) / window.innerHeight;
-
+    const rect = e.currentTarget.getBoundingClientRect();
     confetti({
-      particleCount: 18,
-      spread: 45,
-      origin: { x, y },
-      colors: ['#ff5a1f', '#00e5ff', '#10b981', '#8b5cf6'],
-      ticks: 80,
+      particleCount: 20,
+      spread: 50,
+      origin: {
+        x: (rect.left + rect.width / 2) / window.innerWidth,
+        y: (rect.top + rect.height / 2) / window.innerHeight,
+      },
+      colors: resolveCssColors(['--accent-orange', '--accent-cyan', '--accent-green', '--accent-purple']),
+      ticks: 70,
       disableForReducedMotion: true,
     });
 
-    if (onReact) {
-      onReact(type);
-    }
+    onReact?.(phrase.id);
   };
 
-  return (
-    <div
-      className="hype-button-group"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.45rem',
-        flexWrap: 'wrap',
-      }}
-    >
-      {(Object.keys(REACTION_CONFIG) as ReactionType[]).map((type) => {
-        const item = REACTION_CONFIG[type];
-        const count = counts[type] || 0;
-        const isSelected = activeReactions.includes(type);
+  const myPhraseText = myPhraseId
+    ? localizedHypePhrase(getHypePhrase(myPhraseId) ?? { id: myPhraseId, en: '', de: '' }, locale)
+    : null;
 
-        return (
-          <motion.button
-            key={type}
-            whileTap={{ scale: 1.25, rotate: [-5, 5, 0] }}
-            whileHover={{ scale: 1.08 }}
-            onClick={(e) => handleTapReaction(e, type)}
-            className="btn btn-secondary btn-sm"
-            style={{
-              padding: '0.35rem 0.75rem',
-              borderRadius: 'var(--radius-full)',
-              background: isSelected ? 'var(--chip-bg-strong)' : 'var(--bg-tertiary)',
-              borderColor: isSelected ? item.color : 'var(--border-subtle)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem',
-              fontSize: '0.85rem',
-            }}
-            title={t('hype.give', { label: item.label })}
+  return (
+    <div className="hype-button-wrap">
+      <motion.button
+        type="button"
+        whileTap={{ scale: 1.15 }}
+        onClick={handleTap}
+        className={`btn btn-secondary btn-sm hype-button${myPhraseId ? ' is-active' : ''}`}
+        title={myPhraseText ? t('hype.reroll') : t('hype.give')}
+        aria-pressed={myPhraseId !== null}
+      >
+        <Sparkles size={16} />
+        <span className="hype-button-count">{count}</span>
+      </motion.button>
+
+      {myPhraseText && !popupText && <span className="hype-my-phrase">“{myPhraseText}”</span>}
+
+      <AnimatePresence>
+        {popupText && (
+          <motion.span
+            initial={{ opacity: 0, y: 6, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.2 }}
+            className="hype-popup"
           >
-            <span style={{ fontSize: '1rem' }}>{item.emoji}</span>
-            <span style={{ fontWeight: 700, fontSize: '0.8rem', color: isSelected ? item.color : 'var(--text-secondary)' }}>
-              {count}
-            </span>
-          </motion.button>
-        );
-      })}
+            “{popupText}”
+          </motion.span>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

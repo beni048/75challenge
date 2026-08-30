@@ -11,7 +11,7 @@
 import { createClient } from '../supabase/client';
 import { calculateCurrentDay } from '../date-utils';
 import { FeedPost, STATIC_MOCK_FEED_POSTS } from '../feed';
-import { DbResult, ok, fail, ReactionType } from './types';
+import { DbResult, ok, fail } from './types';
 
 // Rows, not posts: a raw batch this size is generously overfetched because a
 // multi-day catch-up collapses several rows into one post — see the grouping
@@ -43,8 +43,7 @@ interface FeedRow {
   users: { username: string; display_name: string; start_date: string } | null;
   log_rule_checks: { rule_id: string; is_completed: boolean }[];
   reactions: {
-    reaction_type: ReactionType;
-    reaction_count: number;
+    phrase_id: string;
     sender_id: string;
     updated_at: string;
     users: { username: string; display_name: string } | null;
@@ -60,16 +59,14 @@ interface FeedRow {
 type RuleTitleMap = Map<string, string>;
 
 function toFeedPost(row: FeedRow, viewerId: string | null, ruleTitles: RuleTitleMap, batchCount?: number): FeedPost {
-  const reactions = { fire: 0, beast: 0, launch: 0, hype: 0 };
-  const mine: string[] = [];
-
-  // Distinct reactors across every type, most-recently-reacted first — a
-  // sender who tapped both 🔥 and 💪 counts once for "Hyped by X and N
-  // others", not twice.
+  // One reaction per (log, sender) is enforced in the database (migration
+  // 0006), so this map is really just "index by sender" — but the dedupe
+  // stays defensive rather than assuming the constraint always held.
   const reactorsById = new Map<string, { username: string; displayName: string; updatedAt: string }>();
+  let myHypePhraseId: string | null = null;
+
   for (const reaction of row.reactions ?? []) {
-    reactions[reaction.reaction_type] += reaction.reaction_count;
-    if (reaction.sender_id === viewerId) mine.push(reaction.reaction_type);
+    if (reaction.sender_id === viewerId) myHypePhraseId = reaction.phrase_id;
 
     if (reaction.users && (!reactorsById.has(reaction.sender_id) || reaction.updated_at > reactorsById.get(reaction.sender_id)!.updatedAt)) {
       reactorsById.set(reaction.sender_id, {
@@ -106,8 +103,8 @@ function toFeedPost(row: FeedRow, viewerId: string | null, ruleTitles: RuleTitle
     completed_rules: completedRules,
     total_rules: visibleChecks.length,
     created_at: row.created_at,
-    reactions,
-    user_reactions: mine,
+    hypeCount: reactors.length,
+    myHypePhraseId,
     reactors,
     ...(batchCount && batchCount > 1 ? { batchCount } : {}),
   };
@@ -153,7 +150,7 @@ export async function fetchFeed(
         `id, user_id, log_date, status, photo_url, caption, created_at, batch_id,
          users ( username, display_name, start_date ),
          log_rule_checks ( rule_id, is_completed ),
-         reactions ( reaction_type, reaction_count, sender_id, updated_at, users:sender_id ( username, display_name ) )`
+         reactions ( phrase_id, sender_id, updated_at, users:sender_id ( username, display_name ) )`
       )
       .in('status', ['completed', 'shielded'])
       .order('created_at', { ascending: false })
@@ -212,7 +209,7 @@ export async function fetchFeed(
         completed_rules: [],
         total_rules: 0,
         created_at: row.created_at,
-        reactions: { fire: 0, beast: 0, launch: 0, hype: 0 },
+        hypeCount: 0,
       }));
 
     // Rule titles never come from the raw `rules` table here — that table's
@@ -293,7 +290,7 @@ export async function fetchUserFeedPosts(userId: string, viewerId: string | null
         `id, user_id, log_date, status, photo_url, caption, created_at, batch_id,
          users ( username, display_name, start_date ),
          log_rule_checks ( rule_id, is_completed ),
-         reactions ( reaction_type, reaction_count, sender_id, updated_at, users:sender_id ( username, display_name ) )`
+         reactions ( phrase_id, sender_id, updated_at, users:sender_id ( username, display_name ) )`
       )
       .eq('user_id', userId)
       .in('status', ['completed', 'shielded'])
@@ -331,70 +328,28 @@ export async function fetchUserFeedPosts(userId: string, viewerId: string | null
 }
 
 /**
- * Records one tap of a reaction.
+ * Records (or replaces) this sender's hype on a post — one phrase per person
+ * per post, enforced by `unique (log_id, sender_id)` (migration 0006). A
+ * second call from the same sender re-rolls their phrase rather than
+ * incrementing a tally: a hype is a statement, not a like count.
  *
- * Multi-tap is supported by incrementing an existing row, so the count reflects
- * enthusiasm rather than a simple like. There is deliberately no way to
- * decrement or to send a negative type (start.md §7).
+ * `phraseId` must be a real src/lib/hype-phrases.ts id — the CHECK constraint
+ * only bounds its length, so callers are responsible for only ever sending an
+ * id from that curated list (never free text — start.md §7).
  */
-export async function addReaction(
-  logId: string,
-  senderId: string,
-  type: ReactionType
-): Promise<DbResult<true>> {
+export async function addReaction(logId: string, senderId: string, phraseId: string): Promise<DbResult<true>> {
   try {
     const supabase = createClient();
-
-    const { data: existing } = await supabase
-      .from('reactions')
-      .select('reaction_count')
-      .eq('log_id', logId)
-      .eq('sender_id', senderId)
-      .eq('reaction_type', type)
-      .maybeSingle();
 
     const { error } = await supabase.from('reactions').upsert(
       {
         log_id: logId,
         sender_id: senderId,
-        reaction_type: type,
-        reaction_count: (existing?.reaction_count ?? 0) + 1,
+        phrase_id: phraseId,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: 'log_id,sender_id,reaction_type' }
+      { onConflict: 'log_id,sender_id' }
     );
-
-    if (error) return fail(error);
-    return ok(true);
-  } catch (error) {
-    return fail(error);
-  }
-}
-
-/** Hides a participant's posts from this viewer's feed. */
-export async function unfollowUser(followerId: string, unfollowedId: string): Promise<DbResult<true>> {
-  try {
-    const supabase = createClient();
-    const { error } = await supabase
-      .from('user_unfollows')
-      .upsert({ follower_id: followerId, unfollowed_id: unfollowedId });
-
-    if (error) return fail(error);
-    return ok(true);
-  } catch (error) {
-    return fail(error);
-  }
-}
-
-/** Undoes an unfollow. */
-export async function refollowUser(followerId: string, unfollowedId: string): Promise<DbResult<true>> {
-  try {
-    const supabase = createClient();
-    const { error } = await supabase
-      .from('user_unfollows')
-      .delete()
-      .eq('follower_id', followerId)
-      .eq('unfollowed_id', unfollowedId);
 
     if (error) return fail(error);
     return ok(true);

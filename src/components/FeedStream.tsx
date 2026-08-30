@@ -4,12 +4,12 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import FeedCard from './FeedCard';
 import { FeedPost } from '@/lib/feed';
-import { ReactionType } from './HypeButton';
 import { Flame, Users, Info } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useChallenge } from './ChallengeProvider';
 import { useToast } from './Toast';
-import { fetchFeed, addReaction, unfollowUser, refollowUser } from '@/lib/db/feed';
+import { fetchFeed, addReaction } from '@/lib/db/feed';
+import { hideFromFeed, unhideFromFeed } from '@/lib/db/network';
 import { getEffectiveLogDate } from '@/lib/date-utils';
 
 /**
@@ -90,20 +90,18 @@ export default function FeedStream() {
   };
 
   /** Optimistic: the count moves immediately, the write follows. */
-  const handleReact = async (postId: string, type: ReactionType) => {
+  const handleReact = async (postId: string, phraseId: string) => {
     if (!viewerId) return;
     // Preview posts are not real rows, so there is nothing to react to.
     if (postId.startsWith('mock-post-')) return;
 
-    const result = await addReaction(postId, viewerId, type);
+    const result = await addReaction(postId, viewerId, phraseId);
     if (result.error) toast.error(result.error);
   };
 
   const handleUnfollow = async (userId: string, undo: boolean) => {
     if (!viewerId) return;
-    const result = undo
-      ? await refollowUser(viewerId, userId)
-      : await unfollowUser(viewerId, userId);
+    const result = undo ? await unhideFromFeed(viewerId, userId) : await hideFromFeed(viewerId, userId);
 
     if (result.error) {
       toast.error(result.error);
@@ -112,7 +110,7 @@ export default function FeedStream() {
     if (undo) reload();
   };
 
-  if (authLoading) return <div style={{ minHeight: '60vh' }} />;
+  if (authLoading) return <div style={{ minHeight: '60dvh' }} />;
 
   // The feed is for participants only (start.md §5).
   if (!session) {

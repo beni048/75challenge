@@ -13,11 +13,11 @@ export interface FeedPost {
   id: string;
   user_id: string;
   /**
-   * 'reset' is a plain announcement (no photo, rule chips, or reactions —
-   * `reactions.log_id` references daily_logs, and a reset event isn't one).
-   * Absent/'checkin' is the normal check-in card this type was originally
-   * shaped around; every other field below is meaningless for a 'reset' post
-   * beyond user/created_at.
+   * 'reset' is a plain announcement (no photo, rule chips, or hype — a
+   * reaction always references a daily_logs row, and a reset event isn't
+   * one). Absent/'checkin' is the normal check-in card this type was
+   * originally shaped around; every other field below is meaningless for a
+   * 'reset' post beyond user/created_at.
    */
   kind?: 'checkin' | 'reset';
   user: {
@@ -32,14 +32,11 @@ export interface FeedPost {
   completed_rules: string[];
   total_rules: number;
   created_at: string;
-  reactions: {
-    fire: number;
-    beast: number;
-    launch: number;
-    hype: number;
-  };
-  user_reactions?: string[]; // types clicked by current user
-  /** Distinct people who reacted (any type), most recent first — for "Hyped by X and N others". */
+  /** Distinct people who have hyped this post. */
+  hypeCount: number;
+  /** This viewer's own hype phrase id on this post, or null if they haven't hyped it. */
+  myHypePhraseId?: string | null;
+  /** Distinct people who reacted, most recent first — for "Hyped by X and N others". */
   reactors?: { username: string; displayName: string }[];
   is_mock?: boolean;
   /** Preview-post copy, per locale. Absent on real user posts. */
@@ -112,7 +109,7 @@ export const STATIC_MOCK_FEED_POSTS: FeedPost[] = [
     },
     total_rules: 5,
     created_at: minutesAgo(45),
-    reactions: { fire: 8, beast: 14, launch: 5, hype: 19 },
+    hypeCount: 46,
     is_mock: true,
   },
   {
@@ -139,7 +136,7 @@ export const STATIC_MOCK_FEED_POSTS: FeedPost[] = [
     },
     total_rules: 4,
     created_at: minutesAgo(180),
-    reactions: { fire: 24, beast: 9, launch: 12, hype: 31 },
+    hypeCount: 76,
     is_mock: true,
   },
   {
@@ -166,7 +163,7 @@ export const STATIC_MOCK_FEED_POSTS: FeedPost[] = [
     },
     total_rules: 3,
     created_at: minutesAgo(360),
-    reactions: { fire: 15, beast: 18, launch: 7, hype: 22 },
+    hypeCount: 62,
     is_mock: true,
   },
   {
@@ -193,7 +190,7 @@ export const STATIC_MOCK_FEED_POSTS: FeedPost[] = [
     },
     total_rules: 4,
     created_at: minutesAgo(520),
-    reactions: { fire: 11, beast: 6, launch: 9, hype: 17 },
+    hypeCount: 43,
     is_mock: true,
   },
 ];

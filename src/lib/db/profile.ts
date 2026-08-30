@@ -10,7 +10,8 @@
 import { createClient } from '../supabase/client';
 import { calculateTargetEndDate, getEffectiveLogDate } from '../date-utils';
 import type { Rule } from '../streak-engine';
-import { Challenge, DailyLogRow, RuleRow, UserRow, DbResult, ok, fail } from './types';
+import { Challenge, CommitmentLevel, DailyLogRow, RuleRow, UserRow, DbResult, ok, fail } from './types';
+import { COMMITMENT_ANNOUNCEMENT_KEY } from '../shield-policy';
 
 /**
  * Turns a display name into a URL-safe username.
@@ -43,6 +44,9 @@ function assemble(user: UserRow, rules: RuleRow[], logs: DailyLogRow[]): Challen
     location: user.location,
     avatarUrl: user.avatar_url,
     secretRulesVisibility: user.secret_rules_visibility,
+    commitmentLevel: user.commitment_level,
+    lastShieldUsedAt: user.last_shield_used_at,
+    acknowledgedUpdates: user.acknowledged_updates ?? [],
     rules,
     logs,
   };
@@ -77,6 +81,7 @@ export async function fetchChallengeById(userId: string): Promise<DbResult<Chall
 }
 
 export interface ChallengerListEntry {
+  id: string;
   username: string;
   displayName: string;
   avatarUrl: string | null;
@@ -98,7 +103,7 @@ export async function fetchAllChallengers(
     const supabase = createClient();
     const { data, error } = await supabase
       .from('users')
-      .select('username, display_name, avatar_url, start_date, timezone')
+      .select('id, username, display_name, avatar_url, start_date, timezone')
       .order('created_at', { ascending: false })
       // Fetch one extra row to know whether another page exists, without a
       // separate count query.
@@ -109,6 +114,7 @@ export async function fetchAllChallengers(
     const rows = data ?? [];
     const hasMore = rows.length > limit;
     const entries: ChallengerListEntry[] = rows.slice(0, limit).map((row) => ({
+      id: row.id,
       username: row.username,
       displayName: row.display_name,
       avatarUrl: row.avatar_url,
@@ -194,6 +200,8 @@ export interface CreateChallengeInput {
    * which keep the old auto-derive-with-suffix behavior below.
    */
   username?: string;
+  /** Chosen on the new onboarding step (item 8); defaults to 'classic' — the legacy 1-shield behaviour — for callers that predate it. */
+  commitmentLevel?: CommitmentLevel;
 }
 
 /**
@@ -256,6 +264,10 @@ export async function createChallenge(input: CreateChallengeInput): Promise<DbRe
           timezone,
           location: input.location ?? null,
           avatar_url: input.avatarUrl ?? null,
+          commitment_level: input.commitmentLevel ?? 'classic',
+          // A brand-new account chose its tier in onboarding, so the
+          // existing-user announcement is pre-acknowledged (supabase.md §5).
+          acknowledged_updates: [COMMITMENT_ANNOUNCEMENT_KEY],
         })
         .select()
         .single();
@@ -452,7 +464,13 @@ export async function spendShield(userId: string, missedDate: string): Promise<D
 
     const { error } = await supabase
       .from('users')
-      .update({ shields_remaining: 0, updated_at: new Date().toISOString() })
+      .update({
+        // shields_remaining is legacy and no longer read (shield-policy.ts
+        // derives availability); it is kept in sync until 0007 drops it.
+        shields_remaining: 0,
+        last_shield_used_at: missedDate,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', userId);
 
     if (error) return fail(error);
@@ -488,6 +506,7 @@ export async function restartChallenge(
         start_date: startDate,
         target_end_date: calculateTargetEndDate(startDate),
         shields_remaining: 1,
+        last_shield_used_at: null,
         status: 'active',
         updated_at: new Date().toISOString(),
       })
@@ -506,6 +525,40 @@ export async function restartChallenge(
       if (eventError) return fail(eventError);
     }
 
+    return ok(true);
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Marks a feature announcement as seen for this account.
+ *
+ * Lives in the database rather than localStorage so the prompt does not
+ * reappear on every other device the participant signs in on — see
+ * supabase.md §5. Appending (rather than replacing) keeps every prior
+ * acknowledgement intact.
+ */
+export async function acknowledgeUpdate(userId: string, key: string): Promise<DbResult<true>> {
+  try {
+    const supabase = createClient();
+
+    const { data: current, error: readError } = await supabase
+      .from('users')
+      .select('acknowledged_updates')
+      .eq('id', userId)
+      .maybeSingle();
+    if (readError) return fail(readError);
+
+    const existing: string[] = current?.acknowledged_updates ?? [];
+    if (existing.includes(key)) return ok(true);
+
+    const { error } = await supabase
+      .from('users')
+      .update({ acknowledged_updates: [...existing, key], updated_at: new Date().toISOString() })
+      .eq('id', userId);
+
+    if (error) return fail(error);
     return ok(true);
   } catch (error) {
     return fail(error);

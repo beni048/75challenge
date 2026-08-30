@@ -9,10 +9,29 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Info, X } from 'lucide-react';
 
+// Keep in step with .info-tooltip-popover's max-width in globals.css.
+const POPOVER_MAX_WIDTH_PX = 280;
+const VIEWPORT_MARGIN_PX = 16;
+
 export default function InfoTooltip({ label, text }: { label: string; text: string }) {
   const [open, setOpen] = useState(false);
+  // Which edge of the trigger the popover hangs from. Decided once, at the
+  // moment it opens, from the trigger's actual position — a fixed `left: 0`
+  // overflows the viewport whenever the trigger sits in the right portion of
+  // a narrow screen (see start.md §12 rule 10: no popover may render partly
+  // off-screen).
+  const [align, setAlign] = useState<'left' | 'right'>('left');
   const ref = useRef<HTMLDivElement>(null);
   const close = useCallback(() => setOpen(false), []);
+
+  const handleTriggerClick = () => {
+    if (!open && ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      const wouldOverflowRight = rect.left + POPOVER_MAX_WIDTH_PX > window.innerWidth - VIEWPORT_MARGIN_PX;
+      setAlign(wouldOverflowRight ? 'right' : 'left');
+    }
+    setOpen((prev) => !prev);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -37,7 +56,7 @@ export default function InfoTooltip({ label, text }: { label: string; text: stri
       <button
         type="button"
         className="icon-btn info-tooltip-trigger"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={handleTriggerClick}
         aria-expanded={open}
         aria-label={label}
         title={label}
@@ -46,7 +65,7 @@ export default function InfoTooltip({ label, text }: { label: string; text: stri
       </button>
 
       {open && (
-        <div className="info-tooltip-popover" role="tooltip">
+        <div className={`info-tooltip-popover align-${align}`} role="tooltip">
           <span>{text}</span>
           <button type="button" onClick={close} aria-label={label} className="info-tooltip-close">
             <X size={14} />

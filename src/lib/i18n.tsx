@@ -61,7 +61,7 @@ const en = {
 
   'footer.copyright': '© {year}',
   'footer.brand': '75 Challenge. For everyone getting back on track, together.',
-  'footer.tagline': 'Your habits, your pace. One Streak Shield per attempt.',
+  'footer.tagline': 'Your habits, your pace.',
 
   // Landing hero
   'hero.badge': "Let's get on Track",
@@ -75,9 +75,9 @@ const en = {
   'pillars.rules.title': 'Habits you choose',
   'pillars.rules.desc':
     'Nobody hands you a list. Pick the habits that matter to you and the rhythm that fits your week — every day, workdays only, or specific days.',
-  'pillars.shield.title': 'One Streak Shield',
+  'pillars.shield.title': 'Room for a bad day',
   'pillars.shield.desc':
-    'Life happens. If a day gets away from you, your shield covers it once and your progress stays intact.',
+    'Life happens. You choose up front how much slack you want — from none at all to a shield that comes back.',
   'pillars.hype.title': 'Support, not judgement',
   'pillars.hype.desc':
     'No comments to police, no downvotes, no leaderboards. Just people cheering each other on, one day at a time.',
@@ -89,7 +89,7 @@ const en = {
 
   'trust.title': 'You are your own judge',
   'trust.body':
-    'You tick off your own days, and you decide whether you are happy with how one went. Nobody is checking up on you. If you decide you missed a day, tell us — your shield covers it once, and after that you start fresh from Day 1. No shame in that.',
+    'You tick off your own days, and you decide whether you are happy with how one went. Nobody is checking up on you. If you decide you missed a day, you tell us — what happens next is the commitment level you chose. No shame in that.',
 
   // Join page
   'join.badgeReferral': 'Invited by @{username}',
@@ -99,7 +99,7 @@ const en = {
   'join.subtitle':
     'Choose your own habits, go at your own pace, and finish alongside everyone else who decided today was the day.',
   'join.perkRules': 'Habits you choose',
-  'join.perkShield': 'One Streak Shield',
+  'join.perkShield': 'Room for a bad day',
   'join.perkHype': 'Support, not judgement',
   'join.ctaReferral': 'Join with @{username}',
   'join.ctaDefault': 'Join 75 Challenge',
@@ -126,9 +126,9 @@ const en = {
   'onboarding.learnChange': 'You can change them once, after 7 days',
   'onboarding.learnChangeDesc':
     'The first week tells you a lot. After day 7 you get one chance to adjust your habits if you aimed too high or too low.',
-  'onboarding.learnShield': 'You get one Streak Shield',
+  'onboarding.learnShield': 'You choose how strict it is',
   'onboarding.learnShieldDesc':
-    'A single cheat day for the whole 75. Use it when life genuinely gets in the way.',
+    'Before you start you pick a commitment level, which decides how a missed day is handled.',
   'onboarding.learnJudge': 'You are the judge',
   'onboarding.learnJudgeDesc':
     'Nobody checks up on you. At the end of each day you decide whether you are happy with how it went.',
@@ -155,7 +155,6 @@ const en = {
 
   // Step 4 — account
   'onboarding.summary': '{start} → {end}',
-  'onboarding.shieldIncluded': 'One Streak Shield included',
   'onboarding.submit': 'Start my 75 days',
   'onboarding.minRulesAlert': 'Please choose at least {min} habits.',
   'onboarding.maxRulesAlert': 'You can have at most {max} habits.',
@@ -254,6 +253,30 @@ const en = {
     'You still have unchecked rules. Do you want to report this day as missed?',
   'checklist.photoAlt': 'Your photo for today',
 
+  // Commitment tiers (shield difficulty, chosen at signup)
+  'commitment.legend': 'Commitment level',
+  'commitment.stepTitle': 'How strict do you want this to be?',
+  'commitment.stepIntro':
+    'This decides what happens on a day that does not go to plan. You are the only person this answers to — pick the one you will actually keep.',
+  'commitment.stepCta': 'Continue to account',
+  'commitment.locked': 'Your commitment level is set for this attempt. It resets if you start over.',
+  'commitment.announce':
+    'New: you can now choose how strict your challenge is. You are on Classic — the same single shield you have always had.',
+  'commitment.announceCta': 'Take a look',
+  'commitment.purist.name': 'Purist',
+  'commitment.purist.rule': 'No shields',
+  'commitment.purist.desc':
+    'The original 75 Hard. Miss a day and you go back to Day 1, no exceptions.',
+  'commitment.classic.name': 'Classic',
+  'commitment.classic.rule': 'One shield',
+  'commitment.classic.desc':
+    'One missed day is covered across the whole 75. After that, a miss starts you over.',
+  'commitment.flex.name': 'Flex',
+  'commitment.flex.rule': 'Shield recharges',
+  'commitment.flex.desc':
+    'Start with one shield. Once you use it, another arrives {days} days later — so life can happen more than once.',
+  'commitment.shieldReturns': 'Your shield comes back in {days} days.',
+
   // Shield modal
   'shield.title': 'You reported a missed day',
   'shield.subtitle': 'You told us {date} did not go to plan. Your call — here is what happens next.',
@@ -350,8 +373,9 @@ const en = {
     'People check off their own days, share a bit if they feel like it, and cheer each other on. No downvotes, no comment section to police.',
   'preview.sampleBadge': 'Sample',
 
-  // Reactions ("Fire", "Beast", … stay untranslated — they are product names)
-  'hype.give': 'Give {label} hype',
+  // Hype (src/lib/hype-phrases.ts owns the actual phrase text)
+  'hype.give': 'Hype this',
+  'hype.reroll': 'Try another phrase',
 
   // 9:16 story card
   'story.shieldReady': 'Shield Ready',
@@ -409,14 +433,17 @@ const en = {
   'profile.viewing': "{name}'s challenge",
   'profile.notFound': 'No participant found with that username.',
   'profile.ownChallenge': 'Go to my challenge',
-  'profile.follow': 'Follow',
-  'profile.following': 'Following',
-  'profile.followersTitle': 'Followers',
-  'profile.followersCount': '{count} followers',
-  'profile.followingCount': '{count} following',
-  'profile.noFollowers': 'No followers yet.',
-  'profile.noFollowing': 'Not following anyone yet.',
   'profile.rulesTitle': 'Habits',
+  // network.* — everyone follows everyone by default; the only choice is
+  // hiding someone from your own feed, and undoing that.
+  'network.follow': 'Follow',
+  'network.following': 'Following',
+  'network.title': 'Network',
+  'network.peopleYouFollow': 'People you follow',
+  'network.peopleYouFollowDesc': 'Everyone, minus the people below.',
+  'network.hiddenByYou': 'Hidden by you',
+  'network.unhide': 'Unhide',
+  'network.noHidden': "You haven't hidden anyone.",
   'profile.postsTitle': 'Posts',
   'profile.noPosts': 'No check-ins yet.',
 
@@ -536,7 +563,7 @@ const de: Record<TranslationKey, string> = {
 
   'footer.copyright': '© {year}',
   'footer.brand': '75 Challenge. Für alle, die gemeinsam wieder in Fahrt kommen.',
-  'footer.tagline': 'Deine Gewohnheiten, dein Tempo. Ein Streak-Schild pro Versuch.',
+  'footer.tagline': 'Deine Gewohnheiten, dein Tempo.',
 
   'hero.badge': 'Lass uns loslegen',
   'hero.titleLead': 'Fordere dich selbst —',
@@ -549,7 +576,7 @@ const de: Record<TranslationKey, string> = {
   'pillars.rules.title': 'Gewohnheiten deiner Wahl',
   'pillars.rules.desc':
     'Niemand drückt dir eine Liste in die Hand. Wähle die Gewohnheiten, die dir wichtig sind, und den Rhythmus, der zu deiner Woche passt – täglich, werktags oder an bestimmten Tagen.',
-  'pillars.shield.title': 'Ein Streak-Schild',
+  'pillars.shield.title': 'Platz für einen schlechten Tag',
   'pillars.shield.desc':
     'Das Leben kommt dazwischen. Wenn dir ein Tag entgleitet, deckt dein Schild ihn einmal ab und dein Fortschritt bleibt bestehen.',
   'pillars.hype.title': 'Rückhalt statt Urteil',
@@ -572,7 +599,7 @@ const de: Record<TranslationKey, string> = {
   'join.subtitle':
     'Wähle deine eigenen Gewohnheiten, geh dein Tempo und komm gemeinsam mit allen an, die sich heute dafür entschieden haben.',
   'join.perkRules': 'Gewohnheiten deiner Wahl',
-  'join.perkShield': 'Ein Streak-Schild',
+  'join.perkShield': 'Platz für einen schlechten Tag',
   'join.perkHype': 'Rückhalt statt Urteil',
   'join.ctaReferral': 'Mit @{username} beitreten',
   'join.ctaDefault': '75 Challenge beitreten',
@@ -623,7 +650,6 @@ const de: Record<TranslationKey, string> = {
   'onboarding.rulesCta': 'Weiter zum Konto',
 
   'onboarding.summary': '{start} → {end}',
-  'onboarding.shieldIncluded': 'Ein Streak-Schild inklusive',
   'onboarding.submit': 'Meine 75 Tage starten',
   'onboarding.minRulesAlert': 'Bitte wähle mindestens {min} Gewohnheiten.',
   'onboarding.maxRulesAlert': 'Du kannst höchstens {max} Gewohnheiten haben.',
@@ -718,6 +744,29 @@ const de: Record<TranslationKey, string> = {
     'Es sind noch Regeln offen. Möchtest du diesen Tag als verpasst melden?',
   'checklist.photoAlt': 'Dein Foto für heute',
 
+  'commitment.legend': 'Commitment-Level',
+  'commitment.stepTitle': 'Wie streng soll es werden?',
+  'commitment.stepIntro':
+    'Das entscheidet, was an einem Tag passiert, der nicht läuft wie geplant. Du musst dich nur vor dir selbst verantworten – nimm das Level, das du wirklich durchziehst.',
+  'commitment.stepCta': 'Weiter zum Konto',
+  'commitment.locked': 'Dein Level steht für diesen Versuch fest. Beim Neustart kannst du es neu wählen.',
+  'commitment.announce':
+    'Neu: Du kannst jetzt selbst festlegen, wie streng deine Challenge ist. Du bist auf Classic – also genau das eine Schild, das du eh schon hattest.',
+  'commitment.announceCta': 'Anschauen',
+  'commitment.purist.name': 'Purist',
+  'commitment.purist.rule': 'Keine Schilde',
+  'commitment.purist.desc':
+    'Das originale 75 Hard. Ein verpasster Tag und du bist zurück auf Tag 1. Ohne Ausnahme.',
+  'commitment.classic.name': 'Classic',
+  'commitment.classic.rule': 'Ein Schild',
+  'commitment.classic.desc':
+    'Ein verpasster Tag ist über die ganzen 75 Tage abgedeckt. Danach fängst du wieder von vorn an.',
+  'commitment.flex.name': 'Flex',
+  'commitment.flex.rule': 'Schild lädt nach',
+  'commitment.flex.desc':
+    'Du startest mit einem Schild. Wenn du es einsetzt, kommt {days} Tage später das nächste – das Leben darf also öfter dazwischenkommen.',
+  'commitment.shieldReturns': 'Dein Schild ist in {days} Tagen zurück.',
+
   'shield.title': 'Du hast einen verpassten Tag gemeldet',
   'shield.subtitle':
     'Du sagst, der {date} lief nicht nach Plan. Deine Entscheidung – so geht es weiter.',
@@ -807,7 +856,8 @@ const de: Record<TranslationKey, string> = {
     'Leute haken ihre eigenen Tage ab, teilen etwas, wenn ihnen danach ist, und feuern sich gegenseitig an. Keine Downvotes, keine Kommentarspalte zum Moderieren.',
   'preview.sampleBadge': 'Beispiel',
 
-  'hype.give': '{label} als Zuspruch geben',
+  'hype.give': 'Hypen',
+  'hype.reroll': 'Anderen Spruch versuchen',
 
   'story.shieldReady': 'Schild bereit',
   'story.shieldUsed': 'Schild genutzt',
@@ -859,14 +909,15 @@ const de: Record<TranslationKey, string> = {
   'profile.viewing': 'Challenge von {name}',
   'profile.notFound': 'Kein Teilnehmender mit diesem Benutzernamen gefunden.',
   'profile.ownChallenge': 'Zu meiner Challenge',
-  'profile.follow': 'Folgen',
-  'profile.following': 'Gefolgt',
-  'profile.followersTitle': 'Follower',
-  'profile.followersCount': '{count} Follower',
-  'profile.followingCount': '{count} Gefolgte',
-  'profile.noFollowers': 'Noch keine Follower.',
-  'profile.noFollowing': 'Folgt noch niemandem.',
   'profile.rulesTitle': 'Gewohnheiten',
+  'network.follow': 'Folgen',
+  'network.following': 'Gefolgt',
+  'network.title': 'Netzwerk',
+  'network.peopleYouFollow': 'Leute, denen du folgst',
+  'network.peopleYouFollowDesc': 'Alle, ausser den unten aufgeführten.',
+  'network.hiddenByYou': 'Von dir ausgeblendet',
+  'network.unhide': 'Wieder einblenden',
+  'network.noHidden': 'Du hast noch niemanden ausgeblendet.',
   'profile.postsTitle': 'Beiträge',
   'profile.noPosts': 'Noch keine Check-ins.',
 
