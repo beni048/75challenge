@@ -31,6 +31,13 @@ export function shouldShowPreviews(realPostCount: number): boolean {
   return realPostCount === 0;
 }
 
+/**
+ * Note the `users:user_id` embeds in the queries below. Since migration 0008,
+ * daily_logs has TWO foreign keys into users — `user_id` (the author) and
+ * `hype_claimed_by` (whoever claimed the hype phrase) — so a bare `users(...)`
+ * embed is ambiguous and PostgREST rejects it with "more than one relationship
+ * was found". Always name the column.
+ */
 interface FeedRow {
   id: string;
   user_id: string;
@@ -160,7 +167,7 @@ export async function fetchFeed(
       .select(
         `id, user_id, log_date, status, photo_url, caption, created_at, batch_id,
          hype_phrase_id, hype_claimed_by,
-         users ( username, display_name, start_date ),
+         users:user_id ( username, display_name, start_date ),
          log_rule_checks ( rule_id, is_completed ),
          reactions ( phrase_id, sender_id, updated_at, users:sender_id ( username, display_name ) )`
       )
@@ -305,7 +312,7 @@ export async function fetchUserFeedPosts(userId: string, viewerId: string | null
       .select(
         `id, user_id, log_date, status, photo_url, caption, created_at, batch_id,
          hype_phrase_id, hype_claimed_by,
-         users ( username, display_name, start_date ),
+         users:user_id ( username, display_name, start_date ),
          log_rule_checks ( rule_id, is_completed ),
          reactions ( phrase_id, sender_id, updated_at, users:sender_id ( username, display_name ) )`
       )

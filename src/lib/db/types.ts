@@ -147,6 +147,17 @@ export function fail<T>(error: unknown): DbResult<T> {
     error && typeof error === 'object' && 'message' in error
       ? String((error as { message: unknown }).message)
       : 'Something went wrong. Please try again.';
-  console.error('[db]', error);
+  // Log the FIELDS, not the object: a Supabase/PostgREST error serialises as
+  // `{}` in the console, which is how a plain `console.error('[db]', error)`
+  // once reported an ambiguous-embed failure as literally "[db] {}". Same
+  // reasoning as the [auth] and [storage] logs.
+  const e = (error ?? {}) as Record<string, unknown>;
+  console.error('[db]', {
+    message: e.message,
+    code: e.code,
+    details: e.details,
+    hint: e.hint,
+    status: e.status ?? e.statusCode,
+  });
   return { data: null, error: message };
 }
