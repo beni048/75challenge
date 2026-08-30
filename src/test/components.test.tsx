@@ -67,13 +67,13 @@ describe('UI Components', () => {
 
   describe('HypeButton', () => {
     it('renders the current hype count', () => {
-      render(<HypeButton hypeCount={8} />);
+      render(<HypeButton hypeCount={8} dayNumber={34} />);
       expect(screen.getByText('8')).toBeInTheDocument();
     });
 
     it('increments the count optimistically on first tap, with a curated phrase id', () => {
       const handleReact = vi.fn();
-      render(<HypeButton hypeCount={5} onReact={handleReact} />);
+      render(<HypeButton hypeCount={5} dayNumber={34} onReact={handleReact} />);
 
       fireEvent.click(screen.getByRole('button'));
 
@@ -84,7 +84,7 @@ describe('UI Components', () => {
 
     it('re-rolls to a phrase (not a second increment) when the viewer already hyped this post', () => {
       const handleReact = vi.fn();
-      render(<HypeButton hypeCount={5} myPhraseId="you-are-a-god" onReact={handleReact} />);
+      render(<HypeButton hypeCount={5} dayNumber={34} myPhraseId="you-are-a-god" onReact={handleReact} />);
 
       fireEvent.click(screen.getByRole('button'));
 

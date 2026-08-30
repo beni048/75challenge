@@ -29,7 +29,12 @@ interface HypeButtonProps {
  * Tapping again re-rolls to a different phrase instead of adding a tally,
  * since a hype is a statement, not a like count.
  */
-export default function HypeButton({ hypeCount: initialCount, myPhraseId: initialPhraseId, onReact }: HypeButtonProps) {
+export default function HypeButton({
+  hypeCount: initialCount,
+  dayNumber,
+  myPhraseId: initialPhraseId,
+  onReact,
+}: HypeButtonProps) {
   const { t, locale } = useI18n();
 
   // Adjusted during render, not in an effect (React's own recommended pattern
