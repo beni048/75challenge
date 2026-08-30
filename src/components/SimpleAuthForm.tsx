@@ -205,9 +205,6 @@ export default function SimpleAuthForm({
           />
           <AtSign size={18} className="field-icon" />
         </div>
-        {usernameRaw.trim() !== '' && (
-          <p className="field-hint">{t('auth.usernamePreview', { username: usernameSlug })}</p>
-        )}
       </div>
 
       <div className="input-group">

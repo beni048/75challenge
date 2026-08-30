@@ -204,7 +204,6 @@ const en = {
   'auth.nameRequired': 'Display name is required.',
   'auth.usernameLabel': 'Username',
   'auth.usernamePlaceholder': 'ironspartan',
-  'auth.usernamePreview': 'Your profile: @{username}',
   'auth.avatarLabel': 'Profile Picture (optional)',
   'auth.avatarUpload': 'Add a photo',
   'auth.avatarChange': 'Change photo',
@@ -714,7 +713,6 @@ const de: Record<TranslationKey, string> = {
   'auth.nameRequired': 'Wir brauchen einen Anzeigenamen.',
   'auth.usernameLabel': 'Benutzername',
   'auth.usernamePlaceholder': 'ironspartan',
-  'auth.usernamePreview': 'Dein Profil: @{username}',
   'auth.avatarLabel': 'Profilbild (optional)',
   'auth.avatarUpload': 'Foto hinzufügen',
   'auth.avatarChange': 'Foto ändern',
@@ -1050,7 +1048,22 @@ export function translate(
   vars?: Record<string, string | number>
 ): string {
   const table = translations[locale] ?? translations.en;
-  return interpolate(table[key] ?? translations.en[key] ?? key, vars);
+  const copy = table[key] ?? translations.en[key];
+
+  if (copy === undefined) {
+    // Falling back to the key means the raw string "auth.passwordHint" gets
+    // rendered to a user — which is exactly what happened when a key was
+    // deleted while a call site still referenced it. TypeScript catches that
+    // for a literal key, but every `as TranslationKey` cast (the commitment
+    // tiers, weekdays) defeats it, so shout in development instead of failing
+    // silently. Production still degrades to the key rather than crashing.
+    if (process.env.NODE_ENV !== 'production') {
+      console.error(`[i18n] missing translation key: "${key}" — this renders as raw text.`);
+    }
+    return interpolate(key, vars);
+  }
+
+  return interpolate(copy, vars);
 }
 
 interface I18nContextValue {

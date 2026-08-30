@@ -62,3 +62,23 @@ describe('i18n', () => {
     });
   });
 });
+
+describe('every dynamically-built key exists', () => {
+  // These are constructed at runtime and cast with `as TranslationKey`, so the
+  // compiler cannot check them — a renamed tier or weekday would render its
+  // raw key to a user. Enumerate them here instead.
+  const DYNAMIC_KEYS = [
+    ...['purist', 'classic', 'flex'].flatMap((tier) => [
+      `commitment.${tier}.name`,
+      `commitment.${tier}.rule`,
+      `commitment.${tier}.desc`,
+    ]),
+    ...['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map((d) => `weekday.${d}`),
+  ];
+
+  it.each(DYNAMIC_KEYS)('%s resolves in both locales', (key) => {
+    for (const locale of LOCALES) {
+      expect(translations[locale][key as TranslationKey], `${key} (${locale})`).toBeTruthy();
+    }
+  });
+});
