@@ -253,6 +253,23 @@ const en = {
     'You still have unchecked rules. Do you want to report this day as missed?',
   'checklist.photoAlt': 'Your photo for today',
 
+  // Day window (3-day picker on your own profile)
+  'dayWindow.legend': 'Choose a day',
+  'dayWindow.previous': 'Previous day',
+  'dayWindow.next': 'Next day',
+  'dayWindow.dayOf': 'Day {day} of 75',
+  'dayWindow.outsideChallenge': 'Outside your challenge',
+  'dayWindow.viewGrid': 'All 75 days',
+  'dayWindow.viewWindow': 'Focus',
+  'weekday.sun': 'Sun',
+  'weekday.mon': 'Mon',
+  'weekday.tue': 'Tue',
+  'weekday.wed': 'Wed',
+  'weekday.thu': 'Thu',
+  'weekday.fri': 'Fri',
+  'weekday.sat': 'Sat',
+  'progress.ringLabel': 'Challenge complete',
+
   // Commitment tiers (shield difficulty, chosen at signup)
   'commitment.legend': 'Commitment level',
   'commitment.stepTitle': 'How strict do you want this to be?',
@@ -743,6 +760,22 @@ const de: Record<TranslationKey, string> = {
   'checklist.confirmIncomplete':
     'Es sind noch Regeln offen. Möchtest du diesen Tag als verpasst melden?',
   'checklist.photoAlt': 'Dein Foto für heute',
+
+  'dayWindow.legend': 'Tag auswählen',
+  'dayWindow.previous': 'Vorheriger Tag',
+  'dayWindow.next': 'Nächster Tag',
+  'dayWindow.dayOf': 'Tag {day} von 75',
+  'dayWindow.outsideChallenge': 'Ausserhalb deiner Challenge',
+  'dayWindow.viewGrid': 'Alle 75 Tage',
+  'dayWindow.viewWindow': 'Fokus',
+  'weekday.sun': 'So',
+  'weekday.mon': 'Mo',
+  'weekday.tue': 'Di',
+  'weekday.wed': 'Mi',
+  'weekday.thu': 'Do',
+  'weekday.fri': 'Fr',
+  'weekday.sat': 'Sa',
+  'progress.ringLabel': 'Challenge geschafft',
 
   'commitment.legend': 'Commitment-Level',
   'commitment.stepTitle': 'Wie streng soll es werden?',

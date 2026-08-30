@@ -2360,3 +2360,196 @@ a {
   color: var(--text-secondary);
   line-height: 1.45;
 }
+
+/* ---------------------------------------------------------------------------
+   Progress ring — Apple-Health-style circular percentage.
+   Sizing lives here rather than in props so it can be responsive (§12).
+   --------------------------------------------------------------------------- */
+.progress-ring {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 148px;
+}
+
+@media (min-width: 480px) {
+  .progress-ring {
+    width: 172px;
+  }
+}
+
+.progress-ring-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.progress-ring-arc {
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-ring-arc {
+    transition: none;
+  }
+}
+
+/* Centred over the ring's hole, not the whole flex column, hence the offset
+   that accounts for the label sitting below. */
+.progress-ring-value {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  margin-top: -0.85rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.9rem;
+  color: var(--text-primary);
+  pointer-events: none;
+}
+
+@media (min-width: 480px) {
+  .progress-ring-value {
+    font-size: 2.2rem;
+  }
+}
+
+.progress-ring-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ---------------------------------------------------------------------------
+   3-day window picker
+   --------------------------------------------------------------------------- */
+.day-window {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.day-window-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.day-window-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+  min-width: 9rem;
+  text-align: center;
+}
+
+.day-window-slots {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+}
+
+.day-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.7rem 0.4rem;
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  border: 2px solid transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.day-slot:disabled {
+  cursor: default;
+}
+
+/* Not yet reachable — dashed, matching the reference. */
+.day-slot.is-future {
+  border-style: dashed;
+  border-color: var(--border-subtle);
+  opacity: 0.55;
+}
+
+.day-slot.is-selected {
+  border-color: var(--text-primary);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.day-slot-weekday {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.day-slot-number {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+/* The status dot: filled green with a tick when the day is banked. */
+.day-slot-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: var(--grid-empty);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-on-accent);
+}
+
+.day-slot.is-completed .day-slot-dot {
+  background: var(--accent-green);
+}
+
+.day-slot.is-shielded .day-slot-dot {
+  background: var(--accent-cyan);
+}
+
+.day-slot.is-missed .day-slot-dot {
+  background: var(--danger-cell);
+}
+
+/* Comfortable targets on touch, per §12 rule 6. */
+@media (pointer: coarse) {
+  .day-slot {
+    min-height: 76px;
+  }
+}
+
+/* Focused dashboard view: ring above, day picker below. */
+.profile-view-toggle {
+  align-self: center;
+}
+
+.profile-focus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+/* The picker takes the full width under the ring, capped so the three pills
+   stay a sensible size on a wide screen. */
+.profile-focus .day-window {
+  width: 100%;
+  max-width: 380px;
+}

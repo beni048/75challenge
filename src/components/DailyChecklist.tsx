@@ -9,6 +9,8 @@ import { useI18n } from '@/lib/i18n';
 
 export interface DailyCheckInSubmission {
   status: 'completed';
+  /** Which day this submission is for — the picker can move it off today. */
+  logDate: string;
   caption: string | null;
   /**
    * The compressed image itself, not a URL. The page uploads it to Storage and
@@ -35,7 +37,13 @@ export default function DailyChecklist({
   onReportFailure,
 }: DailyChecklistProps) {
   const { t } = useI18n();
-  const [completedRuleIds, setCompletedRuleIds] = useState<string[]>([]);
+  // Everything starts ticked: the common case by far is "I did my day", so
+  // the form opens in that state and unticking is the exception. The parent
+  // remounts this per day (key={logDate}), so the initialiser re-runs whenever
+  // the selected day changes.
+  const [completedRuleIds, setCompletedRuleIds] = useState<string[]>(() =>
+    rules.map((r) => r.id)
+  );
   const [caption, setCaption] = useState('');
   const [photo, setPhoto] = useState<{ blob: Blob; previewUrl: string } | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
@@ -107,9 +115,13 @@ export default function DailyChecklist({
 
     onSaveLog({
       status: 'completed',
+      logDate,
       caption: caption.trim() || null,
       photoBlob: photo?.blob ?? null,
-      ruleChecks: rules.map((r) => ({ ruleId: r.id, isCompleted: true })),
+      ruleChecks: rules.map((r) => ({
+        ruleId: r.id,
+        isCompleted: completedRuleIds.includes(r.id),
+      })),
     });
   };
 

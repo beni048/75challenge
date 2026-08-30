@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import ConsistencyHeatmap from '@/components/ConsistencyHeatmap';
@@ -17,6 +17,11 @@ import { getRequiredRulesForDate } from '@/lib/streak-engine';
 import { calculateCurrentDay, getEffectiveLogDate, hasStarted } from '@/lib/date-utils';
 import { getPendingDates } from '@/lib/pending-days';
 import { hasShieldAvailable } from '@/lib/shield-policy';
+import { useProfileView } from '@/lib/use-profile-view';
+import { buildDayWindow, canStep, shiftDate } from '@/lib/day-window';
+import { completionPercent } from '@/lib/day-progress';
+import ProgressRing from '@/components/ProgressRing';
+import DayWindow from '@/components/DayWindow';
 import { Share2, ArrowRight, Lock } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useChallenge } from '@/components/ChallengeProvider';
@@ -44,6 +49,10 @@ export default function UserProfilePage() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'story'>('dashboard');
   const [saving, setSaving] = useState(false);
   const [catchingUp, setCatchingUp] = useState(false);
+  // The day the check-in form is showing. Null until a challenge (and so a
+  // timezone, and so a "today") exists; resolved below.
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [view, setView] = useProfileView();
 
   // Someone else's profile is fetched on demand; your own comes from context.
   const isOwnProfile = ownChallenge?.username === routeUsername;
@@ -144,14 +153,10 @@ export default function UserProfilePage() {
   // here (before the loading/not-found guards below); nothing that reads
   // `today` renders until after those guards, so an empty placeholder is safe.
   const today = challenge ? getEffectiveLogDate(challenge.timezone) : '';
-  const todaysLog = useMemo(
-    () => challenge?.logs.find((log) => log.log_date === today) ?? null,
-    [challenge, today]
-  );
-
   const handleSaveLog = useCallback(
     async (log: {
       status: 'completed';
+      logDate: string;
       caption: string | null;
       photoBlob: Blob | null;
       ruleChecks: { ruleId: string; isCompleted: boolean }[];
@@ -174,7 +179,7 @@ export default function UserProfilePage() {
 
       const result = await saveDailyLog({
         userId: challenge.id,
-        logDate: today,
+        logDate: log.logDate,
         status: 'completed',
         photoUrl,
         caption: log.caption,
@@ -191,7 +196,7 @@ export default function UserProfilePage() {
       await refresh();
       toast.success(t('day.doneTitle'));
     },
-    [challenge, today, refresh, toast, t]
+    [challenge, refresh, toast, t]
   );
 
   const handleReportFailure = (dateToReport: string) => {
@@ -293,14 +298,21 @@ export default function UserProfilePage() {
     schedule_type: rule.schedule_type,
     custom_days: rule.custom_days,
   }));
-  const rulesDueToday = getRequiredRulesForDate(rules, today);
+  // The whole check-in block below is a function of logDate, not of `today` —
+  // that is what lets the 3-day picker move the form between days.
+  const logDate = selectedDate ?? today;
+  const rulesDueToday = getRequiredRulesForDate(rules, logDate);
+  const selectedLog = challenge.logs.find((log) => log.log_date === logDate) ?? null;
+  const isFutureDay = logDate > today;
+  const daySlots = buildDayWindow(logDate, challenge.startDate, today, challenge.logs);
+  const percent = completionPercent(challenge.logs);
   const pendingDates = isOwnProfile ? getPendingDates(challenge.startDate, rules, challenge.logs, today) : [];
 
   // A finished day is closed for editing — see DayLockedCard.
   const lockedReason =
-    todaysLog?.status === 'completed'
+    selectedLog?.status === 'completed'
       ? ('completed' as const)
-      : todaysLog?.status === 'shielded'
+      : selectedLog?.status === 'shielded'
         ? ('shielded' as const)
         : rulesDueToday.length === 0
           ? ('rest-day' as const)
@@ -384,12 +396,40 @@ export default function UserProfilePage() {
 
           {activeTab === 'dashboard' ? (
             <div className="stack stack-loose">
-              <ConsistencyHeatmap
-                startDate={challenge.startDate}
-                logs={challenge.logs.map((log) => ({ log_date: log.log_date, status: log.status }))}
-                currentDay={currentDay}
-                today={today}
-              />
+              {/* Two ways to look at the same 75 days: a focused ring plus
+                  the day you are logging, or the whole grid. The choice is a
+                  per-device display preference, so it lives in localStorage. */}
+              <div className="segmented profile-view-toggle" role="group" aria-label={t('dayWindow.legend')}>
+                <button type="button" onClick={() => setView('focus')} aria-pressed={view === 'focus'}>
+                  {t('dayWindow.viewWindow')}
+                </button>
+                <button type="button" onClick={() => setView('grid')} aria-pressed={view === 'grid'}>
+                  {t('dayWindow.viewGrid')}
+                </button>
+              </div>
+
+              {view === 'focus' ? (
+                <div className="profile-focus">
+                  <ProgressRing percent={percent} label={t('progress.ringLabel')} />
+                  {started && (
+                    <DayWindow
+                      slots={daySlots}
+                      selectedDate={logDate}
+                      onSelect={setSelectedDate}
+                      onStep={(direction) => setSelectedDate(shiftDate(logDate, direction))}
+                      canStepBack={canStep(logDate, challenge.startDate, -1)}
+                      canStepForward={canStep(logDate, challenge.startDate, 1)}
+                    />
+                  )}
+                </div>
+              ) : (
+                <ConsistencyHeatmap
+                  startDate={challenge.startDate}
+                  logs={challenge.logs.map((log) => ({ log_date: log.log_date, status: log.status }))}
+                  currentDay={currentDay}
+                  today={today}
+                />
+              )}
 
               {/* A future start date shows a countdown instead of tasks that
                   cannot have happened yet. */}
@@ -406,13 +446,15 @@ export default function UserProfilePage() {
                       onReportMissed={handleReportFailure}
                     />
                   )}
-                  {lockedReason ? (
-                    <DayLockedCard reason={lockedReason} logDate={today} />
+                  {isFutureDay ? (
+                    <DayLockedCard reason="rest-day" logDate={logDate} />
+                  ) : lockedReason ? (
+                    <DayLockedCard reason={lockedReason} logDate={logDate} />
                   ) : (
                     <DailyChecklist
-                      key={today}
+                      key={logDate}
                       rules={rulesDueToday}
-                      logDate={today}
+                      logDate={logDate}
                       saving={saving}
                       onSaveLog={handleSaveLog}
                       onReportFailure={handleReportFailure}
