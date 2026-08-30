@@ -111,6 +111,7 @@ export function ConfirmDialog({
   cancelLabel,
   onConfirm,
   onCancel,
+  children,
 }: {
   isOpen: boolean;
   title: string;
@@ -119,6 +120,8 @@ export function ConfirmDialog({
   cancelLabel: string;
   onConfirm: () => void;
   onCancel: () => void;
+  /** Extra content between the body and the action buttons (e.g. a checkbox). */
+  children?: React.ReactNode;
 }) {
   const hydrated = useHydrated();
 
@@ -144,9 +147,10 @@ export function ConfirmDialog({
         aria-label={title}
       >
         <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>{title}</h3>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: children ? '1rem' : '1.5rem' }}>
           {body}
         </p>
+        {children && <div style={{ marginBottom: '1.5rem' }}>{children}</div>}
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <button type="button" className="btn btn-danger" style={{ flex: 1 }} onClick={onConfirm}>
             {confirmLabel}

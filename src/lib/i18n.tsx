@@ -266,8 +266,23 @@ const en = {
   'shield.optionResetDesc':
     'Warning: this wipes your current streak and starts a brand new attempt from Day 1, with 1 fresh Streak Shield.',
   'shield.optionResetCta': 'Reset me to Day 1',
+  'shield.announceToFeed': 'Share this on the community feed',
   'shield.keepGoing': 'Never mind, keep my streak',
   'shield.close': 'Close',
+
+  // Countdown to a future start date
+  'countdown.dayOne': '1 day until your challenge starts',
+  'countdown.days': '{count} days until your challenge starts',
+  'countdown.startsOn': 'You start on {date}.',
+  'countdown.browseFeed': 'Browse the community feed',
+
+  // Catch-up on unlogged past days
+  'catchup.explainOne': 'You have one day without a check-in. No shame in that — catch up now, or tell us it did not happen.',
+  'catchup.explainMany':
+    'You have {count} days without a check-in. No shame in that — catch up now, or tell us it did not happen.',
+  'catchup.reportMissed': 'Report as missed',
+  'catchup.submitOne': 'Catch up on 1 day',
+  'catchup.submitMany': 'Catch up on {count} days',
 
   // Heatmap
   'heatmap.title': 'Your 75 days',
@@ -375,6 +390,7 @@ const en = {
     'Nobody has checked in yet today, so these sample posts show what the feed looks like.',
   'feed.empty': 'No check-ins yet. Be the first today.',
   'feed.loginRequired': 'Log in to see the community feed.',
+  'feed.caughtUpMany': 'Caught up on {count} past days',
 
   // Other people's profiles
   'profile.viewing': "{name}'s challenge",
@@ -691,8 +707,21 @@ const de: Record<TranslationKey, string> = {
   'shield.optionResetDesc':
     'Achtung: Das löscht deine aktuelle Serie und startet einen komplett neuen Versuch ab Tag 1 – mit 1 frischen Streak-Schild.',
   'shield.optionResetCta': 'Auf Tag 1 zurücksetzen',
+  'shield.announceToFeed': 'Im Community-Feed teilen',
   'shield.keepGoing': 'Doch nicht, Serie behalten',
   'shield.close': 'Schliessen',
+
+  'countdown.dayOne': '1 Tag bis deine Challenge beginnt',
+  'countdown.days': '{count} Tage bis deine Challenge beginnt',
+  'countdown.startsOn': 'Du startest am {date}.',
+  'countdown.browseFeed': 'Community-Feed ansehen',
+
+  'catchup.explainOne': 'Du hast einen Tag ohne Check-in. Kein Grund zur Scham – hol ihn jetzt nach oder sag uns, dass er nicht stattgefunden hat.',
+  'catchup.explainMany':
+    'Du hast {count} Tage ohne Check-in. Kein Grund zur Scham – hol sie jetzt nach oder sag uns, dass sie nicht stattgefunden haben.',
+  'catchup.reportMissed': 'Als verpasst melden',
+  'catchup.submitOne': '1 Tag nachholen',
+  'catchup.submitMany': '{count} Tage nachholen',
 
   'heatmap.title': 'Deine 75 Tage',
   'heatmap.subtitle': 'Ein Feld pro Tag. Schau zu, wie es sich füllt.',
@@ -790,6 +819,7 @@ const de: Record<TranslationKey, string> = {
     'Heute hat noch niemand eingecheckt – diese Beispielbeiträge zeigen, wie der Feed aussieht.',
   'feed.empty': 'Noch keine Check-ins. Sei heute die erste Person.',
   'feed.loginRequired': 'Melde dich an, um den Community-Feed zu sehen.',
+  'feed.caughtUpMany': '{count} vergangene Tage nachgeholt',
 
   'profile.viewing': 'Challenge von {name}',
   'profile.notFound': 'Kein Teilnehmender mit diesem Benutzernamen gefunden.',

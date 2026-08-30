@@ -9,15 +9,18 @@ import DayLockedCard from '@/components/DayLockedCard';
 import MilestoneCard from '@/components/MilestoneCard';
 import ShieldModal from '@/components/ShieldModal';
 import Avatar from '@/components/Avatar';
+import StartCountdown from '@/components/StartCountdown';
+import CatchUpList from '@/components/CatchUpList';
 import { getRequiredRulesForDate } from '@/lib/streak-engine';
-import { calculateCurrentDay, getEffectiveLogDate } from '@/lib/date-utils';
+import { calculateCurrentDay, getEffectiveLogDate, hasStarted } from '@/lib/date-utils';
+import { getPendingDates } from '@/lib/pending-days';
 import { Share2, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useChallenge } from '@/components/ChallengeProvider';
 import { useToast } from '@/components/Toast';
 import { fetchChallengeByUsername } from '@/lib/db/profile';
 import { spendShield, restartChallenge } from '@/lib/db/profile';
-import { saveDailyLog } from '@/lib/db/logs';
+import { saveDailyLog, catchUpDays } from '@/lib/db/logs';
 import { uploadProofPhoto } from '@/lib/db/photos';
 import type { Challenge } from '@/lib/db/types';
 
@@ -34,6 +37,7 @@ export default function UserProfilePage() {
   const [missedDate, setMissedDate] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'story'>('dashboard');
   const [saving, setSaving] = useState(false);
+  const [catchingUp, setCatchingUp] = useState(false);
 
   // Someone else's profile is fetched on demand; your own comes from context.
   const isOwnProfile = ownChallenge?.username === routeUsername;
@@ -128,16 +132,30 @@ export default function UserProfilePage() {
     toast.success(t('profile.shieldAlert'));
   };
 
-  const handleHardReset = async () => {
+  const handleHardReset = async (announceToFeed: boolean) => {
     if (!challenge) return;
     setIsShieldModalOpen(false);
-    const result = await restartChallenge(challenge.id, challenge.timezone);
+    const result = await restartChallenge(challenge.id, challenge.timezone, announceToFeed);
     if (result.error) {
       toast.error(result.error);
       return;
     }
     await refresh();
     toast.info(t('profile.resetAlert'));
+  };
+
+  const handleCatchUp = async (dates: string[]) => {
+    if (!challenge || dates.length === 0) return;
+    setCatchingUp(true);
+    const result = await catchUpDays(challenge.id, dates, challenge.rules);
+    setCatchingUp(false);
+
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    await refresh();
+    toast.success(t('day.doneTitle'));
   };
 
   if (loading) {
@@ -182,6 +200,7 @@ export default function UserProfilePage() {
   }
 
   const currentDay = calculateCurrentDay(challenge.startDate, today);
+  const started = hasStarted(challenge.startDate, today);
   const rules = challenge.rules.map((rule) => ({
     id: rule.id,
     title: rule.title,
@@ -189,6 +208,7 @@ export default function UserProfilePage() {
     custom_days: rule.custom_days,
   }));
   const rulesDueToday = getRequiredRulesForDate(rules, today);
+  const pendingDates = isOwnProfile ? getPendingDates(challenge.startDate, rules, challenge.logs, today) : [];
 
   // A finished day is closed for editing — see DayLockedCard.
   const lockedReason =
@@ -274,19 +294,35 @@ export default function UserProfilePage() {
             today={today}
           />
 
-          {/* Only the owner can check in, and only while the day is still open. */}
+          {/* Only the owner can check in. A future start date shows a
+              countdown instead of tasks that cannot have happened yet. */}
           {isOwnProfile &&
-            (lockedReason ? (
-              <DayLockedCard reason={lockedReason} logDate={today} />
+            (!started ? (
+              <StartCountdown startDate={challenge.startDate} today={today} />
             ) : (
-              <DailyChecklist
-                key={today}
-                rules={rulesDueToday}
-                logDate={today}
-                saving={saving}
-                onSaveLog={handleSaveLog}
-                onReportFailure={handleReportFailure}
-              />
+              <>
+                {pendingDates.length > 0 && (
+                  <CatchUpList
+                    key={pendingDates.join(',')}
+                    pendingDates={pendingDates}
+                    busy={catchingUp}
+                    onCatchUp={handleCatchUp}
+                    onReportMissed={handleReportFailure}
+                  />
+                )}
+                {lockedReason ? (
+                  <DayLockedCard reason={lockedReason} logDate={today} />
+                ) : (
+                  <DailyChecklist
+                    key={today}
+                    rules={rulesDueToday}
+                    logDate={today}
+                    saving={saving}
+                    onSaveLog={handleSaveLog}
+                    onReportFailure={handleReportFailure}
+                  />
+                )}
+              </>
             ))}
         </div>
       ) : (

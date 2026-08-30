@@ -9,6 +9,7 @@
 
 import { createClient } from '../supabase/client';
 import { DailyLogRow, LogStatus, DbResult, ok, fail } from './types';
+import { Rule, getRequiredRulesForDate } from '../streak-engine';
 
 export interface SaveLogInput {
   userId: string;
@@ -66,6 +67,62 @@ export async function saveDailyLog(input: SaveLogInput): Promise<DbResult<DailyL
     }
 
     return ok(log);
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Marks one or more past, pending days as done in a single action.
+ *
+ * A deliberate simplification: catching up doesn't ask which specific rules
+ * were actually done on a bygone day — every rule scheduled for that date
+ * (by *today's* rule set; rules have no history/valid-from tracking) is
+ * marked completed. There is no photo or caption on a catch-up row — nothing
+ * was captured in the moment, so nothing is invented for it now.
+ *
+ * More than one date in a single call shares one `batch_id`, so the feed
+ * collapses them into a single aggregated post rather than one per day.
+ */
+export async function catchUpDays(userId: string, dates: string[], rules: Rule[]): Promise<DbResult<true>> {
+  if (dates.length === 0) return ok(true);
+
+  try {
+    const supabase = createClient();
+    const batchId = dates.length > 1 ? crypto.randomUUID() : null;
+
+    for (const date of dates) {
+      const { data: log, error } = await supabase
+        .from('daily_logs')
+        .upsert(
+          {
+            user_id: userId,
+            log_date: date,
+            status: 'completed',
+            photo_url: null,
+            caption: null,
+            batch_id: batchId,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id,log_date' }
+        )
+        .select()
+        .single();
+      if (error) return fail(error);
+
+      const { error: clearError } = await supabase.from('log_rule_checks').delete().eq('log_id', log.id);
+      if (clearError) return fail(clearError);
+
+      const scheduled = getRequiredRulesForDate(rules, date);
+      if (scheduled.length > 0) {
+        const { error: checksError } = await supabase
+          .from('log_rule_checks')
+          .insert(scheduled.map((rule) => ({ log_id: log.id, rule_id: rule.id, is_completed: true })));
+        if (checksError) return fail(checksError);
+      }
+    }
+
+    return ok(true);
   } catch (error) {
     return fail(error);
   }

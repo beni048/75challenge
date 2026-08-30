@@ -53,7 +53,9 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
     );
   }
 
-  const caption = localizedCaption(post, locale);
+  const caption = post.batchCount
+    ? t('feed.caughtUpMany', { count: post.batchCount })
+    : localizedCaption(post, locale);
   const rules = localizedRules(post, locale);
 
   return (

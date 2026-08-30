@@ -77,6 +77,16 @@ export interface UserFollowRow {
   created_at: string;
 }
 
+export type ChallengeEventType = 'reset';
+
+/** A challenge-lifecycle announcement (currently just resets) — see restartChallenge. */
+export interface ChallengeEventRow {
+  id: string;
+  user_id: string;
+  event_type: ChallengeEventType;
+  created_at: string;
+}
+
 /** A participant's complete challenge, assembled from users + rules + logs. */
 export interface Challenge {
   id: string;

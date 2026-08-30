@@ -35,6 +35,7 @@ interface FeedRow {
   photo_url: string | null;
   caption: string | null;
   created_at: string;
+  batch_id: string | null;
   users: { username: string; display_name: string; start_date: string } | null;
   log_rule_checks: { rule_id: string; is_completed: boolean }[];
   reactions: { reaction_type: ReactionType; reaction_count: number; sender_id: string }[];
@@ -48,7 +49,7 @@ interface FeedRow {
  */
 type RuleTitleMap = Map<string, string>;
 
-function toFeedPost(row: FeedRow, viewerId: string | null, ruleTitles: RuleTitleMap): FeedPost {
+function toFeedPost(row: FeedRow, viewerId: string | null, ruleTitles: RuleTitleMap, batchCount?: number): FeedPost {
   const reactions = { fire: 0, beast: 0, launch: 0, hype: 0 };
   const mine: string[] = [];
 
@@ -82,6 +83,7 @@ function toFeedPost(row: FeedRow, viewerId: string | null, ruleTitles: RuleTitle
     created_at: row.created_at,
     reactions,
     user_reactions: mine,
+    ...(batchCount && batchCount > 1 ? { batchCount } : {}),
   };
 }
 
@@ -109,7 +111,7 @@ export async function fetchFeed(viewerId: string | null, today: string): Promise
       supabase
         .from('daily_logs')
         .select(
-          `id, user_id, log_date, status, photo_url, caption, created_at,
+          `id, user_id, log_date, status, photo_url, caption, created_at, batch_id,
            users ( username, display_name, start_date ),
            log_rule_checks ( rule_id, is_completed ),
            reactions ( reaction_type, reaction_count, sender_id )`
@@ -148,7 +150,24 @@ export async function fetchFeed(viewerId: string | null, today: string): Promise
       })
     );
 
-    const posts = visibleRows.map((row) => toFeedPost(row, viewerId, ruleTitles));
+    // Rows sharing a batch_id (a multi-day catch-up submitted in one action)
+    // collapse into a single post — see catchUpDays. The anchor is the
+    // latest-dated row in the group; that's the only one whose photo, rule
+    // chips, and reactions surface on the resulting card.
+    const groups = new Map<string, FeedRow[]>();
+    for (const row of visibleRows) {
+      const key = row.batch_id ?? row.id;
+      const group = groups.get(key);
+      if (group) group.push(row);
+      else groups.set(key, [row]);
+    }
+
+    const posts = Array.from(groups.values())
+      .map((group) => {
+        const anchor = group.reduce((latest, row) => (row.log_date > latest.log_date ? row : latest));
+        return toFeedPost(anchor, viewerId, ruleTitles, group.length);
+      })
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 
     const totalUsers = typeof countResult.data === 'number' ? countResult.data : 0;
     const activeToday = new Set(

@@ -424,7 +424,11 @@ export async function spendShield(userId: string, missedDate: string): Promise<D
  * at the call site) — "today" for a reset is the owner's today, same rule as
  * everywhere else in the app.
  */
-export async function restartChallenge(userId: string, timezone: string): Promise<DbResult<true>> {
+export async function restartChallenge(
+  userId: string,
+  timezone: string,
+  announceToFeed: boolean = false
+): Promise<DbResult<true>> {
   try {
     const supabase = createClient();
     const startDate = getEffectiveLogDate(timezone);
@@ -444,6 +448,18 @@ export async function restartChallenge(userId: string, timezone: string): Promis
       .eq('id', userId);
 
     if (error) return fail(error);
+
+    // A reset is a hard moment — announcing it to the feed is opt-in, never
+    // the default (start.md §14). This never affects what's shown on the
+    // reset account's own profile: the day-of-75 count is always derived
+    // live from start_date for any viewer, regardless of this choice.
+    if (announceToFeed) {
+      const { error: eventError } = await supabase
+        .from('challenge_events')
+        .insert({ user_id: userId, event_type: 'reset' });
+      if (eventError) return fail(eventError);
+    }
+
     return ok(true);
   } catch (error) {
     return fail(error);

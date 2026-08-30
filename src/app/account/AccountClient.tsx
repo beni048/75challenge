@@ -63,6 +63,7 @@ export default function AccountClient() {
   const [busy, setBusy] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [confirmRestart, setConfirmRestart] = useState(false);
+  const [announceRestart, setAnnounceRestart] = useState(false);
   const [confirmRulesChange, setConfirmRulesChange] = useState(false);
 
   if (loading) return <div style={{ minHeight: '60vh' }} />;
@@ -241,7 +242,8 @@ export default function AccountClient() {
   const handleRestart = async () => {
     setConfirmRestart(false);
     setBusy(true);
-    const result = await restartChallenge(challenge.id, challenge.timezone);
+    const result = await restartChallenge(challenge.id, challenge.timezone, announceRestart);
+    setAnnounceRestart(false);
     setBusy(false);
 
     if (result.error) {
@@ -591,8 +593,20 @@ export default function AccountClient() {
         confirmLabel={t('account.dangerCta')}
         cancelLabel={t('common.cancel')}
         onConfirm={handleRestart}
-        onCancel={() => setConfirmRestart(false)}
-      />
+        onCancel={() => {
+          setAnnounceRestart(false);
+          setConfirmRestart(false);
+        }}
+      >
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+          <input
+            type="checkbox"
+            checked={announceRestart}
+            onChange={(e) => setAnnounceRestart(e.target.checked)}
+          />
+          {t('shield.announceToFeed')}
+        </label>
+      </ConfirmDialog>
     </div>
   );
 }

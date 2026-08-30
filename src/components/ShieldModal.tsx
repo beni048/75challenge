@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, ShieldCheck, RotateCcw, AlertCircle, X } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
@@ -11,7 +11,7 @@ interface ShieldModalProps {
   missedDate: string;
   shieldsRemaining: number;
   onUseShield: () => void;
-  onHardReset: () => void;
+  onHardReset: (announceToFeed: boolean) => void;
   onClose: () => void;
 }
 
@@ -30,6 +30,7 @@ export default function ShieldModal({
   onClose,
 }: ShieldModalProps) {
   const { t } = useI18n();
+  const [announceToFeed, setAnnounceToFeed] = useState(false);
 
   return (
     <ModalPortal isOpen={isOpen} onClose={onClose}>
@@ -127,14 +128,32 @@ export default function ShieldModal({
                 <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
                   ⚠️ {t('shield.optionResetDesc')}
                 </p>
-                <button onClick={onHardReset} className="btn btn-danger" style={{ width: '100%' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', marginBottom: '1rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={announceToFeed}
+                    onChange={(e) => setAnnounceToFeed(e.target.checked)}
+                  />
+                  {t('shield.announceToFeed')}
+                </label>
+                <button
+                  onClick={() => {
+                    onHardReset(announceToFeed);
+                    setAnnounceToFeed(false);
+                  }}
+                  className="btn btn-danger"
+                  style={{ width: '100%' }}
+                >
                   {t('shield.optionResetCta')}
                 </button>
               </div>
             </div>
 
             <button
-              onClick={onClose}
+              onClick={() => {
+                setAnnounceToFeed(false);
+                onClose();
+              }}
               className="btn btn-secondary"
               style={{ width: '100%', fontSize: '0.85rem' }}
             >

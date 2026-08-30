@@ -35,6 +35,14 @@ export interface FeedPost {
   /** Preview-post copy, per locale. Absent on real user posts. */
   caption_i18n?: Record<Locale, string>;
   completed_rules_i18n?: Record<Locale, string[]>;
+  /**
+   * Set when this post aggregates a multi-day catch-up submitted in one
+   * action (see catchUpDays / daily_logs.batch_id) — the count of days
+   * collapsed into it. FeedCard shows a translated "Caught up on N days"
+   * line instead of `caption` when this is present; the photo and rule
+   * chips still come from the single anchor (latest-date) row.
+   */
+  batchCount?: number;
 }
 
 export function localizedCaption(post: FeedPost, locale: Locale): string | null | undefined {
