@@ -325,6 +325,9 @@ const en = {
   'feed.unfollowNamed': 'Unfollow {username}',
   'feed.previewPost': 'Preview Post',
   'feed.photoAlt': 'Daily check-in photo',
+  'feed.hypedBySingle': 'Hyped by {name}',
+  'feed.hypedByTwo': 'Hyped by {name} and {name2}',
+  'feed.hypedByMany': 'Hyped by {name} and {count} others',
 
   // Help & feedback
   'help.trigger': 'Help & Feedback',
@@ -392,6 +395,8 @@ const en = {
   'feed.empty': 'No check-ins yet. Be the first today.',
   'feed.loginRequired': 'Log in to see the community feed.',
   'feed.caughtUpMany': 'Caught up on {count} past days',
+  'feed.loadMore': 'Load more',
+  'feed.resetAnnouncement': '{name} started over — back to Day 1.',
 
   // Challenger directory
   'challengers.title': 'Challengers',
@@ -777,6 +782,9 @@ const de: Record<TranslationKey, string> = {
   'feed.unfollowNamed': '{username} ausblenden',
   'feed.previewPost': 'Vorschau-Beitrag',
   'feed.photoAlt': 'Foto vom Tages-Check-in',
+  'feed.hypedBySingle': 'Gehyped von {name}',
+  'feed.hypedByTwo': 'Gehyped von {name} und {name2}',
+  'feed.hypedByMany': 'Gehyped von {name} und {count} weiteren',
 
   'help.trigger': 'Hilfe & Feedback',
   'help.intro':
@@ -837,6 +845,8 @@ const de: Record<TranslationKey, string> = {
   'feed.empty': 'Noch keine Check-ins. Sei heute die erste Person.',
   'feed.loginRequired': 'Melde dich an, um den Community-Feed zu sehen.',
   'feed.caughtUpMany': '{count} vergangene Tage nachgeholt',
+  'feed.loadMore': 'Mehr laden',
+  'feed.resetAnnouncement': '{name} hat neu gestartet — zurück auf Tag 1.',
 
   'challengers.title': 'Challenger',
   'challengers.empty': 'Noch niemand beigetreten.',

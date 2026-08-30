@@ -12,6 +12,14 @@ import type { Locale } from './i18n';
 export interface FeedPost {
   id: string;
   user_id: string;
+  /**
+   * 'reset' is a plain announcement (no photo, rule chips, or reactions —
+   * `reactions.log_id` references daily_logs, and a reset event isn't one).
+   * Absent/'checkin' is the normal check-in card this type was originally
+   * shaped around; every other field below is meaningless for a 'reset' post
+   * beyond user/created_at.
+   */
+  kind?: 'checkin' | 'reset';
   user: {
     username: string;
     display_name: string;
@@ -31,6 +39,8 @@ export interface FeedPost {
     hype: number;
   };
   user_reactions?: string[]; // types clicked by current user
+  /** Distinct people who reacted (any type), most recent first — for "Hyped by X and N others". */
+  reactors?: { username: string; displayName: string }[];
   is_mock?: boolean;
   /** Preview-post copy, per locale. Absent on real user posts. */
   caption_i18n?: Record<Locale, string>;

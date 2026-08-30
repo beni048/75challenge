@@ -26,6 +26,8 @@ export default function FeedStream() {
   const [activeToday, setActiveToday] = useState(0);
   const [showingPreviews, setShowingPreviews] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const viewerId = challenge?.id ?? null;
 
@@ -63,12 +65,29 @@ export default function FeedStream() {
       setTotalUsers(result.data.totalUsers);
       setActiveToday(result.data.activeToday);
       setShowingPreviews(result.data.showingPreviews);
+      setCursor(result.data.cursor);
     })();
 
     return () => {
       active = false;
     };
   }, [authLoading, session, viewerId, reloadToken, toast, t]);
+
+  const handleLoadMore = async () => {
+    if (!cursor) return;
+    setLoadingMore(true);
+    const viewerTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const result = await fetchFeed(viewerId, getEffectiveLogDate(viewerTimezone), cursor);
+    setLoadingMore(false);
+
+    if (result.error || !result.data) {
+      toast.error(result.error ?? t('status.loadFailed'));
+      return;
+    }
+
+    setPosts((prev) => [...prev, ...result.data!.posts]);
+    setCursor(result.data.cursor);
+  };
 
   /** Optimistic: the count moves immediately, the write follows. */
   const handleReact = async (postId: string, type: ReactionType) => {
@@ -165,6 +184,18 @@ export default function FeedStream() {
             <FeedCard key={post.id} post={post} onUnfollow={handleUnfollow} onReact={handleReact} />
           ))}
         </div>
+      )}
+
+      {!loading && !showingPreviews && cursor && (
+        <button
+          type="button"
+          onClick={handleLoadMore}
+          className="btn btn-secondary btn-block"
+          style={{ marginTop: '1.25rem' }}
+          disabled={loadingMore}
+        >
+          {loadingMore ? t('common.loading') : t('feed.loadMore')}
+        </button>
       )}
     </div>
   );

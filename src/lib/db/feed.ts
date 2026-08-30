@@ -13,18 +13,22 @@ import { calculateCurrentDay } from '../date-utils';
 import { FeedPost, STATIC_MOCK_FEED_POSTS } from '../feed';
 import { DbResult, ok, fail, ReactionType } from './types';
 
-const FEED_PAGE_SIZE = 50;
+// Rows, not posts: a raw batch this size is generously overfetched because a
+// multi-day catch-up collapses several rows into one post — see the grouping
+// note on fetchFeed below.
+const FEED_RAW_FETCH_LIMIT = 60;
 
 /**
  * Whether to pad the feed with curated preview posts.
  *
  * The previews exist so a brand-new community does not look abandoned. The
- * moment a real participant has checked in *today*, the feed can stand on its
- * own and the samples are dropped — seeing them next to genuine activity makes
- * the feed feel fake.
+ * moment *any* real activity exists — not just today's — the feed can stand
+ * on its own and the samples are dropped; older real posts are better than
+ * samples sitting next to genuine activity, which is what makes the feed
+ * feel fake.
  */
-export function shouldShowPreviews(realPostsToday: number): boolean {
-  return realPostsToday === 0;
+export function shouldShowPreviews(realPostCount: number): boolean {
+  return realPostCount === 0;
 }
 
 interface FeedRow {
@@ -38,7 +42,13 @@ interface FeedRow {
   batch_id: string | null;
   users: { username: string; display_name: string; start_date: string } | null;
   log_rule_checks: { rule_id: string; is_completed: boolean }[];
-  reactions: { reaction_type: ReactionType; reaction_count: number; sender_id: string }[];
+  reactions: {
+    reaction_type: ReactionType;
+    reaction_count: number;
+    sender_id: string;
+    updated_at: string;
+    users: { username: string; display_name: string } | null;
+  }[];
 }
 
 /**
@@ -53,10 +63,25 @@ function toFeedPost(row: FeedRow, viewerId: string | null, ruleTitles: RuleTitle
   const reactions = { fire: 0, beast: 0, launch: 0, hype: 0 };
   const mine: string[] = [];
 
+  // Distinct reactors across every type, most-recently-reacted first — a
+  // sender who tapped both 🔥 and 💪 counts once for "Hyped by X and N
+  // others", not twice.
+  const reactorsById = new Map<string, { username: string; displayName: string; updatedAt: string }>();
   for (const reaction of row.reactions ?? []) {
     reactions[reaction.reaction_type] += reaction.reaction_count;
     if (reaction.sender_id === viewerId) mine.push(reaction.reaction_type);
+
+    if (reaction.users && (!reactorsById.has(reaction.sender_id) || reaction.updated_at > reactorsById.get(reaction.sender_id)!.updatedAt)) {
+      reactorsById.set(reaction.sender_id, {
+        username: reaction.users.username,
+        displayName: reaction.users.display_name,
+        updatedAt: reaction.updated_at,
+      });
+    }
   }
+  const reactors = Array.from(reactorsById.values())
+    .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
+    .map(({ username, displayName }) => ({ username, displayName }));
 
   // A "hidden" secret rule (owner's own choice) is absent from ruleTitles
   // entirely, and is dropped from both the completed list and the total
@@ -83,6 +108,7 @@ function toFeedPost(row: FeedRow, viewerId: string | null, ruleTitles: RuleTitle
     created_at: row.created_at,
     reactions,
     user_reactions: mine,
+    reactors,
     ...(batchCount && batchCount > 1 ? { batchCount } : {}),
   };
 }
@@ -95,30 +121,59 @@ export interface FeedResult {
   activeToday: number;
   /** True when curated preview posts were appended because nobody posted today. */
   showingPreviews: boolean;
+  /** Pass as `cursor` to fetchFeed to load the next page; null once exhausted. */
+  cursor: string | null;
 }
 
 /**
- * Loads the feed for the signed-in viewer.
+ * Loads one page of the feed for the signed-in viewer.
  *
  * Unfollowed users are filtered out, and while fewer than two people have
- * registered the curated preview posts are appended so the page is not empty.
+ * registered the curated preview posts are appended so the page is not empty
+ * (first page only — by definition there is real activity once a second page
+ * is being requested).
+ *
+ * Pagination is keyset, not offset: `cursor` is the `created_at` of the last
+ * *raw row* seen on the previous page (returned as `FeedResult.cursor`), not
+ * of the last rendered post — offsets drift when new posts arrive between
+ * page loads, and a page is naturally sized in rows before grouping anyway
+ * (see the batch-collapsing note below).
  */
-export async function fetchFeed(viewerId: string | null, today: string): Promise<DbResult<FeedResult>> {
+export async function fetchFeed(
+  viewerId: string | null,
+  today: string,
+  cursor?: string
+): Promise<DbResult<FeedResult>> {
   try {
     const supabase = createClient();
 
-    const [logsResult, countResult, unfollowResult] = await Promise.all([
-      supabase
-        .from('daily_logs')
-        .select(
-          `id, user_id, log_date, status, photo_url, caption, created_at, batch_id,
-           users ( username, display_name, start_date ),
-           log_rule_checks ( rule_id, is_completed ),
-           reactions ( reaction_type, reaction_count, sender_id )`
-        )
-        .in('status', ['completed', 'shielded'])
-        .order('created_at', { ascending: false })
-        .limit(FEED_PAGE_SIZE),
+    let logsQuery = supabase
+      .from('daily_logs')
+      .select(
+        `id, user_id, log_date, status, photo_url, caption, created_at, batch_id,
+         users ( username, display_name, start_date ),
+         log_rule_checks ( rule_id, is_completed ),
+         reactions ( reaction_type, reaction_count, sender_id, updated_at, users:sender_id ( username, display_name ) )`
+      )
+      .in('status', ['completed', 'shielded'])
+      .order('created_at', { ascending: false })
+      .limit(FEED_RAW_FETCH_LIMIT);
+    if (cursor) logsQuery = logsQuery.lt('created_at', cursor);
+
+    // Reset announcements are a much rarer event than a check-in, so a small,
+    // separate, un-batched fetch merged into the same stream is simpler than
+    // folding them into daily_logs' pagination window.
+    let eventsQuery = supabase
+      .from('challenge_events')
+      .select('id, user_id, event_type, created_at, users ( username, display_name )')
+      .eq('event_type', 'reset')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (cursor) eventsQuery = eventsQuery.lt('created_at', cursor);
+
+    const [logsResult, eventsResult, countResult, unfollowResult] = await Promise.all([
+      logsQuery,
+      eventsQuery,
       supabase.rpc('participant_count'),
       viewerId
         ? supabase.from('user_unfollows').select('unfollowed_id').eq('follower_id', viewerId)
@@ -126,6 +181,7 @@ export async function fetchFeed(viewerId: string | null, today: string): Promise
     ]);
 
     if (logsResult.error) return fail(logsResult.error);
+    if (eventsResult.error) return fail(eventsResult.error);
 
     const hidden = new Set(
       (unfollowResult.data ?? []).map((row: { unfollowed_id: string }) => row.unfollowed_id)
@@ -133,6 +189,31 @@ export async function fetchFeed(viewerId: string | null, today: string): Promise
 
     const rows = (logsResult.data ?? []) as unknown as FeedRow[];
     const visibleRows = rows.filter((row) => !hidden.has(row.user_id));
+
+    interface ResetEventRow {
+      id: string;
+      user_id: string;
+      created_at: string;
+      users: { username: string; display_name: string } | null;
+    }
+    const resetPosts: FeedPost[] = ((eventsResult.data ?? []) as unknown as ResetEventRow[])
+      .filter((row) => !hidden.has(row.user_id))
+      .map((row) => ({
+        id: row.id,
+        user_id: row.user_id,
+        kind: 'reset',
+        user: {
+          username: row.users?.username ?? 'challenger',
+          display_name: row.users?.display_name ?? 'Challenger',
+        },
+        day_number: 1,
+        log_date: '',
+        status: 'completed',
+        completed_rules: [],
+        total_rules: 0,
+        created_at: row.created_at,
+        reactions: { fire: 0, beast: 0, launch: 0, hype: 0 },
+      }));
 
     // Rule titles never come from the raw `rules` table here — that table's
     // RLS is `using (true)` (needed so owners can read their own rules the
@@ -162,19 +243,26 @@ export async function fetchFeed(viewerId: string | null, today: string): Promise
       else groups.set(key, [row]);
     }
 
-    const posts = Array.from(groups.values())
-      .map((group) => {
+    const posts = [
+      ...Array.from(groups.values()).map((group) => {
         const anchor = group.reduce((latest, row) => (row.log_date > latest.log_date ? row : latest));
         return toFeedPost(anchor, viewerId, ruleTitles, group.length);
-      })
-      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+      }),
+      ...resetPosts,
+    ].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 
     const totalUsers = typeof countResult.data === 'number' ? countResult.data : 0;
     const activeToday = new Set(
       rows.filter((row) => row.log_date === today).map((row) => row.user_id)
     ).size;
 
-    const showingPreviews = shouldShowPreviews(posts.filter((p) => p.log_date === today).length);
+    // Only cursor off of daily_logs rows, not reset events — resets are rare
+    // enough that a deep-pagination edge case missing one past this window is
+    // an acceptable approximation, not worth a second cursor to track. If the
+    // raw batch came back full, assume more may exist; a false-positive "Load
+    // More" tap that returns nothing is harmless.
+    const nextCursor = rows.length === FEED_RAW_FETCH_LIMIT ? rows[rows.length - 1].created_at : null;
+    const showingPreviews = shouldShowPreviews(posts.length);
 
     return ok({
       // Real activity always comes first; previews only pad the tail.
@@ -182,6 +270,7 @@ export async function fetchFeed(viewerId: string | null, today: string): Promise
       totalUsers,
       activeToday,
       showingPreviews,
+      cursor: nextCursor,
     });
   } catch (error) {
     return fail(error);
@@ -204,7 +293,7 @@ export async function fetchUserFeedPosts(userId: string, viewerId: string | null
         `id, user_id, log_date, status, photo_url, caption, created_at, batch_id,
          users ( username, display_name, start_date ),
          log_rule_checks ( rule_id, is_completed ),
-         reactions ( reaction_type, reaction_count, sender_id )`
+         reactions ( reaction_type, reaction_count, sender_id, updated_at, users:sender_id ( username, display_name ) )`
       )
       .eq('user_id', userId)
       .in('status', ['completed', 'shielded'])

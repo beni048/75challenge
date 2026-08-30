@@ -26,11 +26,11 @@ describe('toUsernameSlug', () => {
 });
 
 describe('shouldShowPreviews', () => {
-  it('shows curated previews while nobody has checked in today', () => {
+  it('shows curated previews while there is no real activity at all', () => {
     expect(shouldShowPreviews(0)).toBe(true);
   });
 
-  it('drops them as soon as one real participant has posted today', () => {
+  it('drops them as soon as any real post exists, even an older one', () => {
     expect(shouldShowPreviews(1)).toBe(false);
     expect(shouldShowPreviews(12)).toBe(false);
   });

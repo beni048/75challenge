@@ -319,6 +319,30 @@ a {
   background: var(--bg-card-hover);
 }
 
+/* Feed cards: edge-to-edge on a phone (bleeding past .container's own
+   gutters), contained with rounded corners from 640px up. */
+.feed-card {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-radius: 0;
+  margin-inline: -1rem;
+}
+
+@media (min-width: 480px) {
+  .feed-card {
+    margin-inline: -1.5rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .feed-card {
+    border-radius: var(--radius-lg);
+    margin-inline: 0;
+  }
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;

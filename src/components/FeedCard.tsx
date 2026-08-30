@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { FeedPost, localizedCaption, localizedRules } from '@/lib/feed';
 import HypeButton, { ReactionType } from './HypeButton';
-import { CheckCircle2, UserMinus, UserCheck } from 'lucide-react';
+import { CheckCircle2, UserMinus, UserCheck, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
 
@@ -53,13 +53,39 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
     );
   }
 
+  // A reset announcement is a plain, text-only card — no photo, rule chips,
+  // or reactions (reactions.log_id references daily_logs, and this isn't one).
+  if (post.kind === 'reset') {
+    return (
+      <div
+        className="glass-card feed-card"
+        style={{ flexDirection: 'row', alignItems: 'center', gap: '0.75rem' }}
+      >
+        <RotateCcw size={20} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+          {t('feed.resetAnnouncement', { name: post.user.display_name })}
+        </span>
+      </div>
+    );
+  }
+
   const caption = post.batchCount
     ? t('feed.caughtUpMany', { count: post.batchCount })
     : localizedCaption(post, locale);
   const rules = localizedRules(post, locale);
 
+  const reactors = post.reactors ?? [];
+  const hypedByLine =
+    reactors.length === 0
+      ? null
+      : reactors.length === 1
+        ? t('feed.hypedBySingle', { name: reactors[0].displayName })
+        : reactors.length === 2
+          ? t('feed.hypedByTwo', { name: reactors[0].displayName, name2: reactors[1].displayName })
+          : t('feed.hypedByMany', { name: reactors[0].displayName, count: reactors.length - 1 });
+
   return (
-    <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div className="glass-card feed-card">
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -182,6 +208,8 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
           alignItems: 'center',
           borderTop: '1px solid var(--border-subtle)',
           paddingTop: '0.85rem',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
         }}
       >
         <HypeButton
@@ -195,6 +223,8 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
           <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{t('feed.previewPost')}</span>
         )}
       </div>
+
+      {hypedByLine && <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{hypedByLine}</p>}
     </div>
   );
 }
