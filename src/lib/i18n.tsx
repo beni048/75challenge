@@ -449,6 +449,8 @@ const en = {
   'feed.loginRequired': 'Log in to see the community feed.',
   'feed.caughtUpMany': 'Caught up on {count} past days',
   'feed.loadMore': 'Load more',
+  'feed.rulesShowAll': '+{count} more',
+  'feed.rulesShowLess': 'Show less',
   'feed.resetAnnouncement': '{name} started over — back to Day 1.',
 
   // Challenger directory
@@ -929,6 +931,8 @@ const de: Record<TranslationKey, string> = {
   'feed.empty': 'Noch keine Check-ins. Mach du den Anfang.',
   'feed.loginRequired': 'Melde dich an, um den Feed zu sehen.',
   'feed.caughtUpMany': '{count} Tage nachgeholt',
+  'feed.rulesShowAll': '+{count} weitere',
+  'feed.rulesShowLess': 'Weniger',
   'feed.loadMore': 'Mehr laden',
   'feed.resetAnnouncement': '{name} fängt neu an – zurück auf Tag 1.',
   'challengers.title': 'Challenger',

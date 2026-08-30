@@ -2835,3 +2835,18 @@ a {
 .profile-avatar.avatar-upload {
   overflow: visible;
 }
+
+/* The "+N more" chip sits in the same row as the habit chips and matches them,
+   so the row reads as one list rather than a list plus a control. */
+.rule-chip-toggle {
+  border: 1px dashed var(--border-medium);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.rule-chip-toggle:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-orange);
+}

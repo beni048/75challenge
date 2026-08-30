@@ -9,6 +9,9 @@ import { useI18n } from '@/lib/i18n';
 import Avatar from './Avatar';
 import { getHypePhrase, localizedHypePhrase } from '@/lib/hype-phrases';
 
+/** How many habit chips a collapsed card shows before the "+N more" toggle. */
+const RULES_COLLAPSED_COUNT = 2;
+
 interface FeedCardProps {
   post: FeedPost;
   /**
@@ -31,6 +34,9 @@ export default function FeedCard({ post, isOwnPost = false, onUnfollow, onReact 
   // failure reuses the branch the card already has for a null photo_url,
   // rather than showing a broken image on someone else's feed.
   const [photoFailed, setPhotoFailed] = useState(false);
+  // Collapsed by default: a post with eleven habits pushed the hype row and
+  // the next post off the screen entirely.
+  const [rulesExpanded, setRulesExpanded] = useState(false);
 
 
   const handleToggleUnfollow = () => {
@@ -161,12 +167,25 @@ export default function FeedCard({ post, isOwnPost = false, onUnfollow, onReact 
 
       {/* Checked-off rules */}
       <div className="feed-card-rules">
-        {rules.map((rule, idx) => (
+        {(rulesExpanded ? rules : rules.slice(0, RULES_COLLAPSED_COUNT)).map((rule, idx) => (
           <span key={idx} className="rule-chip">
             <CheckCircle2 size={14} color="var(--accent-green)" />
             {rule}
           </span>
         ))}
+
+        {rules.length > RULES_COLLAPSED_COUNT && (
+          <button
+            type="button"
+            className="rule-chip rule-chip-toggle"
+            onClick={() => setRulesExpanded((open) => !open)}
+            aria-expanded={rulesExpanded}
+          >
+            {rulesExpanded
+              ? t('feed.rulesShowLess')
+              : t('feed.rulesShowAll', { count: rules.length - RULES_COLLAPSED_COUNT })}
+          </button>
+        )}
       </div>
 
       {/* Hype — the button, the claimed sentence and who agrees are one unit,
