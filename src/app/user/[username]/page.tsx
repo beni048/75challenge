@@ -11,10 +11,13 @@ import ShieldModal from '@/components/ShieldModal';
 import Avatar from '@/components/Avatar';
 import StartCountdown from '@/components/StartCountdown';
 import CatchUpList from '@/components/CatchUpList';
+import FollowButton from '@/components/FollowButton';
+import FollowListModal from '@/components/FollowListModal';
+import FeedCard from '@/components/FeedCard';
 import { getRequiredRulesForDate } from '@/lib/streak-engine';
 import { calculateCurrentDay, getEffectiveLogDate, hasStarted } from '@/lib/date-utils';
 import { getPendingDates } from '@/lib/pending-days';
-import { Share2, ArrowRight } from 'lucide-react';
+import { Share2, ArrowRight, Lock } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useChallenge } from '@/components/ChallengeProvider';
 import { useToast } from '@/components/Toast';
@@ -22,6 +25,10 @@ import { fetchChallengeByUsername } from '@/lib/db/profile';
 import { spendShield, restartChallenge } from '@/lib/db/profile';
 import { saveDailyLog, catchUpDays } from '@/lib/db/logs';
 import { uploadProofPhoto } from '@/lib/db/photos';
+import { fetchUserFeedPosts, addReaction, unfollowUser as hideFromFeed, refollowUser as unhideFromFeed } from '@/lib/db/feed';
+import { fetchFollowCounts, fetchFollowLists, FollowCounts, FollowListEntry } from '@/lib/db/follows';
+import type { ReactionType } from '@/components/HypeButton';
+import type { FeedPost } from '@/lib/feed';
 import type { Challenge } from '@/lib/db/types';
 
 export default function UserProfilePage() {
@@ -59,6 +66,68 @@ export default function UserProfilePage() {
   }, [loading, isOwnProfile, session, routeUsername]);
 
   const challenge = isOwnProfile ? ownChallenge : otherChallenge;
+
+  // Followers/following are only ever fetched for the signed-in viewer's own
+  // profile — RLS on user_follows returns nothing for anyone else's id
+  // anyway, but not even attempting the query for another profile is what
+  // keeps this "completely hidden elsewhere," not just empty-looking.
+  const [followCounts, setFollowCounts] = useState<FollowCounts | null>(null);
+  const [followLists, setFollowLists] = useState<{ followers: FollowListEntry[]; following: FollowListEntry[] } | null>(
+    null
+  );
+  const [followModal, setFollowModal] = useState<'followers' | 'following' | null>(null);
+
+  useEffect(() => {
+    if (!isOwnProfile || !challenge) return;
+    let active = true;
+
+    Promise.all([fetchFollowCounts(challenge.id), fetchFollowLists(challenge.id)]).then(([counts, lists]) => {
+      if (!active) return;
+      if (counts.data) setFollowCounts(counts.data);
+      if (lists.data) setFollowLists(lists.data);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [isOwnProfile, challenge]);
+
+  // This participant's own check-in history — shown to every viewer, per the
+  // profile restructure (start.md §6).
+  const [userPosts, setUserPosts] = useState<FeedPost[]>([]);
+  const [userPostsLoading, setUserPostsLoading] = useState(true);
+  const [postsReloadToken, setPostsReloadToken] = useState(0);
+
+  useEffect(() => {
+    if (!challenge) return;
+    let active = true;
+
+    fetchUserFeedPosts(challenge.id, session?.user.id ?? null).then((result) => {
+      if (!active) return;
+      setUserPostsLoading(false);
+      if (result.data) setUserPosts(result.data);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [challenge, session?.user.id, postsReloadToken]);
+
+  const handleReactToPost = async (postId: string, type: ReactionType) => {
+    if (!session) return;
+    const result = await addReaction(postId, session.user.id, type);
+    if (result.error) toast.error(result.error);
+  };
+
+  const handleUnfollowFromPost = async (userId: string, undo: boolean) => {
+    if (!session) return;
+    const result = undo ? await unhideFromFeed(session.user.id, userId) : await hideFromFeed(session.user.id, userId);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    if (undo) setPostsReloadToken((n) => n + 1);
+  };
 
   // Always the profile OWNER's stored timezone, never the viewer's — "today"
   // is a property of whose challenge this is. `challenge` can still be null
@@ -229,7 +298,7 @@ export default function UserProfilePage() {
             <Avatar url={challenge.avatarUrl} displayName={challenge.displayName} username={challenge.username} />
           </div>
 
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div className="profile-name-row">
               <h2 className="profile-name">{challenge.displayName}</h2>
               <span className="badge badge-fire">{t('profile.activeAttempt')}</span>
@@ -241,8 +310,28 @@ export default function UserProfilePage() {
                 end: challenge.targetEndDate,
               })}
             </p>
+            {(challenge.location || challenge.timezone) && (
+              <p className="profile-meta" style={{ marginTop: '0.2rem' }}>
+                {[challenge.location, challenge.timezone].filter(Boolean).join(' • ')}
+              </p>
+            )}
           </div>
+
+          {!isOwnProfile && session && <FollowButton viewerId={session.user.id} targetId={challenge.id} />}
         </div>
+
+        {/* Followers/following — own profile only. Not rendered-but-hidden:
+            the data itself is never fetched for anyone else's profile. */}
+        {isOwnProfile && followCounts && (
+          <div className="stack-row-sm" style={{ display: 'flex', gap: '1rem' }}>
+            <button type="button" onClick={() => setFollowModal('followers')} className="btn btn-secondary btn-sm">
+              {t('profile.followersCount', { count: followCounts.followers })}
+            </button>
+            <button type="button" onClick={() => setFollowModal('following')} className="btn btn-secondary btn-sm">
+              {t('profile.followingCount', { count: followCounts.following })}
+            </button>
+          </div>
+        )}
 
         <div className="profile-stats">
           <div className="profile-stat">
@@ -268,75 +357,116 @@ export default function UserProfilePage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="profile-tabs">
-        <button
-          onClick={() => setActiveTab('dashboard')}
-          className={`btn ${activeTab === 'dashboard' ? 'btn-primary' : 'btn-secondary'}`}
-        >
-          {t('profile.tabDashboard')}
-        </button>
+      {/* Dashboard / Share-card — interactive, own profile only (start.md §6). */}
+      {isOwnProfile && (
+        <>
+          <div className="profile-tabs">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`btn ${activeTab === 'dashboard' ? 'btn-primary' : 'btn-secondary'}`}
+            >
+              {t('profile.tabDashboard')}
+            </button>
 
-        <button
-          onClick={() => setActiveTab('story')}
-          className={`btn ${activeTab === 'story' ? 'btn-primary' : 'btn-secondary'}`}
-        >
-          <Share2 size={16} /> {t('profile.tabStory')}
-        </button>
+            <button
+              onClick={() => setActiveTab('story')}
+              className={`btn ${activeTab === 'story' ? 'btn-primary' : 'btn-secondary'}`}
+            >
+              <Share2 size={16} /> {t('profile.tabStory')}
+            </button>
+          </div>
+
+          {activeTab === 'dashboard' ? (
+            <div className="stack stack-loose">
+              <ConsistencyHeatmap
+                startDate={challenge.startDate}
+                logs={challenge.logs.map((log) => ({ log_date: log.log_date, status: log.status }))}
+                currentDay={currentDay}
+                today={today}
+              />
+
+              {/* A future start date shows a countdown instead of tasks that
+                  cannot have happened yet. */}
+              {!started ? (
+                <StartCountdown startDate={challenge.startDate} today={today} />
+              ) : (
+                <>
+                  {pendingDates.length > 0 && (
+                    <CatchUpList
+                      key={pendingDates.join(',')}
+                      pendingDates={pendingDates}
+                      busy={catchingUp}
+                      onCatchUp={handleCatchUp}
+                      onReportMissed={handleReportFailure}
+                    />
+                  )}
+                  {lockedReason ? (
+                    <DayLockedCard reason={lockedReason} logDate={today} />
+                  ) : (
+                    <DailyChecklist
+                      key={today}
+                      rules={rulesDueToday}
+                      logDate={today}
+                      saving={saving}
+                      onSaveLog={handleSaveLog}
+                      onReportFailure={handleReportFailure}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="story-wrap">
+              <MilestoneCard
+                displayName={challenge.displayName}
+                username={challenge.username}
+                dayNumber={currentDay}
+                completedRules={challenge.rules.map((r) => r.title)}
+                shieldsRemaining={challenge.shieldsRemaining}
+                streakDays={challenge.logs.filter((l) => l.status !== 'failed').length}
+              />
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Habits — via get_visible_rules for a non-owner viewer (already what
+          challenge.rules holds in that case, see fetchChallengeByUsername). */}
+      <div className="section">
+        <h3 className="h-section" style={{ marginBottom: '0.75rem' }}>
+          {t('profile.rulesTitle')}
+        </h3>
+        <div className="stack stack-tight">
+          {challenge.rules.map((rule) => (
+            <div
+              key={rule.id}
+              className="glass-card"
+              style={{ padding: '0.7rem 0.9rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}
+            >
+              {rule.is_secret && <Lock size={14} color="var(--accent-orange)" />}
+              <span style={{ fontSize: '0.9rem' }}>{rule.title}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {activeTab === 'dashboard' ? (
-        <div className="stack stack-loose">
-          <ConsistencyHeatmap
-            startDate={challenge.startDate}
-            logs={challenge.logs.map((log) => ({ log_date: log.log_date, status: log.status }))}
-            currentDay={currentDay}
-            today={today}
-          />
-
-          {/* Only the owner can check in. A future start date shows a
-              countdown instead of tasks that cannot have happened yet. */}
-          {isOwnProfile &&
-            (!started ? (
-              <StartCountdown startDate={challenge.startDate} today={today} />
-            ) : (
-              <>
-                {pendingDates.length > 0 && (
-                  <CatchUpList
-                    key={pendingDates.join(',')}
-                    pendingDates={pendingDates}
-                    busy={catchingUp}
-                    onCatchUp={handleCatchUp}
-                    onReportMissed={handleReportFailure}
-                  />
-                )}
-                {lockedReason ? (
-                  <DayLockedCard reason={lockedReason} logDate={today} />
-                ) : (
-                  <DailyChecklist
-                    key={today}
-                    rules={rulesDueToday}
-                    logDate={today}
-                    saving={saving}
-                    onSaveLog={handleSaveLog}
-                    onReportFailure={handleReportFailure}
-                  />
-                )}
-              </>
+      {/* This participant's own check-in history. */}
+      <div className="section">
+        <h3 className="h-section" style={{ marginBottom: '0.75rem' }}>
+          {t('profile.postsTitle')}
+        </h3>
+        {userPostsLoading ? (
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t('common.loading')}</p>
+        ) : userPosts.length === 0 ? (
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t('profile.noPosts')}</p>
+        ) : (
+          <div className="stack">
+            {userPosts.map((post) => (
+              <FeedCard key={post.id} post={post} onUnfollow={handleUnfollowFromPost} onReact={handleReactToPost} />
             ))}
-        </div>
-      ) : (
-        <div className="story-wrap">
-          <MilestoneCard
-            displayName={challenge.displayName}
-            username={challenge.username}
-            dayNumber={currentDay}
-            completedRules={challenge.rules.map((r) => r.title)}
-            shieldsRemaining={challenge.shieldsRemaining}
-            streakDays={challenge.logs.filter((l) => l.status !== 'failed').length}
-          />
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       <ShieldModal
         isOpen={isShieldModalOpen}
@@ -346,6 +476,16 @@ export default function UserProfilePage() {
         onHardReset={handleHardReset}
         onClose={() => setIsShieldModalOpen(false)}
       />
+
+      {isOwnProfile && followLists && (
+        <FollowListModal
+          isOpen={followModal !== null}
+          onClose={() => setFollowModal(null)}
+          initialTab={followModal ?? 'followers'}
+          followers={followLists.followers}
+          following={followLists.following}
+        />
+      )}
     </div>
   );
 }

@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  Users,
 } from 'lucide-react';
 import { useI18n, LOCALES, LOCALE_LABELS } from '@/lib/i18n';
 import { useTheme } from '@/lib/theme';
@@ -107,6 +108,12 @@ function useAccountActions(username: string, onDone: () => void): AccountAction[
       label: t('nav.myChallenge'),
       icon: <ListChecks size={16} color="var(--accent-orange)" />,
       run: go(`/user/${username}`),
+    },
+    {
+      key: 'challengers',
+      label: t('nav.challengers'),
+      icon: <Users size={16} color="var(--accent-orange)" />,
+      run: go('/challengers'),
     },
     {
       key: 'rules',

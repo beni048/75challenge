@@ -36,6 +36,7 @@ const en = {
   'nav.account': 'Account',
   'nav.openAccount': 'Open account menu',
   'nav.myChallenge': 'My Challenge',
+  'nav.challengers': 'Challengers',
   'nav.editRules': 'Edit Rules',
   'nav.security': 'Password & Security',
   'nav.logout': 'Log Out',
@@ -392,10 +393,25 @@ const en = {
   'feed.loginRequired': 'Log in to see the community feed.',
   'feed.caughtUpMany': 'Caught up on {count} past days',
 
+  // Challenger directory
+  'challengers.title': 'Challengers',
+  'challengers.empty': 'Nobody has joined yet.',
+  'challengers.loadMore': 'Load more',
+
   // Other people's profiles
   'profile.viewing': "{name}'s challenge",
   'profile.notFound': 'No participant found with that username.',
   'profile.ownChallenge': 'Go to my challenge',
+  'profile.follow': 'Follow',
+  'profile.following': 'Following',
+  'profile.followersTitle': 'Followers',
+  'profile.followersCount': '{count} followers',
+  'profile.followingCount': '{count} following',
+  'profile.noFollowers': 'No followers yet.',
+  'profile.noFollowing': 'Not following anyone yet.',
+  'profile.rulesTitle': 'Habits',
+  'profile.postsTitle': 'Posts',
+  'profile.noPosts': 'No check-ins yet.',
 
   // Login
   'login.title': 'Welcome back',
@@ -489,6 +505,7 @@ const de: Record<TranslationKey, string> = {
   'nav.account': 'Konto',
   'nav.openAccount': 'Kontomenü öffnen',
   'nav.myChallenge': 'Meine Challenge',
+  'nav.challengers': 'Challenger',
   'nav.editRules': 'Regeln bearbeiten',
   'nav.security': 'Passwort & Sicherheit',
   'nav.logout': 'Abmelden',
@@ -821,9 +838,23 @@ const de: Record<TranslationKey, string> = {
   'feed.loginRequired': 'Melde dich an, um den Community-Feed zu sehen.',
   'feed.caughtUpMany': '{count} vergangene Tage nachgeholt',
 
+  'challengers.title': 'Challenger',
+  'challengers.empty': 'Noch niemand beigetreten.',
+  'challengers.loadMore': 'Mehr laden',
+
   'profile.viewing': 'Challenge von {name}',
   'profile.notFound': 'Kein Teilnehmender mit diesem Benutzernamen gefunden.',
   'profile.ownChallenge': 'Zu meiner Challenge',
+  'profile.follow': 'Folgen',
+  'profile.following': 'Gefolgt',
+  'profile.followersTitle': 'Follower',
+  'profile.followersCount': '{count} Follower',
+  'profile.followingCount': '{count} Gefolgte',
+  'profile.noFollowers': 'Noch keine Follower.',
+  'profile.noFollowing': 'Folgt noch niemandem.',
+  'profile.rulesTitle': 'Gewohnheiten',
+  'profile.postsTitle': 'Beiträge',
+  'profile.noPosts': 'Noch keine Check-ins.',
 
   'login.title': 'Willkommen zurück',
   'login.subtitle': 'Melde dich an und mach dort weiter, wo du aufgehört hast.',

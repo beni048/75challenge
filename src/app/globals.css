@@ -625,18 +625,6 @@ a {
   cursor: pointer;
 }
 
-/* The "75 CHALLENGE" wordmark is hidden on the narrowest screens so the flame
-   mark alone identifies the app and the nav actions keep their tap targets. */
-.logo-text {
-  display: none;
-}
-
-@media (min-width: 400px) {
-  .logo-text {
-    display: inline;
-  }
-}
-
 .logo {
   display: flex;
   align-items: center;

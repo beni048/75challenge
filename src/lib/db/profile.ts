@@ -76,6 +76,52 @@ export async function fetchChallengeById(userId: string): Promise<DbResult<Chall
   }
 }
 
+export interface ChallengerListEntry {
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  startDate: string;
+  timezone: string;
+}
+
+/**
+ * A page of the challenger directory, newest signups first. `users` is
+ * broadly readable already (start.md §9), so this is a plain select — no RPC
+ * needed, and no secret-rule masking concern since habit titles are never
+ * part of this list.
+ */
+export async function fetchAllChallengers(
+  offset: number,
+  limit: number = 20
+): Promise<DbResult<{ entries: ChallengerListEntry[]; hasMore: boolean }>> {
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('users')
+      .select('username, display_name, avatar_url, start_date, timezone')
+      .order('created_at', { ascending: false })
+      // Fetch one extra row to know whether another page exists, without a
+      // separate count query.
+      .range(offset, offset + limit);
+
+    if (error) return fail(error);
+
+    const rows = data ?? [];
+    const hasMore = rows.length > limit;
+    const entries: ChallengerListEntry[] = rows.slice(0, limit).map((row) => ({
+      username: row.username,
+      displayName: row.display_name,
+      avatarUrl: row.avatar_url,
+      startDate: row.start_date,
+      timezone: row.timezone,
+    }));
+
+    return ok({ entries, hasMore });
+  } catch (error) {
+    return fail(error);
+  }
+}
+
 /**
  * Loads someone else's challenge by username, for their public profile page.
  *

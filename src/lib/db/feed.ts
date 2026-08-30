@@ -189,6 +189,59 @@ export async function fetchFeed(viewerId: string | null, today: string): Promise
 }
 
 /**
+ * One participant's own check-in history, for the "Posts" section of their
+ * profile — same row shape and secret-rule masking as the main feed, just
+ * scoped to a single `user_id` and with no preview-post padding or
+ * community-wide counters (those only make sense for the shared feed).
+ */
+export async function fetchUserFeedPosts(userId: string, viewerId: string | null): Promise<DbResult<FeedPost[]>> {
+  try {
+    const supabase = createClient();
+
+    const { data, error } = await supabase
+      .from('daily_logs')
+      .select(
+        `id, user_id, log_date, status, photo_url, caption, created_at, batch_id,
+         users ( username, display_name, start_date ),
+         log_rule_checks ( rule_id, is_completed ),
+         reactions ( reaction_type, reaction_count, sender_id )`
+      )
+      .eq('user_id', userId)
+      .in('status', ['completed', 'shielded'])
+      .order('created_at', { ascending: false });
+
+    if (error) return fail(error);
+
+    const rows = (data ?? []) as unknown as FeedRow[];
+
+    const { data: visibleRules } = await supabase.rpc('get_visible_rules', { target_user_id: userId });
+    const ruleTitles: RuleTitleMap = new Map();
+    for (const rule of (visibleRules ?? []) as { id: string; title: string }[]) {
+      ruleTitles.set(rule.id, rule.title);
+    }
+
+    const groups = new Map<string, FeedRow[]>();
+    for (const row of rows) {
+      const key = row.batch_id ?? row.id;
+      const group = groups.get(key);
+      if (group) group.push(row);
+      else groups.set(key, [row]);
+    }
+
+    const posts = Array.from(groups.values())
+      .map((group) => {
+        const anchor = group.reduce((latest, row) => (row.log_date > latest.log_date ? row : latest));
+        return toFeedPost(anchor, viewerId, ruleTitles, group.length);
+      })
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+
+    return ok(posts);
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
  * Records one tap of a reaction.
  *
  * Multi-tap is supported by incrementing an existing row, so the count reflects
