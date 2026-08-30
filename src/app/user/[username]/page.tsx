@@ -9,6 +9,7 @@ import DayLockedCard from '@/components/DayLockedCard';
 import MilestoneCard from '@/components/MilestoneCard';
 import ShieldModal from '@/components/ShieldModal';
 import Avatar from '@/components/Avatar';
+import AvatarUpload from '@/components/AvatarUpload';
 import StartCountdown from '@/components/StartCountdown';
 import CatchUpList from '@/components/CatchUpList';
 import FollowToggle from '@/components/FollowToggle';
@@ -337,9 +338,17 @@ export default function UserProfilePage() {
       {/* Profile banner */}
       <div className="glass-card profile-banner">
         <div className="profile-identity">
-          <div className="profile-avatar">
-            <Avatar url={challenge.avatarUrl} displayName={challenge.displayName} username={challenge.username} />
-          </div>
+          {/* Tapping your own picture replaces it — the most obvious place to
+              look for that, and it beats hunting through Account settings. */}
+          {isOwnProfile ? (
+            <AvatarUpload className="profile-avatar">
+              <Avatar url={challenge.avatarUrl} displayName={challenge.displayName} username={challenge.username} />
+            </AvatarUpload>
+          ) : (
+            <div className="profile-avatar">
+              <Avatar url={challenge.avatarUrl} displayName={challenge.displayName} username={challenge.username} />
+            </div>
+          )}
 
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="profile-name-row">

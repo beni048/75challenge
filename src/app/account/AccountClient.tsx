@@ -10,19 +10,13 @@ import { PASSWORD_MIN_LENGTH, isPasswordLongEnough } from '@/lib/password';
 import { useChallenge } from '@/components/ChallengeProvider';
 import { useToast, ConfirmDialog } from '@/components/Toast';
 import { replaceRules, updateProfile, restartChallenge, consumeRulesChange } from '@/lib/db/profile';
-import { uploadAvatar } from '@/lib/db/avatar';
-import {
-  compressImageToWebP,
-  AVATAR_MAX_DIMENSION_PX,
-  AVATAR_QUALITY,
-  AVATAR_TARGET_KB,
-} from '@/lib/image-compressor';
 import { MIN_RULES } from '@/lib/rules-policy';
 import { getRulesChangeState } from '@/lib/rules-window';
 import { getEffectiveLogDate, getSupportedTimezones } from '@/lib/date-utils';
 import { signOut, updatePassword, sendPasswordReset } from '@/lib/auth';
-import { Lock, ArrowRight, LogOut, RotateCcw, Info, CheckCircle2, Upload } from 'lucide-react';
+import { Lock, ArrowRight, LogOut, RotateCcw, Info, CheckCircle2 } from 'lucide-react';
 import Avatar from '@/components/Avatar';
+import AvatarUpload from '@/components/AvatarUpload';
 import InfoTooltip from '@/components/InfoTooltip';
 
 const TIMEZONE_OPTIONS: string[] = (() => {
@@ -66,7 +60,6 @@ export default function AccountClient() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [busy, setBusy] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [announceRestart, setAnnounceRestart] = useState(false);
   const [confirmRulesChange, setConfirmRulesChange] = useState(false);
@@ -173,40 +166,6 @@ export default function AccountClient() {
     toast.success(t('account.profileSaved'));
   };
 
-  const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingAvatar(true);
-    try {
-      const compressed = await compressImageToWebP(
-        file,
-        AVATAR_MAX_DIMENSION_PX,
-        AVATAR_MAX_DIMENSION_PX,
-        AVATAR_QUALITY,
-        AVATAR_TARGET_KB
-      );
-      URL.revokeObjectURL(compressed.previewUrl);
-      const uploaded = await uploadAvatar(challenge.id, compressed.blob);
-      if (uploaded.error) {
-        toast.error(uploaded.error);
-        return;
-      }
-      const updated = await updateProfile(challenge.id, { avatarUrl: uploaded.data });
-      if (updated.error) {
-        toast.error(updated.error);
-        return;
-      }
-      await refresh();
-      toast.success(t('account.profileSaved'));
-    } catch (err) {
-      console.error('Avatar upload error:', err);
-      toast.error(t('auth.failed'));
-    } finally {
-      setUploadingAvatar(false);
-      e.target.value = '';
-    }
-  };
 
   const handleUpdatePassword = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -359,45 +318,9 @@ export default function AccountClient() {
         <div className="glass-card" style={{ padding: '1.75rem' }}>
           <div className="input-group" style={{ alignItems: 'center' }}>
             <label className="input-label">{t('auth.avatarLabel')}</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div
-                style={{
-                  width: '56px',
-                  height: '56px',
-                  flexShrink: 0,
-                  borderRadius: 'var(--radius-full)',
-                  background: 'var(--gradient-fire)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.4rem',
-                  fontWeight: 900,
-                  color: 'var(--text-on-accent)',
-                  overflow: 'hidden',
-                }}
-              >
-                <Avatar url={challenge.avatarUrl} displayName={displayName} username={challenge.username} />
-              </div>
-
-              <label
-                className="btn btn-secondary btn-sm"
-                style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
-              >
-                <Upload size={16} />
-                <span>{challenge.avatarUrl ? t('auth.avatarChange') : t('auth.avatarUpload')}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  onChange={handleAvatarSelect}
-                  disabled={uploadingAvatar}
-                />
-              </label>
-
-              {uploadingAvatar && (
-                <span style={{ fontSize: '0.78rem', color: 'var(--accent-orange)' }}>{t('checklist.compressing')}</span>
-              )}
-            </div>
+            <AvatarUpload className="account-avatar">
+              <Avatar url={challenge.avatarUrl} displayName={displayName} username={challenge.username} />
+            </AvatarUpload>
           </div>
 
           <div className="input-group">

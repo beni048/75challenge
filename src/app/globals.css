@@ -2765,3 +2765,73 @@ a {
     padding: 0.25rem 0.65rem;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Tap-to-change avatar. The wrapper keeps whatever size the caller's class
+   gives it (.profile-avatar, .account-avatar), so this adds the affordance
+   without owning the dimensions.
+   --------------------------------------------------------------------------- */
+.avatar-upload {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.avatar-upload-input {
+  /* Visually hidden but still focusable, so the label is keyboard reachable. */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* A small camera chip, so it reads as editable rather than decorative. */
+.avatar-upload-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-upload:hover .avatar-upload-badge,
+.avatar-upload-input:focus-visible + .avatar-upload-badge {
+  color: var(--accent-orange);
+  border-color: var(--accent-orange);
+}
+
+/* Dims the picture while the upload is in flight. */
+.avatar-upload-busy {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  background: var(--backdrop);
+}
+
+.account-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-full);
+  background: var(--gradient-fire);
+  color: var(--text-on-accent);
+  font-size: 1.6rem;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+/* The profile banner avatar already has its size; just allow the badge to
+   sit outside its edge. */
+.profile-avatar.avatar-upload {
+  overflow: visible;
+}
