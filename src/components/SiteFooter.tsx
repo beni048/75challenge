@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useI18n } from '@/lib/i18n';
+import HelpFeedback from './HelpFeedback';
 
 export default function SiteFooter() {
   const { t } = useI18n();
@@ -15,6 +16,9 @@ export default function SiteFooter() {
           <span>{t('footer.brand')}</span>
         </p>
         <p style={{ marginTop: '0.4rem', fontSize: '0.78rem' }}>{t('footer.tagline')}</p>
+        <div className="footer-actions">
+          <HelpFeedback />
+        </div>
       </div>
     </footer>
   );

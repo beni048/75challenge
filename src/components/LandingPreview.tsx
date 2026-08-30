@@ -18,6 +18,10 @@ import { formatLongDate } from '@/lib/date-utils';
  * than being told the rules first) — an explicit product decision, not a
  * regression. Nothing in the preview is interactive — visitors join before
  * they can react.
+ *
+ * Backgrounds alternate so the sections read as distinct: only "how it works"
+ * carries the tinted `.landing-band`. Three CTAs are spaced evenly down the
+ * page — hero, after the explanation, and after the preview.
  */
 export default function LandingPreview() {
   const { t, locale } = useI18n();
@@ -55,7 +59,7 @@ export default function LandingPreview() {
           <p className="landing-subtitle">{t('hero.subtitle')}</p>
 
           <div className="landing-cta">
-            <Link id="hero-join-btn" href="/join" className="btn btn-primary btn-lg pulse-active landing-cta-btn">
+            <Link href="/join" className="btn btn-primary btn-lg pulse-active landing-cta-btn">
               {t('hero.cta')} <ArrowRight size={20} />
             </Link>
             {/* The shared finish line — what makes this a group effort. */}
@@ -64,30 +68,41 @@ export default function LandingPreview() {
         </div>
       </section>
 
-      {/* ---------------- How it works ---------------- */}
-      <section className="container landing-section">
-        <div className="landing-section-head">
-          <span className="landing-eyebrow">{t('howItWorks.eyebrow')}</span>
-          <h2 className="h-section">{t('howItWorks.title')}</h2>
-          <p className="landing-section-lede">{t('howItWorks.lede')}</p>
-        </div>
+      {/* ---------------- How it works ----------------
+          Carries the tinted band, so the page alternates
+          hero (bare) → how it works (band) → feed (bare). */}
+      <section className="landing-band">
+        <div className="container landing-section">
+          <div className="landing-section-head">
+            <span className="landing-eyebrow">{t('howItWorks.eyebrow')}</span>
+            <h2 className="h-section">{t('howItWorks.title')}</h2>
+            <p className="landing-section-lede">{t('howItWorks.lede')}</p>
+          </div>
 
-        <div className="card-grid landing-pillars">
-          {pillars.map((pillar) => (
-            <div key={pillar.title} className="glass-card pillar-card">
-              <div className="pillar-card-head">
-                {pillar.icon}
-                <h3 className="pillar-card-title">{pillar.title}</h3>
+          <div className="card-grid landing-pillars">
+            {pillars.map((pillar) => (
+              <div key={pillar.title} className="glass-card pillar-card">
+                <div className="pillar-card-head">
+                  {pillar.icon}
+                  <h3 className="pillar-card-title">{pillar.title}</h3>
+                </div>
+                <p className="pillar-card-body">{pillar.desc}</p>
               </div>
-              <p className="pillar-card-body">{pillar.desc}</p>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          {/* CTA 2 of 3 — the reader now knows what they would be signing up
+              for, which is the first moment the button means anything. */}
+          <div className="landing-midcta">
+            <Link href="/join" className="btn btn-primary btn-lg landing-cta-btn">
+              {t('hero.cta')} <ArrowRight size={20} />
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* ---------------- Feed preview ---------------- */}
-      <section className="landing-band">
-        <div className="container landing-section">
+      <section className="container landing-section">
           <div className="landing-section-head">
             <span className="landing-eyebrow">{t('preview.eyebrow')}</span>
             <h2 className="h-section">{t('preview.title')}</h2>
@@ -148,21 +163,14 @@ export default function LandingPreview() {
             })}
           </div>
 
-          <div className="landing-midcta">
-            <Link id="preview-join-btn" href="/join" className="btn btn-primary btn-lg landing-cta-btn">
+          {/* CTA 3 of 3 — closes the page. The old bare closing section is
+              folded in here: it had no heading of its own and read as a button
+              floating in space. */}
+          <div className="landing-closing">
+            <Link href="/join" className="btn btn-primary btn-lg landing-cta-btn">
               {t('hero.cta')} <ArrowRight size={20} />
             </Link>
           </div>
-        </div>
-      </section>
-
-      {/* ---------------- Closing CTA ---------------- */}
-      <section className="container landing-section">
-        <div className="landing-closing">
-          <Link href="/join" className="btn btn-primary btn-lg landing-cta-btn">
-            {t('hero.cta')} <ArrowRight size={20} />
-          </Link>
-        </div>
       </section>
     </div>
   );

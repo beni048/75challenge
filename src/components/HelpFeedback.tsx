@@ -6,6 +6,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n } from '@/lib/i18n';
 import ModalPortal from './ModalPortal';
 
+/**
+ * Support and feedback.
+ *
+ * Rendered inside SiteFooter rather than as a floating button: the
+ * bottom-right corner now belongs to ScrollToTop, and two stacked FABs there
+ * would collide on a phone. The modal itself is unchanged.
+ */
 /** Support and feature requests both go to this inbox. */
 export const SUPPORT_EMAIL = 'beni.rossi@gmail.com';
 
@@ -16,13 +23,13 @@ export default function HelpFeedback() {
   return (
     <>
       <button
-        id="help-feedback-fab"
+        id="help-feedback-trigger"
         onClick={() => setIsOpen(true)}
-        className="btn btn-secondary btn-sm help-fab"
+        className="footer-link"
         aria-label={t('help.trigger')}
       >
-        <HelpCircle size={18} color="var(--accent-orange)" />
-        <span className="help-fab-label">{t('help.trigger')}</span>
+        <HelpCircle size={15} color="var(--accent-orange)" />
+        <span>{t('help.trigger')}</span>
       </button>
 
       <ModalPortal isOpen={isOpen} onClose={() => setIsOpen(false)}>

@@ -2046,37 +2046,46 @@ a {
   }
 }
 
-/* Floating help trigger. On a phone it collapses to a circular icon button so
-   it does not sit on top of the content it is meant to help with. */
-.help-fab {
+/* Support lives in the footer now — the bottom-right corner belongs to
+   ScrollToTop, and two floating buttons there collide on a phone. */
+.footer-actions {
+  margin-top: 0.6rem;
+}
+
+.footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.footer-link:hover {
+  color: var(--text-primary);
+}
+
+/* Back to top. Sits in the FAB layer, clear of the sticky nav. */
+.scroll-top {
   position: fixed;
   bottom: 1rem;
   right: 1rem;
   z-index: var(--z-fab);
-  border-radius: var(--radius-full);
-  box-shadow: var(--fab-shadow);
-  padding: 0.6rem 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
   background: var(--bg-elevated);
-  border-color: var(--border-medium);
-}
-
-.help-fab-label {
-  display: none;
-  font-size: 0.85rem;
-  font-weight: 600;
+  border: 1px solid var(--border-medium);
+  box-shadow: var(--modal-shadow);
 }
 
 @media (min-width: 768px) {
-  .help-fab {
+  .scroll-top {
     bottom: 1.5rem;
     right: 1.5rem;
-  }
-
-  .help-fab-label {
-    display: inline;
   }
 }
 

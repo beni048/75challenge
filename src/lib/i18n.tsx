@@ -49,6 +49,7 @@ const en = {
   'nav.openMenu': 'Open menu',
   'nav.closeMenu': 'Close menu',
   'nav.menu': 'Menu',
+  'nav.scrollTop': 'Back to top',
 
   // Timezone confirm banner
   'timezone.confirmPrompt':
@@ -568,6 +569,7 @@ const de: Record<TranslationKey, string> = {
   'nav.languageDe': 'Auf Deutsch umschalten',
   'nav.openMenu': 'Menü öffnen',
   'nav.closeMenu': 'Menü schliessen',
+  'nav.scrollTop': 'Nach oben',
   'nav.menu': 'Menü',
 
   'timezone.confirmPrompt':
