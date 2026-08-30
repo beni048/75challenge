@@ -11,7 +11,12 @@ import { useChallenge } from '@/components/ChallengeProvider';
 import { useToast, ConfirmDialog } from '@/components/Toast';
 import { replaceRules, updateProfile, restartChallenge, consumeRulesChange } from '@/lib/db/profile';
 import { uploadAvatar } from '@/lib/db/avatar';
-import { compressImageToWebP } from '@/lib/image-compressor';
+import {
+  compressImageToWebP,
+  AVATAR_MAX_DIMENSION_PX,
+  AVATAR_QUALITY,
+  AVATAR_TARGET_KB,
+} from '@/lib/image-compressor';
 import { MIN_RULES } from '@/lib/rules-policy';
 import { getRulesChangeState } from '@/lib/rules-window';
 import { getEffectiveLogDate, getSupportedTimezones } from '@/lib/date-utils';
@@ -174,7 +179,13 @@ export default function AccountClient() {
 
     setUploadingAvatar(true);
     try {
-      const compressed = await compressImageToWebP(file, 400, 400, 0.82);
+      const compressed = await compressImageToWebP(
+        file,
+        AVATAR_MAX_DIMENSION_PX,
+        AVATAR_MAX_DIMENSION_PX,
+        AVATAR_QUALITY,
+        AVATAR_TARGET_KB
+      );
       URL.revokeObjectURL(compressed.previewUrl);
       const uploaded = await uploadAvatar(challenge.id, compressed.blob);
       if (uploaded.error) {

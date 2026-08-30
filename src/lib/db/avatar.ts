@@ -24,10 +24,13 @@ const BUCKET = 'avatars';
 export async function uploadAvatar(userId: string, blob: Blob): Promise<DbResult<string>> {
   try {
     const supabase = createClient();
+    // Stable name, so a re-upload replaces rather than accumulates. The
+    // extension deliberately does NOT follow blob.type here: varying it would
+    // strand the previous file at the old extension instead of overwriting it.
     const path = `${userId}/avatar.webp`;
 
     const { error } = await supabase.storage.from(BUCKET).upload(path, blob, {
-      contentType: 'image/webp',
+      contentType: blob.type || 'image/webp',
       cacheControl: '3600',
       upsert: true,
     });

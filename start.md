@@ -58,7 +58,7 @@ Email-confirmation sign-up, proof-photo upload to the `proof-photos` bucket, and
 | Auth & DB | Supabase (PostgreSQL, Auth, Realtime, Storage) | Free |
 | Hosting | Vercel | Free |
 | Animations | Framer Motion + canvas-confetti | — |
-| Image Compression | Client-side Canvas API → WebP (< 200 KB) | — |
+| Image Compression | Client-side Canvas API → WebP (see §9.1) | — |
 
 ### Hard Constraints
 - **Supabase Storage limit**: 1 GB — client-side image compression is mandatory.
@@ -303,10 +303,122 @@ key, so there is no trusted server layer in front of it. Key policies:
 - Storage objects live under `<user-id>/…`; the policy checks that first path segment.
 
 ### Storage
-Bucket `proof-photos`, public read. Photos are compressed to WebP < 200 KB in the
-browser *before* upload to stay inside the 1 GB free tier. **Only the durable
-Storage URL is ever persisted on a log** — a `blob:` preview URL dies with the
-page and renders broken after a reload.
+Two buckets, both public read, both writing under `<user-id>/…` so the RLS
+policy can check that first path segment:
+
+| Bucket | Holds | Lifecycle |
+|---|---|---|
+| `proof-photos` | One object per check-in, `<user-id>/<uuid>.<ext>` | Never overwritten; **eligible for automatic cleanup** (§9.1) |
+| `avatars` | One object per user, `<user-id>/avatar.webp`, `upsert: true` | Replaced on change; **never cleaned** — bounded at one per user |
+
+**Only the durable Storage URL is ever persisted on a log** — a `blob:` preview
+URL dies with the page and renders broken after a reload.
+
+---
+
+## 9.1 The Storage Budget — MANDATORY
+
+> The free tier gives **1 GB of Storage, shared by every participant**. If it
+> fills, *every* proof-photo upload fails at once — check-ins break for the
+> whole community, not just the person who tipped it over. Everything in this
+> section exists to make that unreachable.
+
+### The numbers live in code, never in prose
+All of them are in **`src/lib/image-compressor.ts`** (dimensions, quality,
+target KB) and **`src/lib/storage-quota.ts`** (quota, thresholds, batch sizes).
+Never write a KB or px figure into a comment, a doc, or a UI string — import
+the constant. This section deliberately names no numbers for that reason; it
+is exactly how the 5-vs-6 password bug shipped (§0).
+
+### Every image is compressed before upload
+Downscaled and re-encoded client-side via the Canvas API, then uploaded. This
+is a silent preprocessing step — the participant sees a brief "compressing"
+label and nothing else.
+
+- **Proof photos** and **avatars** have separate budgets; pass the `AVATAR_*`
+  constants explicitly rather than relying on the proof-photo defaults.
+- **WebP is requested, but not guaranteed.** `canvas.toBlob(cb, 'image/webp')`
+  is specified to fall back to **PNG** where WebP is unsupported — silently,
+  and ignoring `quality` entirely, since PNG is lossless. That produced a
+  1.26 MB "compressed" file in the dev bucket under a `.webp` name. So:
+  `encodeCanvas` checks `blob.type` and falls back to **JPEG** (universally
+  supported, and it *does* honour quality). Upload paths take the extension
+  and content type **from `blob.type`**, never from an assumption.
+- **The size cap is enforced, not hoped for.** If the quality floor is reached
+  and the result is still over the hard ceiling, compression **throws** rather
+  than uploading. A bound you don't enforce is not a bound — and "≤ 75 photos
+  per user" only holds if each one is actually capped.
+- Compression applies to **new uploads only**. Nothing ever re-encodes what is
+  already in the bucket.
+
+### Old photos are reclaimed automatically ("rolling window")
+Once usage crosses the trigger ratio, `POST /api/cleanup-storage` frees space
+back down to the target ratio. The gap between the two is **hysteresis and is
+not optional** — with a single threshold, every upload past the line would
+start another run that frees just enough to dip under it and immediately cross
+back.
+
+**A cleaned day stays completed.** Only `photo_url` is set to `null`; status,
+rule checks, streak and shield maths are untouched (§4 — a completed day is
+final). `photo_url IS NULL` is already a normal state — `catchUpDays` writes it
+deliberately, and `FeedCard` renders no photo block for it.
+
+**Order is DB-first, then Storage**, and this is not interchangeable:
+- Clearing the column first puts the row into a state the app already handles.
+  If the Storage delete then fails, the object is merely *orphaned*, and the
+  next run's orphan pass reclaims it for free.
+- The reverse would leave a live row pointing at a 404 — a broken image on
+  other people's feeds. (`FeedCard` also has an `onError` fallback for this,
+  but not creating the bug beats handling it.)
+
+**Retention order is a product decision, and it lives in SQL** (migration
+`0005`), not in TypeScript, so it is versioned: **abandoned attempts
+(`users.status = 'failed'`) are given up first**, and only then oldest-first
+across everyone. Plain "delete oldest" would strip the early days from the
+people furthest into their challenge — punishing the most committed
+participants to make room for new signups.
+
+**Never `delete from storage.objects` in SQL.** There is no cascade to the
+underlying S3 object: a direct row delete leaks the file *and* destroys the
+metadata that would let anything find it again, making the space permanently
+unreclaimable. All deletion goes through the Storage API in the route handler.
+
+### The cleanup endpoint is destructive — how it is defended
+In priority order. Note the auth check is **not** the most important one:
+1. **It accepts no user-controlled target.** No body, no ids, no bucket, no
+   count. *What* gets deleted is computed entirely server-side by the SQL
+   functions. An attacker cannot aim it.
+2. **It is a no-op below the trigger threshold**, so spamming it achieves
+   nothing in the normal case.
+3. **A server-side atomic claim** (`claim_storage_cleanup`) is the cooldown
+   *and* a mutex, so two concurrent invocations cannot race the same batch.
+   This is the authoritative rate limit — the `localStorage` throttle on the
+   client is advisory only, because in this threat model the client is the
+   attacker.
+4. **Auth**: the cron bearer secret (compared with `timingSafeEqual`), or a
+   valid Supabase session via `getUser()` — **never `getSession()`**, which
+   trusts a forgeable cookie instead of revalidating the JWT.
+5. The service-role key is server-only (`src/lib/supabase/admin.ts`, no
+   `NEXT_PUBLIC_` prefix, throws if imported in the browser). A missing key
+   returns **503** — it must never silently fall back to the anon key, which
+   would report success while RLS hid every row.
+
+### Triggers
+- **Primary: a nightly GitHub Actions cron** (`.github/workflows/storage-cleanup.yml`).
+  Free on any plan, and it runs whether or not anyone is active. `pg_cron` is
+  also available on Supabase Free if you prefer it in-database.
+- **Secondary: after a successful photo upload**, fire-and-forget from the
+  client. Hooked to uploads rather than logins because uploads are the only
+  action that grows the bucket. Never awaited, never blocks the check-in, and
+  **never toasted** — the participant just logged their day; a storage message
+  would be meaningless to them.
+- **Reactive retry on a quota error ships deliberately inert.**
+  `isStorageQuotaError` returns `false` for everything until someone observes
+  what Supabase actually returns on quota exhaustion. Guessing is dangerous
+  here: a matcher that caught a network blip or an RLS denial would respond to
+  a transient error by permanently deleting 50 other people's photos — and it
+  would look like it worked. Match on `code`/`status` only, never on
+  `message` (§0). Fill it in from the `[storage] upload failed` log line.
 
 ---
 
@@ -460,7 +572,7 @@ toxicity" and similar — that register is retired; do not reintroduce it.
 7. **New accounts start on Day 1 with an empty log.** Never pre-fill days.
 8. **No text comments, no downvotes** — reactions only.
 9. **Cold-start threshold: < 2 users** → show static preview posts in feed. Feed query must filter `daily_logs` to show ONLY 'completed' or 'shielded' statuses.
-10. **Client-side image compression** to WebP < 200 KB before upload.
+10. **Client-side image compression before every upload**, to the budget in `image-compressor.ts`; over the hard ceiling it throws rather than uploading (see §9.1).
 11. **Export Utility** to handle converting the `MilestoneCard` DOM element into a downloadable image (e.g. `html-to-image`).
 12. **Every user-facing string exists in English AND German** (see §11).
 12b. **Mobile First is mandatory** — base styles are the phone; `min-width` only (see §12).

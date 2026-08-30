@@ -73,6 +73,22 @@ only to themselves.
 Writing a digit into a sentence is exactly how the 5-vs-6 password bug shipped
 and silently broke every sign-up.
 
+### 🖼️ The storage budget is shared and finite (`start.md` §9.1)
+
+Supabase Free gives **1 GB of Storage for the whole community**. If it fills,
+every proof-photo upload fails at once.
+
+- **Never write a KB or px figure into prose.** They live in
+  `src/lib/image-compressor.ts` and `src/lib/storage-quota.ts` — import them.
+- **Compress before every upload**, and take the extension/content type from
+  `blob.type` — `canvas.toBlob` silently falls back to PNG where WebP is
+  unsupported, which once put a 1.26 MB "compressed" file in the bucket.
+- **Cleanup clears `photo_url` first, deletes the object second.** The reverse
+  leaves a live row pointing at a 404.
+- **Never `delete from storage.objects` in SQL** — no cascade to the S3 object,
+  so the space becomes permanently unreclaimable.
+- A cleaned day **stays completed**; only the photo goes.
+
 ### 🌿 Push to `dev`, never straight to `main` (`github.md`)
 
 All work lands on `dev` → `dev.75challenge.quest`. `main` →

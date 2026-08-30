@@ -17,6 +17,12 @@ interface FeedCardProps {
 export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
   const { t, locale } = useI18n();
   const [isUnfollowed, setIsUnfollowed] = useState(false);
+  // A stored photo_url can outlive its object: the storage-cleanup job clears
+  // the column and deletes the file, and a crash between those two steps
+  // leaves a row pointing at a 404. Collapsing to the no-photo state on load
+  // failure reuses the branch the card already has for a null photo_url,
+  // rather than showing a broken image on someone else's feed.
+  const [photoFailed, setPhotoFailed] = useState(false);
 
   const handleToggleUnfollow = () => {
     const nextState = !isUnfollowed;
@@ -154,7 +160,7 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
       )}
 
       {/* Proof photo */}
-      {post.photo_url && (
+      {post.photo_url && !photoFailed && (
         <div
           style={{
             borderRadius: 'var(--radius-md)',
@@ -173,6 +179,7 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
             src={post.photo_url}
             alt={t('feed.photoAlt')}
             loading="lazy"
+            onError={() => setPhotoFailed(true)}
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
         </div>

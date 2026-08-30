@@ -5,7 +5,12 @@ import { Mail, Lock, User as UserIcon, AtSign, Upload, ArrowRight } from 'lucide
 import { useI18n } from '@/lib/i18n';
 import { PASSWORD_MIN_LENGTH, isPasswordLongEnough } from '@/lib/password';
 import { toUsernameSlug } from '@/lib/db/profile';
-import { compressImageToWebP } from '@/lib/image-compressor';
+import {
+  compressImageToWebP,
+  AVATAR_MAX_DIMENSION_PX,
+  AVATAR_QUALITY,
+  AVATAR_TARGET_KB,
+} from '@/lib/image-compressor';
 import Avatar from './Avatar';
 import { useToast } from './Toast';
 
@@ -69,7 +74,13 @@ export default function SimpleAuthForm({
 
     setIsCompressingAvatar(true);
     try {
-      const result = await compressImageToWebP(file, 400, 400, 0.82);
+      const result = await compressImageToWebP(
+        file,
+        AVATAR_MAX_DIMENSION_PX,
+        AVATAR_MAX_DIMENSION_PX,
+        AVATAR_QUALITY,
+        AVATAR_TARGET_KB
+      );
       if (avatar?.previewUrl) URL.revokeObjectURL(avatar.previewUrl);
       setAvatar({ blob: result.blob, previewUrl: result.previewUrl });
     } catch (err) {

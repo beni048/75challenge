@@ -180,7 +180,8 @@ create policy user_unfollows_all on public.user_unfollows
 -- ---------------------------------------------------------------------------
 -- Storage: proof photos
 --
--- Images are compressed to WebP < 200 KB in the browser before upload
+-- Images are downscaled and re-encoded in the browser before upload; the size
+-- and dimension budget lives in src/lib/image-compressor.ts (start.md §9.1).
 -- (src/lib/image-compressor.ts) to stay inside the 1 GB free tier.
 -- Objects are stored under "<user-id>/<filename>", which is what the policies
 -- below key off.

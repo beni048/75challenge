@@ -1,0 +1,38 @@
+# Nightly storage ceiling check.
+#
+# This is the PRIMARY trigger for cleanup. The client-side call after a photo
+# upload is opportunistic backup — it only helps if someone happens to be
+# uploading, whereas this runs whether or not anyone is active.
+#
+# The endpoint is a no-op below the trigger threshold, so on a normal night
+# this costs one request and deletes nothing.
+#
+# Required repository secrets:
+#   CLEANUP_URL           e.g. https://dev.75challenge.quest/api/cleanup-storage
+#   CLEANUP_CRON_SECRET   must match the CLEANUP_CRON_SECRET env var on Vercel
+name: Storage cleanup
+
+on:
+  schedule:
+    - cron: '17 3 * * *' # 03:17 UTC daily — off the hour, when load is lowest.
+  workflow_dispatch: # so it can be run by hand from the Actions tab
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger storage cleanup
+        run: |
+          if [ -z "${{ secrets.CLEANUP_URL }}" ] || [ -z "${{ secrets.CLEANUP_CRON_SECRET }}" ]; then
+            echo "CLEANUP_URL / CLEANUP_CRON_SECRET not configured — skipping."
+            exit 0
+          fi
+          response=$(curl -sS -w '\n%{http_code}' -X POST "${{ secrets.CLEANUP_URL }}" \
+            -H "Authorization: Bearer ${{ secrets.CLEANUP_CRON_SECRET }}")
+          body=$(echo "$response" | sed '$d')
+          status=$(echo "$response" | tail -n1)
+          echo "HTTP $status"
+          echo "$body"
+          # Fail the run on a server error so it surfaces, but treat a
+          # cooling-down / under-threshold no-op as success.
+          if [ "$status" -ge 500 ]; then exit 1; fi
