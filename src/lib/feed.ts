@@ -23,6 +23,8 @@ export interface FeedPost {
   user: {
     username: string;
     display_name: string;
+    /** Null falls back to the initial-letter bubble, same as everywhere else. */
+    avatar_url?: string | null;
   };
   day_number: number;
   log_date: string;

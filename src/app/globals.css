@@ -392,6 +392,8 @@ a {
   font-weight: 800;
   font-size: 1rem;
   color: var(--text-primary);
+  /* Clips a real photo to the circle; the letter fallback is unaffected. */
+  overflow: hidden;
 }
 
 .feed-card-name {

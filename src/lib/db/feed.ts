@@ -49,7 +49,7 @@ interface FeedRow {
   batch_id: string | null;
   hype_phrase_id: string | null;
   hype_claimed_by: string | null;
-  users: { username: string; display_name: string; start_date: string } | null;
+  users: { username: string; display_name: string; start_date: string; avatar_url: string | null } | null;
   log_rule_checks: { rule_id: string; is_completed: boolean }[];
   reactions: {
     phrase_id: string;
@@ -109,6 +109,7 @@ function toFeedPost(row: FeedRow, viewerId: string | null, ruleTitles: RuleTitle
     user: {
       username: row.users?.username ?? 'challenger',
       display_name: row.users?.display_name ?? 'Challenger',
+      avatar_url: row.users?.avatar_url ?? null,
     },
     // Derived from the participant's start date, never stored.
     day_number: row.users ? calculateCurrentDay(row.users.start_date, row.log_date) : 1,
@@ -167,7 +168,7 @@ export async function fetchFeed(
       .select(
         `id, user_id, log_date, status, photo_url, caption, created_at, batch_id,
          hype_phrase_id, hype_claimed_by,
-         users:user_id ( username, display_name, start_date ),
+         users:user_id ( username, display_name, start_date, avatar_url ),
          log_rule_checks ( rule_id, is_completed ),
          reactions ( phrase_id, sender_id, updated_at, users:sender_id ( username, display_name ) )`
       )
@@ -312,7 +313,7 @@ export async function fetchUserFeedPosts(userId: string, viewerId: string | null
       .select(
         `id, user_id, log_date, status, photo_url, caption, created_at, batch_id,
          hype_phrase_id, hype_claimed_by,
-         users:user_id ( username, display_name, start_date ),
+         users:user_id ( username, display_name, start_date, avatar_url ),
          log_rule_checks ( rule_id, is_completed ),
          reactions ( phrase_id, sender_id, updated_at, users:sender_id ( username, display_name ) )`
       )

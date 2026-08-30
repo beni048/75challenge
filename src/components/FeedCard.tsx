@@ -6,6 +6,7 @@ import HypeButton from './HypeButton';
 import { CheckCircle2, UserMinus, UserCheck, RotateCcw, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
+import Avatar from './Avatar';
 import { getHypePhrase, localizedHypePhrase } from '@/lib/hype-phrases';
 
 interface FeedCardProps {
@@ -86,8 +87,12 @@ export default function FeedCard({ post, isOwnPost = false, onUnfollow, onReact 
       {/* Header */}
       <div className="feed-card-head">
         <div className="feed-card-identity">
-          <div className="feed-card-avatar" aria-hidden="true">
-            {post.user.display_name.charAt(0).toUpperCase()}
+          <div className="feed-card-avatar">
+            <Avatar
+              url={post.user.avatar_url}
+              displayName={post.user.display_name}
+              username={post.user.username}
+            />
           </div>
 
           <div>
