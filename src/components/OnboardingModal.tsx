@@ -158,8 +158,9 @@ export default function OnboardingModal({
       if (!result.hasSession || !result.userId) {
         // Confirmation required: the challenge row cannot be written until the
         // user is authenticated. ChallengeProvider creates it on first visit.
-        setLoading(false);
-        onClose();
+        // As with the success path, navigation unmounts this modal — closing it
+        // first would flash the /join page in between. The toast is rendered at
+        // the app level, so it survives the route change.
         toast.info(t('signup.confirmEmail'));
         router.push('/login');
         return;
@@ -186,9 +187,8 @@ export default function OnboardingModal({
         referredByUsername: referredBy ?? null,
       });
 
-      setLoading(false);
-
       if (created.error || !created.data) {
+        setLoading(false);
         toast.error(created.error ?? t('onboarding.signupFailed'));
         return;
       }
@@ -202,7 +202,13 @@ export default function OnboardingModal({
       setChallenge(created.data);
       clearPendingSignup();
 
-      onClose();
+      // Deliberately NOT closing the modal, and NOT clearing `loading`.
+      // Closing it first plays a 0.2s exit animation that reveals the /join
+      // page underneath before the route changes, and clearing loading flips
+      // the button back to "start my 75 days" — so the last thing you saw was
+      // the form you had just submitted, blinking, over the page you were
+      // leaving. Navigation unmounts the whole page; letting it do that keeps
+      // the submitting state on screen until the profile paints.
       router.push(`/user/${created.data.username}`);
     } catch (err) {
       console.error('Signup error:', err);
@@ -242,15 +248,15 @@ export default function OnboardingModal({
       rules: configuredRules,
       referredByUsername: referredBy ?? null,
     });
-    setLoading(false);
-
     if (created.error || !created.data) {
+      setLoading(false);
       toast.error(created.error ?? t('onboarding.resumeFailed'));
       return;
     }
 
     setChallenge(created.data);
-    onClose();
+    // Same as above: navigation unmounts this, so closing first would only
+    // flash the page behind it.
     router.push(`/user/${created.data.username}`);
   };
 
