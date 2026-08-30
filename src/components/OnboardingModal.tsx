@@ -20,6 +20,9 @@ import { uploadAvatar } from '@/lib/db/avatar';
 import { signUp } from '@/lib/auth';
 import { useToast } from './Toast';
 import { MIN_RULES, MAX_RULES, hasEnoughRules } from '@/lib/rules-policy';
+// The unlock day comes from the constant the rule is actually enforced with,
+// never typed into the copy — start.md's "numbers come from constants" rule.
+import { RULES_CHANGE_UNLOCKS_ON_DAY } from '@/lib/rules-window';
 import CommitmentPicker from './CommitmentPicker';
 import { DEFAULT_COMMITMENT_LEVEL, type CommitmentLevel } from '@/lib/shield-policy';
 
@@ -302,7 +305,7 @@ export default function OnboardingModal({
                     />
                     <LearnPoint
                       icon={<RefreshCw size={18} />}
-                      title={t('onboarding.learnChange')}
+                      title={t('onboarding.learnChange', { day: RULES_CHANGE_UNLOCKS_ON_DAY })}
                       body={t('onboarding.learnChangeDesc')}
                     />
                     <LearnPoint

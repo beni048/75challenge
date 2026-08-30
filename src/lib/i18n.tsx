@@ -75,23 +75,20 @@ const en = {
 
   'pillars.rules.title': 'Habits you choose',
   'pillars.rules.desc':
-    'Nobody hands you a list. Pick the habits that matter to you and the rhythm that fits your week — every day, workdays only, or specific days.',
+    'Pick your own, and which days they count. Nobody hands you a list.',
   'pillars.shield.title': 'Room for a bad day',
   'pillars.shield.desc':
-    'Life happens. You choose up front how much slack you want — from none at all to a shield that comes back.',
+    'Decide up front how much slack you get — from none, to a shield that recharges.',
   'pillars.hype.title': 'Support, not judgement',
   'pillars.hype.desc':
-    'No comments to police, no downvotes, no leaderboards. Just people cheering each other on, one day at a time.',
-
+    'No comments, no downvotes, no rankings. Just people cheering each other on.',
   'howItWorks.eyebrow': 'The basics',
   'howItWorks.title': 'How it works',
   'howItWorks.lede':
-    'Four things worth knowing before you start. None of them involve anyone else grading you.',
-
+    'Four things worth knowing. None of them involve anyone grading you.',
   'trust.title': 'You are your own judge',
   'trust.body':
-    'You tick off your own days, and you decide whether you are happy with how one went. Nobody is checking up on you. If you decide you missed a day, you tell us — what happens next is the commitment level you chose. No shame in that.',
-
+    'You tick off your own days and decide whether one counted. Nobody checks up on you.',
   // Join page
   'join.badgeReferral': 'Invited by @{username}',
   'join.badgeDefault': 'LET’S GET STARTED',
@@ -120,22 +117,22 @@ const en = {
   // Step 1 — education
   'onboarding.learnTitle': 'Here is how it works',
   'onboarding.learnIntro':
-    'Five things to know before you start. It takes a minute to read, and it is the whole game.',
+    'Five things, about a minute. Then you are on Day 1.',
   'onboarding.learnHabits': 'Choose at least {min} habits',
   'onboarding.learnHabitsDesc':
-    'You decide what you are working on — up to {max}. Make them specific enough that you know at the end of the day whether you did them.',
-  'onboarding.learnChange': 'You can change them once, after 7 days',
+    'Up to {max}. Make each one specific enough to answer yes or no at bedtime.',
+  'onboarding.learnChange': 'One change, from day {day}',
   'onboarding.learnChangeDesc':
-    'The first week tells you a lot. After day 7 you get one chance to adjust your habits if you aimed too high or too low.',
+    'The first week teaches you a lot. After that you get one adjustment.',
   'onboarding.learnShield': 'You choose how strict it is',
   'onboarding.learnShieldDesc':
-    'Before you start you pick a commitment level, which decides how a missed day is handled.',
+    'Pick a commitment level up front. It decides what a missed day costs.',
   'onboarding.learnJudge': 'You are the judge',
   'onboarding.learnJudgeDesc':
-    'Nobody checks up on you. At the end of each day you decide whether you are happy with how it went.',
-  'onboarding.learnReset': 'Miss a day with no shield left, and you restart',
+    'Nobody checks up on you. You decide whether a day counted.',
+  'onboarding.learnReset': 'Miss a day with no shield, and you restart',
   'onboarding.learnResetDesc':
-    'Back to Day 1. It is not a punishment — it is what makes finishing mean something.',
+    'Back to Day 1. Not a punishment — it is what makes finishing mean something.',
   'onboarding.learnCta': "Let's go",
 
   // Step 2 — start date
@@ -602,20 +599,20 @@ const de: Record<TranslationKey, string> = {
   'hero.goal': 'Unser gemeinsames Ziel: die 75 Tage bis zum {deadline} durchziehen.',
   'pillars.rules.title': 'Du wählst deine Routinen',
   'pillars.rules.desc':
-    'Niemand drückt dir eine Liste in die Hand. Nimm dir vor, was dir wirklich wichtig ist – täglich, nur werktags oder an den Tagen, die zu deiner Woche passen.',
+    'Du nimmst dir vor, was dir wichtig ist – und an welchen Tagen es zählt.',
   'pillars.shield.title': 'Platz für einen miesen Tag',
   'pillars.shield.desc':
-    'Das Leben kommt dazwischen. Du legst vorher fest, wie viel Spielraum du willst – von gar keinem bis zu einem Schild, das wieder nachlädt.',
+    'Du bestimmst vorher, wie viel Spielraum du hast – von keinem bis zu einem Schild, das nachlädt.',
   'pillars.hype.title': 'Zuspruch, keine Bewertung',
   'pillars.hype.desc':
-    'Keine Kommentarspalte, keine Downvotes, keine Rangliste. Nur Leute, die sich gegenseitig pushen. Tag für Tag.',
+    'Keine Kommentare, keine Downvotes, keine Rangliste. Nur Leute, die dich pushen.',
   'howItWorks.eyebrow': 'Kurz erklärt',
   'howItWorks.title': 'So läuft das hier',
   'howItWorks.lede':
-    'Vier Dinge, die du vorher wissen solltest. Bei keinem davon bewertet dich irgendwer.',
+    'Vier Dinge, die du wissen solltest. Bei keinem bewertet dich jemand.',
   'trust.title': 'Du entscheidest selbst',
   'trust.body':
-    'Du hakst deine Tage selbst ab und entscheidest selbst, ob du mit einem Tag zufrieden bist. Niemand kontrolliert dich. Wenn du sagst, du hast einen Tag verpasst, sagst du uns das – was dann passiert, hängt an dem Level, das du dir ausgesucht hast. Kein Grund für ein schlechtes Gewissen.',
+    'Du hakst deine Tage selbst ab und entscheidest, ob einer gezählt hat. Niemand kontrolliert dich.',
   'join.badgeReferral': 'Eingeladen von @{username}',
   'join.badgeDefault': 'LOS GEHT’S',
   'join.titleReferral': 'Mach mit @{username} bei der 75 Challenge mit',
@@ -641,22 +638,22 @@ const de: Record<TranslationKey, string> = {
 
   'onboarding.learnTitle': 'So läuft das hier',
   'onboarding.learnIntro':
-    'Fünf Dinge, die du vorher wissen solltest. Eine Minute lesen – und du kennst das ganze Spiel.',
+    'Fünf Dinge, etwa eine Minute. Dann bist du auf Tag 1.',
   'onboarding.learnHabits': 'Such dir mindestens {min} Routinen aus',
   'onboarding.learnHabitsDesc':
-    'Du entscheidest, woran du arbeitest – bis zu {max}. Formulier sie so konkret, dass du abends genau weisst, ob du sie gemacht hast.',
-  'onboarding.learnChange': 'Nach 7 Tagen kannst du einmal nachjustieren',
+    'Bis zu {max}. Formulier sie so, dass du abends Ja oder Nein sagen kannst.',
+  'onboarding.learnChange': 'Eine Änderung, ab Tag {day}',
   'onboarding.learnChangeDesc':
-    'Die erste Woche zeigt dir viel. Ab Tag 8 kannst du einmal anpassen, falls du zu hoch oder zu tief gegriffen hast.',
+    'Die erste Woche zeigt dir viel. Danach hast du eine Anpassung frei.',
   'onboarding.learnShield': 'Du legst fest, wie streng es wird',
   'onboarding.learnShieldDesc':
-    'Bevor du startest, wählst du dein Commitment-Level. Das entscheidet, was bei einem verpassten Tag passiert.',
+    'Du wählst vorher dein Level. Es entscheidet, was ein verpasster Tag kostet.',
   'onboarding.learnJudge': 'Du bist der Massstab',
   'onboarding.learnJudgeDesc':
-    'Niemand kontrolliert dich. Am Ende jedes Tages entscheidest du selbst, ob der Tag für dich gezählt hat.',
-  'onboarding.learnReset': 'Ohne Schild einen Tag verpasst? Dann fängst du neu an',
+    'Niemand kontrolliert dich. Du entscheidest, ob ein Tag gezählt hat.',
+  'onboarding.learnReset': 'Ohne Schild einen Tag verpasst? Du fängst neu an',
   'onboarding.learnResetDesc':
-    'Zurück auf Tag 1. Das ist keine Strafe – das ist der Grund, warum Ankommen überhaupt etwas bedeutet.',
+    'Zurück auf Tag 1. Keine Strafe – das macht Ankommen erst bedeutsam.',
   'onboarding.learnCta': 'Let\'s go',
   'onboarding.dateTitle': 'Wann willst du starten?',
   'onboarding.dateIntro':
