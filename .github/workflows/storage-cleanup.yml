@@ -1,38 +1,77 @@
-# Nightly storage ceiling check.
+# Nightly storage ceiling check, for dev and production.
 #
 # This is the PRIMARY trigger for cleanup. The client-side call after a photo
 # upload is opportunistic backup — it only helps if someone happens to be
 # uploading, whereas this runs whether or not anyone is active.
 #
 # The endpoint is a no-op below the trigger threshold, so on a normal night
-# this costs one request and deletes nothing.
+# this costs one request per environment and deletes nothing.
 #
-# Required repository secrets:
-#   CLEANUP_URL           e.g. https://dev.75challenge.quest/api/cleanup-storage
-#   CLEANUP_CRON_SECRET   must match the CLEANUP_CRON_SECRET env var on Vercel
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   CLEANUP_CRON_SECRET_DEV    must match CLEANUP_CRON_SECRET in Vercel Preview
+#   CLEANUP_CRON_SECRET_PROD   must match CLEANUP_CRON_SECRET in Vercel Production
+#
+# URLs are NOT secrets, so they live here in plain sight. Production uses the
+# www host deliberately: the apex 308-redirects to it, and following a redirect
+# risks dropping the Authorization header.
 name: Storage cleanup
 
 on:
   schedule:
     - cron: '17 3 * * *' # 03:17 UTC daily — off the hour, when load is lowest.
   workflow_dispatch: # so it can be run by hand from the Actions tab
+    inputs:
+      environment:
+        description: Which environment to clean
+        required: true
+        default: both
+        type: choice
+        options: [both, dev, production]
 
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # one environment failing must not skip the other
+      matrix:
+        include:
+          - name: dev
+            url: https://dev.75challenge.quest/api/cleanup-storage
+            secret_name: CLEANUP_CRON_SECRET_DEV
+          - name: production
+            url: https://www.75challenge.quest/api/cleanup-storage
+            secret_name: CLEANUP_CRON_SECRET_PROD
+
+    name: Clean ${{ matrix.name }}
     steps:
       - name: Trigger storage cleanup
+        # On a manual run, honour the chosen environment; on the schedule, do both.
+        if: >-
+          github.event_name == 'schedule' ||
+          github.event.inputs.environment == 'both' ||
+          github.event.inputs.environment == matrix.name
+        env:
+          CLEANUP_SECRET: ${{ secrets[matrix.secret_name] }}
+          CLEANUP_URL: ${{ matrix.url }}
         run: |
-          if [ -z "${{ secrets.CLEANUP_URL }}" ] || [ -z "${{ secrets.CLEANUP_CRON_SECRET }}" ]; then
-            echo "CLEANUP_URL / CLEANUP_CRON_SECRET not configured — skipping."
+          if [ -z "$CLEANUP_SECRET" ]; then
+            echo "::notice::${{ matrix.secret_name }} is not set — skipping ${{ matrix.name }}."
             exit 0
           fi
-          response=$(curl -sS -w '\n%{http_code}' -X POST "${{ secrets.CLEANUP_URL }}" \
-            -H "Authorization: Bearer ${{ secrets.CLEANUP_CRON_SECRET }}")
+
+          response=$(curl -sS -m 30 -w '\n%{http_code}' -X POST "$CLEANUP_URL" \
+            -H "Authorization: Bearer $CLEANUP_SECRET" \
+            -H 'Content-Type: application/json')
           body=$(echo "$response" | sed '$d')
           status=$(echo "$response" | tail -n1)
+
           echo "HTTP $status"
           echo "$body"
-          # Fail the run on a server error so it surfaces, but treat a
-          # cooling-down / under-threshold no-op as success.
-          if [ "$status" -ge 500 ]; then exit 1; fi
+
+          case "$status" in
+            200) echo "::notice::${{ matrix.name }} cleanup OK" ;;
+            401) echo "::error::401 — ${{ matrix.secret_name }} does not match CLEANUP_CRON_SECRET in Vercel for this environment."; exit 1 ;;
+            404) echo "::error::404 — the route is not deployed here yet. Production only gets it once dev is promoted to main."; exit 1 ;;
+            503) echo "::error::503 — SUPABASE_SERVICE_ROLE_KEY is missing from this Vercel environment."; exit 1 ;;
+            *)   if [ "$status" -ge 500 ]; then exit 1; fi ;;
+          esac
