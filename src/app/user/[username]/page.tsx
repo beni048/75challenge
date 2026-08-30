@@ -32,7 +32,7 @@ import { saveDailyLog, catchUpDays } from '@/lib/db/logs';
 import { uploadProofPhoto } from '@/lib/db/photos';
 import { fetchUserFeedPosts, hypePost } from '@/lib/db/feed';
 import { fetchHiddenUserIds, hideFromFeed, unhideFromFeed } from '@/lib/db/network';
-import type { FeedPost } from '@/lib/feed';
+import { applyOptimisticHype, type FeedPost } from '@/lib/feed';
 import type { Challenge } from '@/lib/db/types';
 
 export default function UserProfilePage() {
@@ -133,9 +133,19 @@ export default function UserProfilePage() {
   }, [challenge, session?.user.id, postsReloadToken]);
 
   const handleReactToPost = async (postId: string, phraseId: string) => {
-    if (!session) return;
+    if (!session || !ownChallenge) return;
+
+    const viewer = { username: ownChallenge.username, displayName: ownChallenge.displayName };
+    const before = userPosts;
+    setUserPosts((prev) =>
+      prev.map((p) => (p.id === postId ? applyOptimisticHype(p, phraseId, viewer) : p))
+    );
+
     const result = await hypePost(postId, session.user.id, phraseId);
-    if (result.error) toast.error(result.error);
+    if (result.error) {
+      setUserPosts(before); // revert
+      toast.error(result.error);
+    }
   };
 
   const handleUnfollowFromPost = async (userId: string, undo: boolean) => {
@@ -518,7 +528,13 @@ export default function UserProfilePage() {
         ) : (
           <div className="stack">
             {userPosts.map((post) => (
-              <FeedCard key={post.id} post={post} onUnfollow={handleUnfollowFromPost} onReact={handleReactToPost} />
+              <FeedCard
+                key={post.id}
+                post={post}
+                isOwnPost={post.user_id === session?.user.id}
+                onUnfollow={handleUnfollowFromPost}
+                onReact={handleReactToPost}
+              />
             ))}
           </div>
         )}

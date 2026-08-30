@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import FeedCard from './FeedCard';
-import { FeedPost } from '@/lib/feed';
+import { FeedPost, applyOptimisticHype } from '@/lib/feed';
 import { Flame, Users, Info } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useChallenge } from './ChallengeProvider';
@@ -89,14 +89,23 @@ export default function FeedStream() {
     setCursor(result.data.cursor);
   };
 
-  /** Optimistic: the count moves immediately, the write follows. */
+  /** Optimistic: the card updates immediately, the write follows. */
   const handleReact = async (postId: string, phraseId: string) => {
-    if (!viewerId) return;
+    if (!viewerId || !challenge) return;
     // Preview posts are not real rows, so there is nothing to react to.
     if (postId.startsWith('mock-post-')) return;
 
+    const viewer = { username: challenge.username, displayName: challenge.displayName };
+    const before = posts;
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? applyOptimisticHype(p, phraseId, viewer) : p))
+    );
+
     const result = await hypePost(postId, viewerId, phraseId);
-    if (result.error) toast.error(result.error);
+    if (result.error) {
+      setPosts(before); // revert — the card must not claim something that failed
+      toast.error(result.error);
+    }
   };
 
   const handleUnfollow = async (userId: string, undo: boolean) => {
@@ -179,7 +188,13 @@ export default function FeedStream() {
       ) : (
         <div className="stack">
           {posts.map((post) => (
-            <FeedCard key={post.id} post={post} onUnfollow={handleUnfollow} onReact={handleReact} />
+            <FeedCard
+              key={post.id}
+              post={post}
+              isOwnPost={post.user_id === viewerId}
+              onUnfollow={handleUnfollow}
+              onReact={handleReact}
+            />
           ))}
         </div>
       )}

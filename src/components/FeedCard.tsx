@@ -10,12 +10,18 @@ import { getHypePhrase, localizedHypePhrase } from '@/lib/hype-phrases';
 
 interface FeedCardProps {
   post: FeedPost;
+  /**
+   * True when this post belongs to the viewer. Hides the hide-from-feed
+   * control: you cannot hide yourself, and the database rejects it outright
+   * (user_unfollows_no_self, migration 0006).
+   */
+  isOwnPost?: boolean;
   /** `undo` is true when the viewer is re-following after hiding someone. */
   onUnfollow?: (userId: string, undo: boolean) => void;
   onReact?: (postId: string, phraseId: string) => void;
 }
 
-export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
+export default function FeedCard({ post, isOwnPost = false, onUnfollow, onReact }: FeedCardProps) {
   const { t, locale } = useI18n();
   const [isUnfollowed, setIsUnfollowed] = useState(false);
   // A stored photo_url can outlive its object: the storage-cleanup job clears
@@ -25,19 +31,6 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
   // rather than showing a broken image on someone else's feed.
   const [photoFailed, setPhotoFailed] = useState(false);
 
-  // The claimed sentence is held locally as well as on the post, so it appears
-  // the instant you claim it rather than after the next feed refetch. Reset
-  // during render when the server value changes, per React's own pattern.
-  const [prevClaimed, setPrevClaimed] = useState(post.hypePhraseId ?? null);
-  const [claimedId, setClaimedId] = useState<string | null>(post.hypePhraseId ?? null);
-  const [claimedName, setClaimedName] = useState<string | null>(
-    post.hypeClaimedBy?.displayName ?? null
-  );
-  if ((post.hypePhraseId ?? null) !== prevClaimed) {
-    setPrevClaimed(post.hypePhraseId ?? null);
-    setClaimedId(post.hypePhraseId ?? null);
-    setClaimedName(post.hypeClaimedBy?.displayName ?? null);
-  }
 
   const handleToggleUnfollow = () => {
     const nextState = !isUnfollowed;
@@ -76,7 +69,7 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
   // One sentence per post, claimed by whoever hyped first; everyone after
   // agrees with it. Rendered in the language it was sent in — it is a quote
   // from a person, not app copy (see hype-phrases.ts).
-  const claimedPhrase = claimedId ? getHypePhrase(claimedId) : undefined;
+  const claimedPhrase = post.hypePhraseId ? getHypePhrase(post.hypePhraseId) : undefined;
   const claimedText = claimedPhrase
     ? localizedHypePhrase(claimedPhrase, { days: post.day_number })
     : null;
@@ -114,14 +107,16 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
             {post.status === 'completed' ? t('feed.statusCompleted') : t('feed.statusShielded')}
           </span>
 
-          <button
-            onClick={handleToggleUnfollow}
-            className="icon-btn"
-            title={t('feed.unfollow')}
-            aria-label={t('feed.unfollowNamed', { username: post.user.username })}
-          >
-            <UserMinus size={16} />
-          </button>
+          {!isOwnPost && (
+            <button
+              onClick={handleToggleUnfollow}
+              className="icon-btn"
+              title={t('feed.unfollow')}
+              aria-label={t('feed.unfollowNamed', { username: post.user.username })}
+            >
+              <UserMinus size={16} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -159,20 +154,16 @@ export default function FeedCard({ post, onUnfollow, onReact }: FeedCardProps) {
         <HypeButton
           hypeCount={post.hypeCount}
           dayNumber={post.day_number}
-          claimedPhraseId={claimedId}
+          claimedPhraseId={post.hypePhraseId}
           hasHyped={post.viewerHasHyped}
-          onHype={(phraseId) => {
-            // Show it immediately; the server value takes over on next fetch.
-            if (!claimedId) setClaimedId(phraseId);
-            onReact?.(post.id, phraseId);
-          }}
+          onHype={(phraseId) => onReact?.(post.id, phraseId)}
         />
 
         <div className="feed-card-hype-text">
           {claimedText ? (
             <>
               <p className="feed-card-hype-line">
-                <strong>{t('hype.says', { name: claimedName ?? t('hype.you') })}</strong>{' '}
+                <strong>{t('hype.says', { name: post.hypeClaimedBy?.displayName ?? t('hype.you') })}</strong>{' '}
                 <span className="feed-card-hype-quote">“{claimedText}”</span>
               </p>
               {agreeLine && <p className="feed-card-hype-agree">{agreeLine}</p>}

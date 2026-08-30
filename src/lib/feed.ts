@@ -201,3 +201,34 @@ export const STATIC_MOCK_FEED_POSTS: FeedPost[] = [
     is_mock: true,
   },
 ];
+
+/**
+ * Applies a hype to a post locally, so the card reflects it the instant you
+ * tap rather than after the next refetch.
+ *
+ * Pure, and it owns every field a hype touches — the count, whether the viewer
+ * has hyped, the claimed phrase if this call claimed it, and the agree list.
+ * Updating only some of those is what left the rocket ticking up while the
+ * "N others agree" line stayed stale.
+ *
+ * Idempotent: hyping a post the viewer has already hyped returns it unchanged,
+ * so a double tap cannot inflate the count.
+ */
+export function applyOptimisticHype(
+  post: FeedPost,
+  phraseId: string,
+  viewer: { username: string; displayName: string }
+): FeedPost {
+  if (post.viewerHasHyped) return post;
+
+  const isClaiming = !post.hypePhraseId;
+  return {
+    ...post,
+    hypeCount: post.hypeCount + 1,
+    viewerHasHyped: true,
+    hypePhraseId: post.hypePhraseId ?? phraseId,
+    hypeClaimedBy: post.hypeClaimedBy ?? viewer,
+    // The claimer is named separately, so they never also appear as an agreer.
+    agreedBy: isClaiming ? (post.agreedBy ?? []) : [viewer, ...(post.agreedBy ?? [])],
+  };
+}
