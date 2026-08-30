@@ -39,6 +39,10 @@ function assemble(user: UserRow, rules: RuleRow[], logs: DailyLogRow[]): Challen
     status: user.status,
     referredById: user.referred_by_id,
     rulesChangedAt: user.rules_changed_at ?? null,
+    timezone: user.timezone,
+    location: user.location,
+    avatarUrl: user.avatar_url,
+    secretRulesVisibility: user.secret_rules_visibility,
     rules,
     logs,
   };
@@ -110,6 +114,14 @@ export interface CreateChallengeInput {
   startDate: string;
   rules: Rule[];
   referredByUsername?: string | null;
+  /**
+   * IANA zone. Optional here because the explicit, editable capture step
+   * lands in a later onboarding phase — until then this defaults to the
+   * signing-up browser's own detected zone, which is already a correct guess
+   * for the common case (someone signing up from where they actually are)
+   * rather than leaving every new account on the DB's 'UTC' default.
+   */
+  timezone?: string;
 }
 
 /**
@@ -148,6 +160,7 @@ export async function createChallenge(input: CreateChallengeInput): Promise<DbRe
     // `username` is unique. Try the plain slug first, then suffix it until the
     // insert stops colliding (Postgres unique violation is code 23505).
     const base = toUsernameSlug(input.displayName);
+    const timezone = input.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
     let user: UserRow | null = null;
     let lastError: unknown = null;
 
@@ -164,6 +177,7 @@ export async function createChallenge(input: CreateChallengeInput): Promise<DbRe
           shields_remaining: 1,
           status: 'active',
           referred_by_id: referredById,
+          timezone,
         })
         .select()
         .single();
@@ -256,6 +270,9 @@ export async function replaceRules(userId: string, rules: Rule[]): Promise<DbRes
           schedule_type: rule.schedule_type,
           custom_days: rule.custom_days ?? [],
           position: index,
+          // The secret-rules UI toggle lands separately; every rule starts
+          // non-secret until then.
+          is_secret: false,
         });
       }
     });
@@ -357,11 +374,15 @@ export async function spendShield(userId: string, missedDate: string): Promise<D
 /**
  * Restarts the challenge from Day 1 today: clears every logged day and returns
  * a fresh shield. Destructive and irreversible — always confirm first.
+ *
+ * `timezone` must be this same user's own stored timezone (`challenge.timezone`
+ * at the call site) — "today" for a reset is the owner's today, same rule as
+ * everywhere else in the app.
  */
-export async function restartChallenge(userId: string): Promise<DbResult<true>> {
+export async function restartChallenge(userId: string, timezone: string): Promise<DbResult<true>> {
   try {
     const supabase = createClient();
-    const startDate = getEffectiveLogDate();
+    const startDate = getEffectiveLogDate(timezone);
 
     const { error: logsError } = await supabase.from('daily_logs').delete().eq('user_id', userId);
     if (logsError) return fail(logsError);

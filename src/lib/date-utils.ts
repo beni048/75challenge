@@ -14,10 +14,27 @@ export const CHALLENGE_LENGTH_DAYS = 75;
 export const CHALLENGE_DEADLINE = '2026-12-31';
 
 /**
- * Returns the effective log date (YYYY-MM-DD) for local time.
+ * Returns "today" (YYYY-MM-DD) as experienced in the given IANA timezone.
+ *
+ * `timezone` is deliberately required, not optional-with-a-browser-local
+ * fallback: an optional param is exactly how a timezone bug creeps back in
+ * the next time a call site is added and someone forgets to pass it. The
+ * rule this app follows everywhere: "today" always means the *profile
+ * owner's* stored timezone, never the viewer's device — even when the owner
+ * is looking at their own profile, because a challenge's day boundary is a
+ * property of whose challenge it is, not of whichever device loaded the
+ * page. See start.md §2 for the full rationale.
+ *
+ * `now` is the true universal instant; `en-CA` formats as YYYY-MM-DD
+ * directly, which is what makes this trick work without a date library.
  */
-export function getEffectiveLogDate(now: Date = new Date()): string {
-  return formatDate(now);
+export function getEffectiveLogDate(timezone: string, now: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
 }
 
 /**
@@ -50,16 +67,37 @@ export function calculateTargetEndDate(startDateStr: string): string {
 
 /**
  * Calculates current day number (1-indexed) in the 75-day challenge.
+ *
+ * `effectiveDateStr` is required rather than defaulting to "now" — this
+ * function is pure date-string arithmetic and never needs a live clock; the
+ * caller decides what "today" means (see `getEffectiveLogDate`). For an
+ * already-written log, pass that log's own `log_date` — no clock, no
+ * timezone, involved at all, since the date was fixed the moment it was
+ * written.
+ *
+ * A future `startDateStr` (challenge hasn't started yet) still clamps to 1
+ * here — check `hasStarted()` first if that distinction matters to the
+ * caller; this function's return value doesn't encode it.
  */
-export function calculateCurrentDay(startDateStr: string, effectiveDateStr: string = getEffectiveLogDate()): number {
+export function calculateCurrentDay(startDateStr: string, effectiveDateStr: string): number {
   const start = parseDate(startDateStr);
   const current = parseDate(effectiveDateStr);
-  
+
   const diffTime = current.getTime() - start.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays < 0) return 1; // Before start
   return Math.min(diffDays + 1, CHALLENGE_LENGTH_DAYS);
+}
+
+/**
+ * True once a challenge's start date has arrived (or passed), given today's
+ * date. A future start date should show a countdown, not daily tasks —
+ * `calculateCurrentDay` alone can't express that distinction, since it
+ * clamps a future start to day 1 for display convenience.
+ */
+export function hasStarted(startDateStr: string, todayStr: string): boolean {
+  return todayStr >= startDateStr;
 }
 
 /**

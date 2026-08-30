@@ -49,6 +49,11 @@ const en = {
   'nav.closeMenu': 'Close menu',
   'nav.menu': 'Menu',
 
+  // Timezone confirm banner
+  'timezone.confirmPrompt':
+    "We set your timezone to UTC by default — your device suggests {timezone}. Is that right?",
+  'timezone.confirmUpdate': 'Update',
+
   'meta.title': '75 Challenge — Challenge Yourself',
   'meta.description':
     'Build habits that stick in 75 days. Choose your own, go at your own pace, and finish together with the community by 31 December 2026.',
@@ -461,6 +466,10 @@ const de: Record<TranslationKey, string> = {
   'nav.openMenu': 'Menü öffnen',
   'nav.closeMenu': 'Menü schliessen',
   'nav.menu': 'Menü',
+
+  'timezone.confirmPrompt':
+    'Wir haben deine Zeitzone standardmässig auf UTC gesetzt – dein Gerät schlägt {timezone} vor. Stimmt das?',
+  'timezone.confirmUpdate': 'Aktualisieren',
 
   'meta.title': '75 Challenge — Fordere dich selbst',
   'meta.description':

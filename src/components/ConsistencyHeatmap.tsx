@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { generate75DayDates, getEffectiveLogDate } from '@/lib/date-utils';
+import { generate75DayDates } from '@/lib/date-utils';
 import { DailyLog } from '@/lib/streak-engine';
 import { Check, Shield, X } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
@@ -10,12 +10,13 @@ interface ConsistencyHeatmapProps {
   startDate: string;
   logs: DailyLog[];
   currentDay: number;
+  /** The profile owner's own today (timezone-aware) — computed once by the caller. */
+  today: string;
 }
 
-export default function ConsistencyHeatmap({ startDate, logs, currentDay }: ConsistencyHeatmapProps) {
+export default function ConsistencyHeatmap({ startDate, logs, currentDay, today }: ConsistencyHeatmapProps) {
   const { t } = useI18n();
   const dates = generate75DayDates(startDate);
-  const effectiveToday = getEffectiveLogDate();
 
   const logsMap = new Map<string, DailyLog>();
   logs.forEach((log) => logsMap.set(log.log_date, log));
@@ -49,7 +50,7 @@ export default function ConsistencyHeatmap({ startDate, logs, currentDay }: Cons
         {dates.map((dateStr, index) => {
           const dayNum = index + 1;
           const log = logsMap.get(dateStr);
-          const isToday = dateStr === effectiveToday;
+          const isToday = dateStr === today;
           const isPast = dayNum < currentDay;
           const isFuture = dayNum > currentDay;
 

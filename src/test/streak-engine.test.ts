@@ -55,6 +55,7 @@ describe('Streak & Shield Engine', () => {
       current_day: 4,
       shields_remaining: 1,
       status: 'active',
+      timezone: 'UTC',
     };
 
     const rules: Rule[] = [

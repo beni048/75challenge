@@ -28,7 +28,9 @@ export default function UserProfilePage() {
   const { session, challenge: ownChallenge, loading, refresh } = useChallenge();
 
   const [isShieldModalOpen, setIsShieldModalOpen] = useState(false);
-  const [missedDate, setMissedDate] = useState<string>(getEffectiveLogDate());
+  // Real value only matters once handleReportFailure sets it; the modal is
+  // never open with this placeholder still in place.
+  const [missedDate, setMissedDate] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'story'>('dashboard');
   const [saving, setSaving] = useState(false);
 
@@ -53,7 +55,11 @@ export default function UserProfilePage() {
 
   const challenge = isOwnProfile ? ownChallenge : otherChallenge;
 
-  const today = getEffectiveLogDate();
+  // Always the profile OWNER's stored timezone, never the viewer's — "today"
+  // is a property of whose challenge this is. `challenge` can still be null
+  // here (before the loading/not-found guards below); nothing that reads
+  // `today` renders until after those guards, so an empty placeholder is safe.
+  const today = challenge ? getEffectiveLogDate(challenge.timezone) : '';
   const todaysLog = useMemo(
     () => challenge?.logs.find((log) => log.log_date === today) ?? null,
     [challenge, today]
@@ -124,7 +130,7 @@ export default function UserProfilePage() {
   const handleHardReset = async () => {
     if (!challenge) return;
     setIsShieldModalOpen(false);
-    const result = await restartChallenge(challenge.id);
+    const result = await restartChallenge(challenge.id, challenge.timezone);
     if (result.error) {
       toast.error(result.error);
       return;
@@ -174,7 +180,7 @@ export default function UserProfilePage() {
     );
   }
 
-  const currentDay = calculateCurrentDay(challenge.startDate);
+  const currentDay = calculateCurrentDay(challenge.startDate, today);
   const rules = challenge.rules.map((rule) => ({
     id: rule.id,
     title: rule.title,
@@ -262,6 +268,7 @@ export default function UserProfilePage() {
             startDate={challenge.startDate}
             logs={challenge.logs.map((log) => ({ log_date: log.log_date, status: log.status }))}
             currentDay={currentDay}
+            today={today}
           />
 
           {/* Only the owner can check in, and only while the day is still open. */}

@@ -34,6 +34,8 @@ export interface UserChallengeProfile {
   current_day: number;
   shields_remaining: number;
   status: 'active' | 'failed' | 'completed';
+  /** IANA zone, e.g. 'Europe/Zurich' — always the owner's, see date-utils.ts. */
+  timezone: string;
 }
 
 /**
@@ -97,7 +99,7 @@ export function evaluateUserChallenge(
   logs: DailyLog[],
   now: Date = new Date()
 ): StreakEvaluationResult {
-  const effectiveToday = getEffectiveLogDate(now);
+  const effectiveToday = getEffectiveLogDate(user.timezone, now);
   const start = parseDate(user.start_date);
   const today = parseDate(effectiveToday);
 

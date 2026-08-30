@@ -42,7 +42,14 @@ export default function FeedStream() {
     let active = true;
 
     (async () => {
-      const result = await fetchFeed(viewerId, getEffectiveLogDate());
+      // The feed spans many users, each with their own stored timezone — there
+      // is no single "owner" here for the "always use the owner's timezone"
+      // rule to apply to. `today` only ever feeds two approximate, aggregate
+      // signals (the "active today" count and whether sample posts still
+      // show), so the viewer's own browser zone is a reasonable, simple
+      // reference point — not a per-user correctness value like day-of-75.
+      const viewerTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const result = await fetchFeed(viewerId, getEffectiveLogDate(viewerTimezone));
       if (!active) return;
 
       setLoading(false);

@@ -12,6 +12,7 @@ import { useToast, ConfirmDialog } from '@/components/Toast';
 import { replaceRules, updateProfile, restartChallenge, consumeRulesChange } from '@/lib/db/profile';
 import { MIN_RULES } from '@/lib/rules-policy';
 import { getRulesChangeState } from '@/lib/rules-window';
+import { getEffectiveLogDate } from '@/lib/date-utils';
 import { signOut, updatePassword, sendPasswordReset } from '@/lib/auth';
 import { Lock, ArrowRight, LogOut, RotateCcw, Info, CheckCircle2 } from 'lucide-react';
 
@@ -83,7 +84,11 @@ export default function AccountClient() {
 
   // One adjustment per attempt, from day 8. The database enforces this too;
   // this is what lets the UI explain the state instead of just failing.
-  const rulesChange = getRulesChangeState(challenge.startDate, challenge.rulesChangedAt);
+  const rulesChange = getRulesChangeState(
+    challenge.startDate,
+    challenge.rulesChangedAt,
+    getEffectiveLogDate(challenge.timezone)
+  );
   const canEditRules = rulesChange.status === 'available';
 
   const handleSaveRules = async () => {
@@ -183,7 +188,7 @@ export default function AccountClient() {
   const handleRestart = async () => {
     setConfirmRestart(false);
     setBusy(true);
-    const result = await restartChallenge(challenge.id);
+    const result = await restartChallenge(challenge.id, challenge.timezone);
     setBusy(false);
 
     if (result.error) {

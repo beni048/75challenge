@@ -4,6 +4,7 @@ import Providers from '@/components/Providers';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import HelpFeedback from '@/components/HelpFeedback';
+import TimezoneConfirmBanner from '@/components/TimezoneConfirmBanner';
 import { THEME_INIT_SCRIPT } from '@/lib/theme';
 
 export const metadata: Metadata = {
@@ -43,6 +44,7 @@ export default function RootLayout({
       <body>
         <Providers>
           <SiteHeader />
+          <TimezoneConfirmBanner />
 
           <main>{children}</main>
 

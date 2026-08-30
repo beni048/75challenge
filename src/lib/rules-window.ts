@@ -23,7 +23,7 @@ export type RulesChangeState =
 export function getRulesChangeState(
   startDate: string,
   rulesChangedAt: string | null,
-  today?: string
+  today: string
 ): RulesChangeState {
   if (rulesChangedAt) return { status: 'used', changedAt: rulesChangedAt };
 
@@ -38,7 +38,7 @@ export function getRulesChangeState(
 export function canChangeRules(
   startDate: string,
   rulesChangedAt: string | null,
-  today?: string
+  today: string
 ): boolean {
   return getRulesChangeState(startDate, rulesChangedAt, today).status === 'available';
 }

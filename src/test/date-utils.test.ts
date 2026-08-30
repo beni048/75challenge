@@ -5,6 +5,7 @@ import {
   parseDate,
   calculateTargetEndDate,
   calculateCurrentDay,
+  hasStarted,
   validateChallengeDates,
   generate75DayDates,
 } from '@/lib/date-utils';
@@ -15,7 +16,19 @@ describe('Date & Time Utilities', () => {
     it('formats dates consistently to YYYY-MM-DD', () => {
       const date = new Date(2026, 8, 15); // Sept 15
       expect(formatDate(date)).toBe('2026-09-15');
-      expect(getEffectiveLogDate(date)).toBe('2026-09-15');
+    });
+
+    it('resolves "today" as experienced in the given timezone, not the host clock', () => {
+      // A single UTC instant that is two different calendar dates depending
+      // on the zone: 23:30 UTC on March 15 is still March 15 in Los Angeles
+      // (UTC-7 with DST in March) but already March 16 in Tokyo (UTC+9).
+      const instant = new Date('2026-03-15T23:30:00Z');
+      expect(getEffectiveLogDate('America/Los_Angeles', instant)).toBe('2026-03-15');
+      expect(getEffectiveLogDate('Asia/Tokyo', instant)).toBe('2026-03-16');
+    });
+
+    it('returns a YYYY-MM-DD string for the real current instant when now is omitted', () => {
+      expect(getEffectiveLogDate('UTC')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
 
     it('parses YYYY-MM-DD into a local Date object', () => {
@@ -46,6 +59,20 @@ describe('Date & Time Utilities', () => {
 
     it('caps at 75', () => {
       expect(calculateCurrentDay('2026-09-01', '2026-12-01')).toBe(75);
+    });
+  });
+
+  describe('hasStarted', () => {
+    it('is false before the start date', () => {
+      expect(hasStarted('2026-09-01', '2026-08-31')).toBe(false);
+    });
+
+    it('is true on the start date itself', () => {
+      expect(hasStarted('2026-09-01', '2026-09-01')).toBe(true);
+    });
+
+    it('is true after the start date', () => {
+      expect(hasStarted('2026-09-01', '2026-09-02')).toBe(true);
     });
   });
 
