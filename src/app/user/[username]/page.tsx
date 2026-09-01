@@ -6,7 +6,8 @@ import Link from 'next/link';
 import ConsistencyHeatmap from '@/components/ConsistencyHeatmap';
 import DailyChecklist from '@/components/DailyChecklist';
 import DayLockedCard from '@/components/DayLockedCard';
-import MilestoneCard from '@/components/MilestoneCard';
+import MilestoneCard, { MAX_CARD_HABITS } from '@/components/MilestoneCard';
+import HabitPicker from '@/components/HabitPicker';
 import ShieldModal from '@/components/ShieldModal';
 import Avatar from '@/components/Avatar';
 import AvatarUpload from '@/components/AvatarUpload';
@@ -48,6 +49,10 @@ export default function UserProfilePage() {
   // never open with this placeholder still in place.
   const [missedDate, setMissedDate] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'story'>('dashboard');
+  // null = not chosen yet. Reset whenever the rule set itself changes (an
+  // edit could remove a habit that was selected), so a stale id never
+  // silently disappears from the card.
+  const [cardHabitIds, setCardHabitIds] = useState<string[] | null>(null);
   const [saving, setSaving] = useState(false);
   const [catchingUp, setCatchingUp] = useState(false);
   // The day the check-in form is showing. Null until a challenge (and so a
@@ -296,6 +301,14 @@ export default function UserProfilePage() {
 
   const currentDay = calculateCurrentDay(challenge.startDate, today);
   const started = hasStarted(challenge.startDate, today);
+
+  // Card habit selection — derived, not reset via an effect: if an edit
+  // removes a habit that was chosen, it just drops out of this list rather
+  // than needing to be reconciled separately.
+  const needsHabitPicker = challenge.rules.length > MAX_CARD_HABITS;
+  const cardHabitTitles = needsHabitPicker
+    ? challenge.rules.filter((r) => cardHabitIds?.includes(r.id)).map((r) => r.title)
+    : challenge.rules.map((r) => r.title);
   // Derived from the chosen tier, never from the legacy shields_remaining
   // counter — see src/lib/shield-policy.ts. A Purist is never offered one.
   const shieldAvailable = hasShieldAvailable(
@@ -502,14 +515,37 @@ export default function UserProfilePage() {
             </div>
           ) : (
             <div className="story-wrap">
-              <MilestoneCard
-                displayName={challenge.displayName}
-                username={challenge.username}
-                dayNumber={currentDay}
-                completedRules={challenge.rules.map((r) => r.title)}
-                shieldsRemaining={shieldAvailable ? 1 : 0}
-                streakDays={challenge.logs.filter((l) => l.status !== 'failed').length}
-              />
+              {needsHabitPicker && !cardHabitIds ? (
+                <HabitPicker
+                  rules={challenge.rules.map((r) => ({ id: r.id, title: r.title }))}
+                  max={MAX_CARD_HABITS}
+                  onConfirm={setCardHabitIds}
+                />
+              ) : (
+                <>
+                  <MilestoneCard
+                    displayName={challenge.displayName}
+                    username={challenge.username}
+                    dayNumber={currentDay}
+                    habits={cardHabitTitles}
+                    hasShield={shieldAvailable}
+                    isPurist={challenge.commitmentLevel === 'purist'}
+                    streakDays={challenge.logs.filter((l) => l.status !== 'failed').length}
+                    hasStarted={started}
+                    startDate={challenge.startDate}
+                  />
+                  {needsHabitPicker && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ marginTop: '1rem' }}
+                      onClick={() => setCardHabitIds(null)}
+                    >
+                      {t('storyPicker.change')}
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           )}
         </>

@@ -2880,3 +2880,48 @@ a {
   color: var(--text-muted);
   margin-top: 0.35rem;
 }
+
+/* ---------------------------------------------------------------------------
+   Habit picker for the shareable card — a plain checkable list, one tap per
+   row toggles it. Disabled rows (cap reached) get reduced opacity rather than
+   disappearing, so the full set stays visible while choosing.
+   --------------------------------------------------------------------------- */
+.habit-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.habit-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  min-height: 44px;
+  text-align: left;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.habit-picker-item.is-selected {
+  border-color: var(--accent-green);
+  background: var(--accent-green-soft);
+}
+
+.habit-picker-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.habit-picker-item-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

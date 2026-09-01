@@ -2,31 +2,48 @@
 
 import React, { useRef, useState } from 'react';
 import { exportElementAsImage } from '@/lib/export-utils';
-import { Flame, Shield, CheckCircle2, Download, Sparkles } from 'lucide-react';
+import { Flame, Shield, ShieldOff, CheckCircle2, Download, Sparkles, CalendarClock } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useI18n } from '@/lib/i18n';
+import { formatLongDate } from '@/lib/date-utils';
 import { useToast } from './Toast';
+
+/** How many habits fit on the card. Also what HabitPicker caps selection at. */
+export const MAX_CARD_HABITS = 4;
 
 interface MilestoneCardProps {
   displayName: string;
   username: string;
   dayNumber: number;
-  completedRules: string[];
-  shieldsRemaining: number;
+  /** The habits the owner chose to showcase (via HabitPicker) — already
+   *  capped to MAX_CARD_HABITS by the caller, but sliced again here too:
+   *  never trust a caller to have enforced a hard limit on a fixed-size
+   *  9:16 export. */
+  habits: string[];
+  /** Never a stored "0 = no shields" tri-state — Purist genuinely has none,
+   *  which reads differently from Classic/Flex having spent theirs. */
+  hasShield: boolean;
+  isPurist: boolean;
   streakDays: number;
   quote?: string;
+  /** False before the participant's chosen start date. */
+  hasStarted: boolean;
+  startDate: string;
 }
 
 export default function MilestoneCard({
   displayName,
   username,
   dayNumber,
-  completedRules,
-  shieldsRemaining,
+  habits,
+  hasShield,
+  isPurist,
   streakDays,
   quote,
+  hasStarted,
+  startDate,
 }: MilestoneCardProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const toast = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -56,7 +73,8 @@ export default function MilestoneCard({
     }
   };
 
-  const progressPercent = Math.round((dayNumber / 75) * 100);
+  const shownHabits = habits.slice(0, MAX_CARD_HABITS);
+  const progressPercent = hasStarted ? Math.round((dayNumber / 75) * 100) : 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
@@ -90,6 +108,8 @@ export default function MilestoneCard({
             </span>
           </div>
 
+          {/* A Purist never has a shield to begin with — showing "Shield Used"
+              implied they had spent one, which was never true for that tier. */}
           <span
             style={{
               padding: '0.2rem 0.6rem',
@@ -104,70 +124,105 @@ export default function MilestoneCard({
               gap: '0.25rem',
             }}
           >
-            <Shield size={12} /> {shieldsRemaining > 0 ? t('story.shieldReady') : t('story.shieldUsed')}
+            {isPurist ? (
+              <>
+                <ShieldOff size={12} /> {t('story.noShield')}
+              </>
+            ) : (
+              <>
+                <Shield size={12} /> {hasShield ? t('story.shieldReady') : t('story.shieldUsed')}
+              </>
+            )}
           </span>
         </div>
 
         {/* Hero Progress Center */}
         <div style={{ textAlign: 'center', margin: '1rem 0' }}>
-          <div
-            style={{
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              color: 'var(--accent-orange)',
-              marginBottom: '0.2rem',
-            }}
-          >
-            {t('story.milestone')}
-          </div>
+          {hasStarted ? (
+            <>
+              <div
+                style={{
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                  color: 'var(--accent-orange)',
+                  marginBottom: '0.2rem',
+                }}
+              >
+                {t('story.milestone')}
+              </div>
 
-          <div
-            style={{
-              fontSize: '3.75rem',
-              fontWeight: 900,
-              lineHeight: 1,
-              fontFamily: 'var(--font-display)',
-              background: 'linear-gradient(135deg, #ffffff 0%, #ff7d4d 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            {t('story.day', { day: dayNumber })}
-          </div>
-          <div style={{ fontSize: '0.95rem', color: '#94a3b8', marginTop: '0.3rem' }}>
-            {t('story.ofDays')}
-          </div>
+              <div
+                style={{
+                  fontSize: '3.75rem',
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  fontFamily: 'var(--font-display)',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #ff7d4d 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                {t('story.day', { day: dayNumber })}
+              </div>
+              <div style={{ fontSize: '0.95rem', color: '#94a3b8', marginTop: '0.3rem' }}>
+                {t('story.ofDays')}
+              </div>
 
-          {/* Progress bar */}
-          <div
-            style={{
-              width: '100%',
-              height: '8px',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              borderRadius: '999px',
-              marginTop: '1rem',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                width: `${progressPercent}%`,
-                height: '100%',
-                background: 'var(--gradient-fire)',
-                borderRadius: '999px',
-              }}
-            />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#64748b', marginTop: '0.3rem' }}>
-            <span>{t('story.start')}</span>
-            <span>{t('story.percentComplete', { percent: progressPercent })}</span>
-            <span>{t('story.finish')}</span>
-          </div>
+              {/* Progress bar */}
+              <div
+                style={{
+                  width: '100%',
+                  height: '8px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '999px',
+                  marginTop: '1rem',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    width: `${progressPercent}%`,
+                    height: '100%',
+                    background: 'var(--gradient-fire)',
+                    borderRadius: '999px',
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#64748b', marginTop: '0.3rem' }}>
+                <span>{t('story.start')}</span>
+                <span>{t('story.percentComplete', { percent: progressPercent })}</span>
+                <span>{t('story.finish')}</span>
+              </div>
+            </>
+          ) : (
+            // No days have happened yet — showing "DAY 1" here was the exact
+            // bug: the start date replaces it, so the card states a fact
+            // ("I start on...") rather than a false one ("I am on day 1").
+            <>
+              <CalendarClock size={40} color="var(--accent-orange)" style={{ marginBottom: '0.5rem' }} />
+              <div
+                style={{
+                  fontSize: '1.9rem',
+                  fontWeight: 900,
+                  lineHeight: 1.15,
+                  fontFamily: 'var(--font-display)',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #ff7d4d 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                {formatLongDate(startDate, locale)}
+              </div>
+              <div style={{ fontSize: '0.95rem', color: '#94a3b8', marginTop: '0.4rem' }}>
+                {t('story.committedToStart', { date: formatLongDate(startDate, locale) })}
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Completed Rules List */}
+        {/* Showcased habits */}
         <div
           style={{
             backgroundColor: 'rgba(23, 27, 38, 0.75)',
@@ -177,23 +232,39 @@ export default function MilestoneCard({
             border: '1px solid rgba(255, 255, 255, 0.08)',
           }}
         >
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
-            {t('story.rulesToday')}
+          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.7rem', lineHeight: 1.3 }}>
+            {hasStarted
+              ? t('story.habitsHeading', { day: dayNumber })
+              : t('story.habitsHeadingFuture')}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-            {completedRules.slice(0, 4).map((rule, idx) => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+            {shownHabits.map((habit, idx) => (
               <div
                 key={idx}
                 style={{
                   display: 'flex',
-                  alignItems: 'center',
+                  alignItems: 'flex-start',
                   gap: '0.45rem',
                   fontSize: '0.78rem',
                   color: '#f8fafc',
                 }}
               >
-                <CheckCircle2 size={15} color="var(--accent-green)" />
-                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rule}</span>
+                <CheckCircle2 size={15} color="var(--accent-green)" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+                {/* No truncation: a long habit wraps across lines rather than
+                    being cut with an ellipsis. Capped at 3 lines as a guard
+                    against a pathological title, not as the default case —
+                    with at most 4 habits on the card there is room. */}
+                <span
+                  style={{
+                    overflow: 'hidden',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {habit}
+                </span>
               </div>
             ))}
           </div>
@@ -205,9 +276,11 @@ export default function MilestoneCard({
             “{quote ?? t('story.defaultQuote')}”
           </div>
           <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>{displayName}</div>
-          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-            @{username} • {t('story.daysLogged', { count: streakDays })}
-          </div>
+          {hasStarted && (
+            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+              @{username} • {t('story.daysLogged', { count: streakDays })}
+            </div>
+          )}
         </div>
       </div>
 
