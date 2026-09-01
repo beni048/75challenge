@@ -164,6 +164,7 @@ const en = {
 
   // Date notices
   'dates.invalid': 'Please choose a valid start date.',
+  'dates.startTooLate': 'Pick a start date on or before {deadline} — that is this challenge cycle.',
   'dates.crossesYearEnd':
     'Heads up: starting here you would finish on {date}, past our shared goal of {deadline}. You are very welcome to join anyway — this is your challenge.',
 
@@ -337,7 +338,8 @@ const en = {
 
   // User profile
   'profile.activeAttempt': 'In progress',
-  'profile.meta': '@{username} • Started: {start} • Target Finish: {end}',
+  'profile.metaStart': 'Started {date}',
+  'profile.metaEnd': 'Ends {date}',
   'profile.dayOf75': 'Day of 75',
   'profile.shieldsLeft': 'Shields Left',
   'profile.activeRules': 'Active Rules',
@@ -676,6 +678,7 @@ const de: Record<TranslationKey, string> = {
     'Das Konto gibt es schon, aber die Challenge wurde nie fertig eingerichtet. Noch ein Schritt, dann bist du auf Tag 1.',
   'onboarding.resumeFailed': 'Deine Challenge liess sich nicht einrichten. Versuch es nochmal.',
   'dates.invalid': 'Wähl bitte ein gültiges Startdatum.',
+  'dates.startTooLate': 'Wähl ein Startdatum am oder vor dem {deadline} – das ist diese Challenge-Runde.',
   'dates.crossesYearEnd':
     'Kleiner Hinweis: So wärst du erst am {date} fertig – nach unserem gemeinsamen Ziel am {deadline}. Mitmachen kannst du trotzdem, es ist deine Challenge.',
   'rules.heading': 'Deine Routinen',
@@ -835,7 +838,8 @@ const de: Record<TranslationKey, string> = {
   'heatmap.statusFailed': 'Verpasst',
 
   'profile.activeAttempt': 'Läuft',
-  'profile.meta': '@{username} • Start: {start} • Zielende: {end}',
+  'profile.metaStart': 'Start {date}',
+  'profile.metaEnd': 'Letzter Tag {date}',
   'profile.dayOf75': 'Tag von 75',
   'profile.shieldsLeft': 'Schilde übrig',
   'profile.activeRules': 'Routinen',

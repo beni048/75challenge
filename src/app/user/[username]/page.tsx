@@ -15,7 +15,7 @@ import CatchUpList from '@/components/CatchUpList';
 import FollowToggle from '@/components/FollowToggle';
 import FeedCard from '@/components/FeedCard';
 import { getRequiredRulesForDate } from '@/lib/streak-engine';
-import { calculateCurrentDay, getEffectiveLogDate, hasStarted } from '@/lib/date-utils';
+import { calculateCurrentDay, getEffectiveLogDate, hasStarted, formatLongDate } from '@/lib/date-utils';
 import { getPendingDates } from '@/lib/pending-days';
 import { hasShieldAvailable } from '@/lib/shield-policy';
 import { useProfileView } from '@/lib/use-profile-view';
@@ -39,7 +39,7 @@ import type { Challenge } from '@/lib/db/types';
 export default function UserProfilePage() {
   const params = useParams();
   const routeUsername = (params?.username as string) || '';
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const toast = useToast();
   const { session, challenge: ownChallenge, loading, refresh } = useChallenge();
 
@@ -350,23 +350,30 @@ export default function UserProfilePage() {
             </div>
           )}
 
-          <div style={{ minWidth: 0, flex: 1 }}>
+          <div className="profile-identity-text">
             <div className="profile-name-row">
               <h2 className="profile-name">{challenge.displayName}</h2>
               <span className="badge badge-fire">{t('profile.activeAttempt')}</span>
             </div>
-            <p className="profile-meta">
-              {t('profile.meta', {
-                username: challenge.username,
-                start: challenge.startDate,
-                end: challenge.targetEndDate,
-              })}
-            </p>
-            {(challenge.location || challenge.timezone) && (
-              <p className="profile-meta" style={{ marginTop: '0.2rem' }}>
-                {[challenge.location, challenge.timezone].filter(Boolean).join(' • ')}
-              </p>
-            )}
+
+            {/* Each fact is its own chip rather than one bullet-joined string,
+                so a narrow screen wraps BETWEEN facts instead of splitting one
+                mid-phrase — a "@name • Start: ... • Letzter Tag: ..." sentence
+                has no good break point and was the actual cause of the
+                cramped/overlapping mobile layout (start.md §12). Dates go
+                through formatLongDate so German renders "30. August 2026"
+                rather than the raw ISO string. */}
+            <div className="profile-meta-row">
+              <span className="profile-meta-item">@{challenge.username}</span>
+              <span className="profile-meta-item">
+                {t('profile.metaStart', { date: formatLongDate(challenge.startDate, locale) })}
+              </span>
+              <span className="profile-meta-item">
+                {t('profile.metaEnd', { date: formatLongDate(challenge.targetEndDate, locale) })}
+              </span>
+              {challenge.location && <span className="profile-meta-item">{challenge.location}</span>}
+              {challenge.timezone && <span className="profile-meta-item">{challenge.timezone}</span>}
+            </div>
           </div>
 
           {!isOwnProfile && session && (
@@ -377,7 +384,10 @@ export default function UserProfilePage() {
         <div className="profile-stats">
           <div className="profile-stat">
             <div className="profile-stat-value" style={{ color: 'var(--accent-orange)' }}>
-              {currentDay}
+              {/* A future start date must never read as Day 1 — the full
+                  countdown card below already gives the actual date; this
+                  compact stat just needs to stop lying. */}
+              {started ? currentDay : 0}
             </div>
             <div className="profile-stat-label">{t('profile.dayOf75')}</div>
           </div>

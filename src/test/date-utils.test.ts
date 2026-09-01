@@ -109,6 +109,31 @@ describe('Date & Time Utilities', () => {
       expect(result.valid).toBe(false);
       expect(result.errorKey).toBe('dates.invalid');
     });
+
+    it('hard-blocks a start date after the deadline itself, distinct from the soft year-end notice', () => {
+      // 2026-10-25 finishes past the deadline but the START date is still
+      // within the cycle — soft notice only.
+      expect(validateChallengeDates('2026-10-25').valid).toBe(true);
+
+      // 2027-01-01 as a START date belongs to no defined cycle at all.
+      const result = validateChallengeDates('2027-01-01');
+      expect(result.valid).toBe(false);
+      expect(result.meetsSharedGoal).toBe(false);
+      expect(result.errorKey).toBe('dates.startTooLate');
+      expect(result.errorVars).toEqual({ deadline: '2026-12-31' });
+    });
+
+    it('accepts a start date exactly on the deadline itself', () => {
+      // The bound is inclusive: "strictly before Jan 1 2027" allows Dec 31.
+      expect(validateChallengeDates('2026-12-31').valid).toBe(true);
+    });
+
+    it('renders the hard-block error in both languages', () => {
+      const result = validateChallengeDates('2027-06-01');
+      const key = result.errorKey!;
+      expect(translate('en', key, result.errorVars)).toContain('2026-12-31');
+      expect(translate('de', key, result.errorVars)).toContain('2026-12-31');
+    });
   });
 
   describe('generate75DayDates', () => {

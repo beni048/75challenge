@@ -1296,10 +1296,33 @@ a {
   overflow-wrap: anywhere;
 }
 
-.profile-meta {
+/* Replaces the single bullet-joined .profile-meta string: each fact is an
+   atomic chip, so a narrow screen wraps between facts rather than splitting
+   one sentence mid-phrase — that was the actual cause of the squished header
+   (start.md §12). */
+.profile-identity-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.6rem;
+  row-gap: 0.25rem;
+  margin-top: 0.3rem;
+}
+
+.profile-meta-item {
   color: var(--text-muted);
   font-size: 0.8rem;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+}
+
+.profile-meta-item:not(:last-child)::after {
+  content: '•';
+  margin-left: 0.6rem;
+  color: var(--border-medium);
 }
 
 /*
@@ -1453,7 +1476,7 @@ a {
     font-size: 1.75rem;
   }
 
-  .profile-meta {
+  .profile-meta-item {
     font-size: 0.85rem;
   }
 

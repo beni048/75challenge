@@ -135,15 +135,21 @@ export interface ChallengeDateEvaluation {
   /** True when this start date still meets the community's shared deadline. */
   meetsSharedGoal: boolean;
   /** Translation key for a blocking error. */
-  errorKey?: 'dates.invalid';
+  errorKey?: 'dates.invalid' | 'dates.startTooLate';
+  errorVars?: Record<string, string>;
 }
 
 /**
  * Evaluates a start date against the 75-day window.
  *
- * If the challenge finishes after 31 December, the result carries an
- * informational notice — joining is still allowed. Copy is returned as
- * translation keys so both languages render from one source.
+ * Two distinct outcomes for "too late", handled differently on purpose:
+ *  - Finishing after the deadline is only ever a soft notice — joining is
+ *    still allowed (start.md §2, §15.3).
+ *  - Starting AFTER the deadline itself is a hard block (`errorKey:
+ *    'dates.startTooLate'`) — there is no shared goal to join for a start
+ *    date in a cycle that has not been defined yet.
+ * Copy is returned as translation keys so both languages render from one
+ * source.
  */
 export function validateChallengeDates(
   startDateStr: string,
@@ -156,6 +162,21 @@ export function validateChallengeDates(
   const startDate = parseDate(startDateStr);
   if (Number.isNaN(startDate.getTime())) {
     return { valid: false, endDate: '', meetsSharedGoal: false, errorKey: 'dates.invalid' };
+  }
+
+  // Hard cutoff, distinct from the soft notice below: a start date past the
+  // shared deadline itself cannot belong to this challenge cycle at all — it
+  // is not "finishes late", it is "starts in a year with no shared goal yet".
+  // Compared against `deadline` (not the literal CHALLENGE_DEADLINE constant)
+  // so a caller testing a different cutoff exercises this branch too.
+  if (startDateStr > deadline) {
+    return {
+      valid: false,
+      endDate: '',
+      meetsSharedGoal: false,
+      errorKey: 'dates.startTooLate',
+      errorVars: { deadline },
+    };
   }
 
   const endDate = calculateTargetEndDate(startDateStr);

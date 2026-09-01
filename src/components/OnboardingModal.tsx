@@ -2,7 +2,13 @@
 
 import React, { useState } from 'react';
 import { Rule } from '@/lib/streak-engine';
-import { validateChallengeDates, formatDate, formatLongDate, getSupportedTimezones } from '@/lib/date-utils';
+import {
+  validateChallengeDates,
+  formatDate,
+  formatLongDate,
+  getSupportedTimezones,
+  CHALLENGE_DEADLINE,
+} from '@/lib/date-utils';
 import SimpleAuthForm, { SimpleAuthFormData } from './SimpleAuthForm';
 import RuleCustomizer from './RuleCustomizer';
 import ModalPortal from './ModalPortal';
@@ -110,13 +116,21 @@ export default function OnboardingModal({
    */
   const [justSignedUp, setJustSignedUp] = useState(false);
 
-  const { endDate, infoNoticeKey, infoNoticeVars } = validateChallengeDates(startDate);
+  const { endDate, infoNoticeKey, infoNoticeVars, valid: dateValid, errorKey, errorVars } =
+    validateChallengeDates(startDate);
   const infoNotice = infoNoticeKey
     ? t(infoNoticeKey, {
         date: formatLongDate(String(infoNoticeVars?.date ?? endDate), locale),
         deadline: formatLongDate(String(infoNoticeVars?.deadline ?? ''), locale),
       })
     : null;
+  // Hard block, distinct from the soft infoNotice above — see
+  // validateChallengeDates' own doc comment for why these are two different
+  // things rather than one severity dial.
+  const dateError =
+    errorKey && startDate
+      ? t(errorKey, { deadline: formatLongDate(String(errorVars?.deadline ?? ''), locale) })
+      : null;
 
   const stepIndex = STEP_ORDER.indexOf(step);
   const goTo = (next: Step) => setStep(next);
@@ -369,19 +383,34 @@ export default function OnboardingModal({
                       className="input-field"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
+                      // Native affordance only — validateChallengeDates is the
+                      // real enforcement below, since `max` alone would silently
+                      // let through a pasted or scripted out-of-range value.
+                      max={CHALLENGE_DEADLINE}
                     />
                   </div>
 
-                  <div className="onboarding-finish">
-                    <Calendar size={16} color="var(--accent-orange)" style={{ flexShrink: 0 }} />
-                    <span>{t('onboarding.finish', { date: formatLongDate(endDate, locale) })}</span>
-                  </div>
+                  {dateValid && (
+                    <div className="onboarding-finish">
+                      <Calendar size={16} color="var(--accent-orange)" style={{ flexShrink: 0 }} />
+                      <span>{t('onboarding.finish', { date: formatLongDate(endDate, locale) })}</span>
+                    </div>
+                  )}
 
                   {/* Finishing after the shared goal is allowed — just flagged. */}
                   {infoNotice && (
                     <div className="notice notice-info">
                       <Info size={16} style={{ flexShrink: 0 }} />
                       <span>{infoNotice}</span>
+                    </div>
+                  )}
+
+                  {/* A start date past the deadline itself is a hard block —
+                      there is no computed end date to show. */}
+                  {dateError && (
+                    <div className="notice notice-error">
+                      <Info size={16} style={{ flexShrink: 0 }} />
+                      <span>{dateError}</span>
                     </div>
                   )}
 
@@ -426,7 +455,13 @@ export default function OnboardingModal({
                     </div>
                   </div>
 
-                  <button type="button" onClick={() => goTo('rules')} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                  <button
+                    type="button"
+                    onClick={() => goTo('rules')}
+                    className="btn btn-primary btn-lg"
+                    style={{ width: '100%' }}
+                    disabled={!dateValid}
+                  >
                     {t('onboarding.dateCta')} <ArrowRight size={18} />
                   </button>
                 </div>

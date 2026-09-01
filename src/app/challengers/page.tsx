@@ -9,7 +9,7 @@ import Avatar from '@/components/Avatar';
 import FollowToggle from '@/components/FollowToggle';
 import { fetchAllChallengers, ChallengerListEntry } from '@/lib/db/profile';
 import { fetchHiddenUserIds, hideFromFeed, unhideFromFeed } from '@/lib/db/network';
-import { calculateCurrentDay, getEffectiveLogDate } from '@/lib/date-utils';
+import { calculateCurrentDay, getEffectiveLogDate, hasStarted } from '@/lib/date-utils';
 
 const PAGE_SIZE = 20;
 
@@ -121,7 +121,13 @@ export default function ChallengersPage() {
       ) : (
         <div className="stack stack-tight">
           {entries.map((entry) => {
-            const day = calculateCurrentDay(entry.startDate, getEffectiveLogDate(entry.timezone));
+            const effectiveDate = getEffectiveLogDate(entry.timezone);
+            // A future start date reads as Day 0, matching the profile page —
+            // calculateCurrentDay alone clamps a future start to 1, which is
+            // exactly the "Day 1" bug this row would otherwise reproduce.
+            const day = hasStarted(entry.startDate, effectiveDate)
+              ? calculateCurrentDay(entry.startDate, effectiveDate)
+              : 0;
             const isSelf = entry.id === challenge?.id;
             return (
               <div key={entry.username} className="glass-card challenger-row">
