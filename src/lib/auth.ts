@@ -165,13 +165,21 @@ export async function signUp(
   }
 }
 
-export async function signIn(email: string, password: string): Promise<AuthResult> {
+export async function signIn(
+  email: string,
+  password: string,
+  captchaToken?: string
+): Promise<AuthResult> {
   const misconfigured = configError();
   if (misconfigured) return misconfigured;
 
   try {
     const supabase = createClient();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: { captchaToken },
+    });
     if (error) return failure(error, 'signin');
     return { ok: true, hasSession: Boolean(data.session), userId: data.user?.id };
   } catch (error) {
@@ -190,7 +198,7 @@ export async function signOut(): Promise<void> {
 }
 
 /** Resends the sign-up confirmation email. */
-export async function resendConfirmation(email: string): Promise<AuthResult> {
+export async function resendConfirmation(email: string, captchaToken?: string): Promise<AuthResult> {
   const misconfigured = configError();
   if (misconfigured) return misconfigured;
 
@@ -201,6 +209,7 @@ export async function resendConfirmation(email: string): Promise<AuthResult> {
       email,
       options: {
         emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/` : undefined,
+        captchaToken,
       },
     });
     if (error) return failure(error, 'resend');
@@ -215,7 +224,7 @@ export async function resendConfirmation(email: string): Promise<AuthResult> {
  * Sends the email-verified password reset link. The recipient lands on
  * /reset-password with a recovery session and can then set a new password.
  */
-export async function sendPasswordReset(email: string): Promise<AuthResult> {
+export async function sendPasswordReset(email: string, captchaToken?: string): Promise<AuthResult> {
   const misconfigured = configError();
   if (misconfigured) return misconfigured;
 
@@ -224,6 +233,7 @@ export async function sendPasswordReset(email: string): Promise<AuthResult> {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo:
         typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined,
+      captchaToken,
     });
     if (error) return failure(error, 'reset');
     return { ok: true };

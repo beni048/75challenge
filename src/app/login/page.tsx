@@ -7,6 +7,7 @@ import { Mail, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { signIn, sendPasswordReset } from '@/lib/auth';
 import { useToast } from '@/components/Toast';
+import Turnstile from '@/components/Turnstile';
 
 type Mode = 'login' | 'forgot';
 
@@ -20,6 +21,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Supabase's CAPTCHA setting guards login and password-reset too, not just
+  // sign-up — without a token both are rejected outright with captcha_failed.
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+
   const handleLogin = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -28,8 +34,13 @@ export default function LoginPage() {
       return;
     }
 
+    if (captchaRequired && !captchaToken) {
+      toast.error(t('auth.captchaRequired'));
+      return;
+    }
+
     setLoading(true);
-    const result = await signIn(email.trim(), password);
+    const result = await signIn(email.trim(), password, captchaToken ?? undefined);
     setLoading(false);
 
     if (!result.ok) {
@@ -52,8 +63,13 @@ export default function LoginPage() {
       return;
     }
 
+    if (captchaRequired && !captchaToken) {
+      toast.error(t('auth.captchaRequired'));
+      return;
+    }
+
     setLoading(true);
-    const result = await sendPasswordReset(email.trim());
+    const result = await sendPasswordReset(email.trim(), captchaToken ?? undefined);
     setLoading(false);
 
     if (!result.ok) {
@@ -122,7 +138,14 @@ export default function LoginPage() {
             </div>
           )}
 
-          <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={loading}>
+          {captchaRequired && <Turnstile onVerify={setCaptchaToken} />}
+
+          <button
+            type="submit"
+            className="btn btn-primary btn-lg"
+            style={{ width: '100%' }}
+            disabled={loading || (captchaRequired && !captchaToken)}
+          >
             {mode === 'login'
               ? loading
                 ? t('login.submitting')

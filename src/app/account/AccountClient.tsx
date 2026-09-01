@@ -16,6 +16,7 @@ import { getEffectiveLogDate, getSupportedTimezones } from '@/lib/date-utils';
 import { signOut, updatePassword, sendPasswordReset } from '@/lib/auth';
 import { Lock, ArrowRight, LogOut, RotateCcw, Info, CheckCircle2 } from 'lucide-react';
 import Avatar from '@/components/Avatar';
+import Turnstile from '@/components/Turnstile';
 import AvatarUpload from '@/components/AvatarUpload';
 import InfoTooltip from '@/components/InfoTooltip';
 
@@ -60,6 +61,8 @@ export default function AccountClient() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [busy, setBusy] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [announceRestart, setAnnounceRestart] = useState(false);
   const [confirmRulesChange, setConfirmRulesChange] = useState(false);
@@ -196,7 +199,12 @@ export default function AccountClient() {
     const email = session.user.email;
     if (!email) return;
 
-    const result = await sendPasswordReset(email);
+    if (captchaRequired && !captchaToken) {
+      toast.error(t('auth.captchaRequired'));
+      return;
+    }
+
+    const result = await sendPasswordReset(email, captchaToken ?? undefined);
     if (!result.ok) {
       toast.error(t(result.errorKey ?? 'auth.failed', result.errorVars));
       return;
@@ -482,11 +490,21 @@ export default function AccountClient() {
                 </div>
               </div>
 
+              {/* Only the reset EMAIL needs this — changing the password in
+                  place uses updateUser, which is authenticated and not
+                  captcha-guarded. */}
+              {captchaRequired && <Turnstile onVerify={setCaptchaToken} />}
+
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <button type="submit" className="btn btn-primary" disabled={busy}>
                   {busy ? t('reset.submitting') : t('account.updateSubmit')}
                 </button>
-                <button type="button" onClick={handleSendReset} className="btn btn-secondary">
+                <button
+                  type="button"
+                  onClick={handleSendReset}
+                  className="btn btn-secondary"
+                  disabled={captchaRequired && !captchaToken}
+                >
                   {t('account.sendReset')}
                 </button>
               </div>
