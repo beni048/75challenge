@@ -116,7 +116,11 @@ function configError(): AuthResult | null {
   return { ok: false, errorKey: 'auth.err.notConfigured' };
 }
 
-export async function signUp(email: string, password: string): Promise<AuthResult> {
+export async function signUp(
+  email: string,
+  password: string,
+  captchaToken?: string
+): Promise<AuthResult> {
   const misconfigured = configError();
   if (misconfigured) return misconfigured;
 
@@ -129,6 +133,13 @@ export async function signUp(email: string, password: string): Promise<AuthResul
         // Confirming a sign-up email should land on the app, not on the
         // password-reset screen.
         emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/` : undefined,
+        // Verified server-side by Supabase itself (GoTrue), not just checked
+        // in the browser — a client-only check is worthless here, since this
+        // app has no backend of its own in front of the auth endpoint
+        // (start.md §9: RLS is the entire authorization model). Absent when
+        // Turnstile isn't configured for this project, so local dev without
+        // a site key still works.
+        captchaToken,
       },
     });
 

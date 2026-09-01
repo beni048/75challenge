@@ -618,7 +618,30 @@ toxicity" and similar — that register is retired; do not reintroduce it.
 NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
 SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>  # Server-side only
+
+# Optional — Cloudflare Turnstile, bot protection on sign-up (see below).
+# Absent means the check is skipped entirely; nothing else depends on it.
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=<your-turnstile-site-key>
 ```
+
+### Turnstile: set up on both Vercel and Supabase, or it does nothing
+
+The token `Turnstile.tsx` produces is **only meaningful if Supabase verifies
+it** — a client-only check stops nothing, since this app has no backend of
+its own in front of the auth endpoint (§9, RLS is the entire authorization
+model). Two independent settings, both required:
+
+1. **Vercel** (Preview + Production): `NEXT_PUBLIC_TURNSTILE_SITE_KEY` — the
+   public site key from the Cloudflare dashboard.
+2. **Supabase dashboard** (Authentication → Attack Protection), on **both**
+   the dev and production projects: enable Turnstile and paste the matching
+   **secret** key. This is what actually rejects a bad token — the site key
+   alone does nothing without it.
+
+Leaving `NEXT_PUBLIC_TURNSTILE_SITE_KEY` unset disables the widget entirely
+(`Turnstile` renders nothing, sign-up proceeds without a token) — safe for
+local development, and safe to configure on production before dev if you
+only want the protection live where real signups happen.
 
 ---
 

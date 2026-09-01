@@ -216,6 +216,9 @@ const en = {
   'auth.failed': 'Authentication failed. Please try again.',
   'auth.submitting': 'Committing Challenge...',
   'auth.submitDefault': 'Join the 75 Challenge',
+  'auth.captchaRequired': 'Please complete the verification check above.',
+  'auth.conductNotice':
+    'By joining you agree to keep this a supportive space. We may remove accounts that harass others or abuse the platform.',
 
   // Auth failures. Supabase returns English-only strings, so its error codes are
   // mapped to these keys instead of being shown raw (see src/lib/auth.ts).
@@ -737,6 +740,9 @@ const de: Record<TranslationKey, string> = {
   'auth.failed': 'Hat nicht geklappt. Versuch es nochmal.',
   'auth.submitting': 'Deine Challenge startet ...',
   'auth.submitDefault': 'Bei der 75 Challenge mitmachen',
+  'auth.captchaRequired': 'Bitte schliess die Sicherheitsprüfung oben ab.',
+  'auth.conductNotice':
+    'Mit deiner Anmeldung hältst du diesen Ort unterstützend. Konten, die andere belästigen oder die Plattform missbrauchen, können wir entfernen.',
   'auth.err.weakPassword': 'Zu kurz – nimm mindestens {min} Zeichen.',
   'auth.err.emailExists':
     'Mit dieser Adresse gibt es schon ein Konto. Melde dich einfach an.',

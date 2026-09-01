@@ -144,7 +144,7 @@ export default function OnboardingModal({
 
     setLoading(true);
     try {
-      const result = await signUp(authData.email, authData.password);
+      const result = await signUp(authData.email, authData.password, authData.captchaToken);
 
       // Before any await that could let a re-render observe the new session.
       if (result.ok) setJustSignedUp(true);

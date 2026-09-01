@@ -12,6 +12,7 @@ import {
   AVATAR_TARGET_KB,
 } from '@/lib/image-compressor';
 import Avatar from './Avatar';
+import Turnstile from './Turnstile';
 import { useToast } from './Toast';
 
 export interface SimpleAuthFormData {
@@ -22,6 +23,8 @@ export interface SimpleAuthFormData {
   password: string;
   /** Compressed, ready to upload once the account exists. Optional. */
   avatarBlob: Blob | null;
+  /** Undefined when Turnstile isn't configured for this project. */
+  captchaToken?: string;
 }
 
 interface SimpleAuthFormProps {
@@ -44,6 +47,8 @@ export default function SimpleAuthForm({
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
   // The username field tracks the display name live until the user actually
   // edits it themselves — same derive-unless-overridden pattern used for the
@@ -108,6 +113,11 @@ export default function SimpleAuthForm({
       return;
     }
 
+    if (turnstileRequired && !captchaToken) {
+      toast.error(t('auth.captchaRequired'));
+      return;
+    }
+
     try {
       await onSubmit({
         displayName: displayName.trim(),
@@ -115,6 +125,7 @@ export default function SimpleAuthForm({
         email: email.trim(),
         password,
         avatarBlob: avatar?.blob ?? null,
+        captchaToken: captchaToken ?? undefined,
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('auth.failed'));
@@ -246,11 +257,20 @@ export default function SimpleAuthForm({
         </div>
       </div>
 
+      {turnstileRequired && <Turnstile onVerify={setCaptchaToken} />}
+
+      {/* Kept brief and placed right at the point of commitment, not buried
+          in a separate terms page nobody opens (start.md §14 — supportive
+          tone, not legalese). */}
+      <p className="field-hint" style={{ textAlign: 'center' }}>
+        {t('auth.conductNotice')}
+      </p>
+
       <button
         type="submit"
         className="btn btn-primary btn-lg"
         style={{ width: '100%', marginTop: '0.5rem' }}
-        disabled={loading}
+        disabled={loading || (turnstileRequired && !captchaToken)}
         id="auth-submit-btn"
       >
         {loading ? t('auth.submitting') : (submitButtonText ?? t('auth.submitDefault'))}
