@@ -43,7 +43,7 @@ export default function HabitPicker({ rules, max, onConfirm }: HabitPickerProps)
   const atCap = selected.length === max;
 
   return (
-    <div className="glass-card stack">
+    <div className="glass-card stack habit-picker">
       <div>
         <h3 className="h-page">{t('storyPicker.title')}</h3>
         <p className="onboarding-lede">{t('storyPicker.intro', { max })}</p>

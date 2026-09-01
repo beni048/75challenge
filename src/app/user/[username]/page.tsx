@@ -24,7 +24,7 @@ import { buildDayWindow, canStep, shiftDate } from '@/lib/day-window';
 import { completionPercent } from '@/lib/day-progress';
 import ProgressRing from '@/components/ProgressRing';
 import DayWindow from '@/components/DayWindow';
-import { Share2, ArrowRight, Lock } from 'lucide-react';
+import { Share2, ArrowRight, Lock, ListChecks } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useChallenge } from '@/components/ChallengeProvider';
 import { useToast } from '@/components/Toast';
@@ -530,18 +530,16 @@ export default function UserProfilePage() {
                     habits={cardHabitTitles}
                     hasShield={shieldAvailable}
                     isPurist={challenge.commitmentLevel === 'purist'}
-                    streakDays={challenge.logs.filter((l) => l.status !== 'failed').length}
                     hasStarted={started}
                     startDate={challenge.startDate}
                   />
                   {needsHabitPicker && (
                     <button
                       type="button"
-                      className="btn btn-secondary"
-                      style={{ marginTop: '1rem' }}
+                      className="btn btn-secondary story-change-habits"
                       onClick={() => setCardHabitIds(null)}
                     >
-                      {t('storyPicker.change')}
+                      <ListChecks size={16} /> {t('storyPicker.change')}
                     </button>
                   )}
                 </>

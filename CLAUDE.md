@@ -60,7 +60,15 @@ CSS, not Tailwind** — there is no `sm:` / `md:` / `lg:`. The equivalent is:
    and `title`.
 13. **Wide content scrolls inside its own box**, never widening the page. The
    body must never scroll sideways.
-14. **Verify at 360px width** before calling any UI work done.
+14. **Read a container's CSS before putting anything inside it.** Every
+   layout bug here came from trusting a class name instead of opening it:
+   `.glass-card` has *no padding*, `.story-wrap` is a flex *row*, and
+   `.story-wrap > *` silently scales every child you add. Run
+   `grep -n "^\.the-class" -A 12 src/app/globals.css` first, and check for
+   `> *` rules on the parent that will capture your new element.
+15. **A badge or chip never wraps** — `white-space: nowrap` + `flex-shrink: 0`.
+   Two-line badges look broken; shorten the text instead.
+16. **Verify at 360px width** before calling any UI work done.
 
 ### 🌍 Everything exists in English AND German (`start.md` §11)
 

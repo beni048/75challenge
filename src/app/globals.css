@@ -1506,18 +1506,32 @@ a {
  */
 .story-wrap {
   display: flex;
-  justify-content: center;
+  /* A column, so anything after the card stacks BELOW it. As a row, the
+     "change habits" button became a second flex item beside the card and was
+     squeezed into a tall narrow strip. */
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
   padding-block: 0.5rem;
 }
 
-.story-wrap > * {
+/* The scale-down is for the 9:16 card only. Applying it to every direct child
+   (`> *`) also shrank and negative-margined the button next to it. */
+.story-wrap > .story-card {
   transform: scale(0.86);
   transform-origin: top center;
   margin-bottom: -100px;
 }
 
+.story-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
 @media (min-width: 400px) {
-  .story-wrap > * {
+  .story-wrap > .story-card {
     transform: none;
     margin-bottom: 0;
   }
@@ -2924,4 +2938,70 @@ a {
 .habit-picker-item-title {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+/* Sits under the card's own "save" button, matching its width so the two read
+   as a pair of actions rather than a control floating beside the card. */
+.story-change-habits {
+  width: 100%;
+  max-width: 340px;
+}
+
+/* The picker is a .glass-card, which carries no padding of its own — every
+   other user of that class supplies it. Without this the checkboxes sat flush
+   against the border. */
+.habit-picker {
+  padding: 1.25rem;
+  width: 100%;
+  max-width: 420px;
+}
+
+@media (min-width: 480px) {
+  .habit-picker {
+    padding: 1.5rem;
+  }
+}
+
+/* Replaces the onboarding sheet's content while the account is being created.
+   Sized to roughly the sheet's resting height so the modal does not visibly
+   collapse and re-expand around it. */
+.onboarding-committing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+  min-height: 320px;
+  padding: 2rem 1rem;
+}
+
+.onboarding-committing-spinner {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  border: 3px solid var(--border-subtle);
+  border-top-color: var(--accent-orange);
+  animation: spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-committing-spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+.onboarding-committing-title {
+  font-size: 1.05rem;
+}
+
+.onboarding-committing-body {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

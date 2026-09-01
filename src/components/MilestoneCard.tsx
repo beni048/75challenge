@@ -24,7 +24,6 @@ interface MilestoneCardProps {
    *  which reads differently from Classic/Flex having spent theirs. */
   hasShield: boolean;
   isPurist: boolean;
-  streakDays: number;
   quote?: string;
   /** False before the participant's chosen start date. */
   hasStarted: boolean;
@@ -38,7 +37,6 @@ export default function MilestoneCard({
   habits,
   hasShield,
   isPurist,
-  streakDays,
   quote,
   hasStarted,
   startDate,
@@ -77,7 +75,7 @@ export default function MilestoneCard({
   const progressPercent = hasStarted ? Math.round((dayNumber / 75) * 100) : 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+    <div className="story-card">
       {/* 9:16 Instagram Story Aspect Ratio Card Container */}
       <div
         ref={cardRef}
@@ -140,19 +138,8 @@ export default function MilestoneCard({
         <div style={{ textAlign: 'center', margin: '1rem 0' }}>
           {hasStarted ? (
             <>
-              <div
-                style={{
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  color: 'var(--accent-orange)',
-                  marginBottom: '0.2rem',
-                }}
-              >
-                {t('story.milestone')}
-              </div>
-
+              {/* No "TODAY" eyebrow: it sat above a 3.75rem "DAY 12" and
+                  added nothing the number was not already shouting. */}
               <div
                 style={{
                   fontSize: '3.75rem',
@@ -190,11 +177,9 @@ export default function MilestoneCard({
                   }}
                 />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#64748b', marginTop: '0.3rem' }}>
-                <span>{t('story.start')}</span>
-                <span>{t('story.percentComplete', { percent: progressPercent })}</span>
-                <span>{t('story.finish')}</span>
-              </div>
+              {/* The bar alone carries the progress. "Start / 1% done /
+                  Goal" restated the day number twice over, and "1% done" is a
+                  deflating thing to stamp on something meant to be shared. */}
             </>
           ) : (
             // No days have happened yet — showing "DAY 1" here was the exact
@@ -233,9 +218,8 @@ export default function MilestoneCard({
           }}
         >
           <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.7rem', lineHeight: 1.3 }}>
-            {hasStarted
-              ? t('story.habitsHeading', { day: dayNumber })
-              : t('story.habitsHeadingFuture')}
+            {/* No "Day 12:" prefix — the hero number above already says it. */}
+            {hasStarted ? t('story.habitsHeading') : t('story.habitsHeadingFuture')}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
             {shownHabits.map((habit, idx) => (
@@ -272,15 +256,15 @@ export default function MilestoneCard({
 
         {/* Footer Identity */}
         <div style={{ textAlign: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '0.75rem' }}>
-          <div style={{ fontStyle: 'italic', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: '0.5rem' }}>
-            “{quote ?? t('story.defaultQuote')}”
-          </div>
-          <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>{displayName}</div>
-          {hasStarted && (
-            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-              @{username} • {t('story.daysLogged', { count: streakDays })}
+          {/* Only a real quote earns the space. A generic default in quote
+              marks reads as filler on something meant to be shared. */}
+          {quote && (
+            <div style={{ fontStyle: 'italic', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: '0.5rem' }}>
+              “{quote}”
             </div>
           )}
+          <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>{displayName}</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>@{username}</div>
         </div>
       </div>
 

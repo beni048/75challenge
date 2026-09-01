@@ -21,6 +21,7 @@ import { useRouter } from 'next/navigation';
 import { useI18n, type TranslationKey } from '@/lib/i18n';
 import { savePendingSignup, clearPendingSignup } from '@/lib/pending-signup';
 import { useChallenge } from './ChallengeProvider';
+import { beginSignup, endSignup, useSignupInFlight } from '@/lib/signup-in-flight';
 import { createChallenge } from '@/lib/db/profile';
 import { uploadAvatar } from '@/lib/db/avatar';
 import { signUp } from '@/lib/auth';
@@ -115,6 +116,8 @@ export default function OnboardingModal({
    * authenticated, which this distinguishes.
    */
   const [justSignedUp, setJustSignedUp] = useState(false);
+  // Survives a remount, unlike `loading` — see src/lib/signup-in-flight.ts.
+  const submitting = useSignupInFlight();
 
   const { endDate, infoNoticeKey, infoNoticeVars, valid: dateValid, errorKey, errorVars } =
     validateChallengeDates(startDate);
@@ -143,6 +146,7 @@ export default function OnboardingModal({
     }
 
     setLoading(true);
+    beginSignup();
     try {
       const result = await signUp(authData.email, authData.password, authData.captchaToken);
 
@@ -151,6 +155,7 @@ export default function OnboardingModal({
 
       if (!result.ok) {
         setLoading(false);
+        endSignup();
         toast.error(t(result.errorKey ?? 'onboarding.signupFailed', result.errorVars));
         return;
       }
@@ -203,6 +208,7 @@ export default function OnboardingModal({
 
       if (created.error || !created.data) {
         setLoading(false);
+        endSignup();
         toast.error(created.error ?? t('onboarding.signupFailed'));
         return;
       }
@@ -227,6 +233,7 @@ export default function OnboardingModal({
     } catch (err) {
       console.error('Signup error:', err);
       setLoading(false);
+      endSignup();
       toast.error(t('onboarding.signupFailed'));
     }
   };
@@ -253,6 +260,7 @@ export default function OnboardingModal({
     }
 
     setLoading(true);
+    beginSignup();
     const created = await createChallenge({
       userId: session.user.id,
       displayName: resumeName.trim(),
@@ -264,6 +272,7 @@ export default function OnboardingModal({
     });
     if (created.error || !created.data) {
       setLoading(false);
+      endSignup();
       toast.error(created.error ?? t('onboarding.resumeFailed'));
       return;
     }
@@ -290,6 +299,17 @@ export default function OnboardingModal({
               aria-modal="true"
               aria-label={t('onboarding.title')}
             >
+              {submitting ? (
+                /* Covers the whole sheet — not an overlay ON the form, but a
+                   replacement FOR it, so a remount underneath cannot flash a
+                   reset step or empty fields through. */
+                <div className="onboarding-committing" role="status" aria-live="polite">
+                  <span className="onboarding-committing-spinner" aria-hidden="true" />
+                  <strong className="onboarding-committing-title">{t('onboarding.committingTitle')}</strong>
+                  <span className="onboarding-committing-body">{t('onboarding.committingBody')}</span>
+                </div>
+              ) : (
+              <>
               {/* Header */}
               <div className="onboarding-head">
                 {stepIndex > 0 ? (
@@ -575,6 +595,8 @@ export default function OnboardingModal({
                     />
                   )}
                 </div>
+              )}
+              </>
               )}
             </motion.div>
           </div>

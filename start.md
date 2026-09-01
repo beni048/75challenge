@@ -505,6 +505,37 @@ same idea expressed in our own system: base rules are the phone layout, and
 13. **Modals are near-full-screen sheets on mobile** and floating cards from
    `sm` up — see `.modal-content`.
 
+### Before you put an element inside an existing container — READ ITS CSS
+
+Every layout bug in this project's history has the same shape: JSX written
+against a class name whose CSS was never opened. The class name sounded right;
+what it actually did was different. Three real examples, all shipped:
+
+- **`.glass-card` has no padding.** It is background + border + radius, nothing
+  else — every user of it supplies its own padding. Used bare as a container,
+  the content sits flush against the border.
+- **`.story-wrap` is `display: flex`** (a row). Adding a second child put the
+  new button *beside* the card and squeezed it into a tall narrow strip.
+- **`.story-wrap > *` applied `transform: scale(0.86)`** to every direct child.
+  The new button silently inherited a scale meant only for the 9:16 card.
+
+So, before adding or moving an element:
+
+1. **`grep -n "^\.the-class" -A 12 src/app/globals.css`** and read it. Check
+   `display`, `flex-direction`, `padding`, and `gap` before assuming any of them.
+2. **Search for `> *` and `:first-child` / `:last-child` rules on the parent.**
+   A descendant selector written for one child silently captures every child
+   you add later. Prefer targeting a named child class over `> *` when writing
+   new CSS, for exactly this reason.
+3. **A structural class is not a finished container.** If it supplies no
+   padding, add a named class that does — never an inline `style` (rule 3).
+
+### A badge, chip or pill never wraps
+
+Anything short and label-shaped gets `white-space: nowrap` and
+`flex-shrink: 0`. A two-line badge always looks broken. If it does not fit, the
+*text* is too long for that row — shorten the text (rule 11), do not let it wrap.
+
 ### Verifying
 Check every change at **360px** width before considering it done. If a phone has
 to scroll sideways, or a control is under 44px, it is not finished.
