@@ -497,7 +497,7 @@ export default function UserProfilePage() {
                   {isOutsideChallenge ? (
                     <DayLockedCard reason="outside" logDate={logDate} />
                   ) : isFutureDay ? (
-                    <DayLockedCard reason="future" logDate={logDate} />
+                    <DayLockedCard reason="future" logDate={logDate} scheduledRules={rulesDueToday.map((r) => r.title)} />
                   ) : lockedReason ? (
                     <DayLockedCard reason={lockedReason} logDate={logDate} />
                   ) : (

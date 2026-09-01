@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import { CheckCircle2, ShieldCheck, Moon, CalendarClock, CalendarX } from 'lucide-react';
+import { CheckCircle2, Circle, ShieldCheck, Moon, CalendarClock, CalendarX } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
 export type LockedReason = 'completed' | 'shielded' | 'rest-day' | 'future' | 'outside';
@@ -65,14 +65,25 @@ const PRESENTATION: Record<
 export default function DayLockedCard({
   reason,
   logDate,
-  completedRules = [],
+  scheduledRules = [],
 }: {
   reason: LockedReason;
   logDate: string;
-  completedRules?: string[];
+  /**
+   * What's on the docket for this day — used for a future day, so someone
+   * planning ahead (a schedule with workday-only or custom-day habits) can
+   * see what applies without waiting for the day to arrive. Nothing here has
+   * been done yet, so it renders with an outline circle, never a checkmark.
+   */
+  scheduledRules?: string[];
 }) {
   const { t } = useI18n();
   const { icon, tint, titleKey, bodyKey } = PRESENTATION[reason];
+  const isPreview = reason === 'future';
+  // A future rest day (nothing scheduled that day, e.g. a Mon/Wed/Fri-only
+  // habit landing on a Tuesday) has no list to point at below — the generic
+  // "look below" copy would refer to nothing.
+  const resolvedBodyKey = isPreview && scheduledRules.length === 0 ? 'day.futureRestBody' : bodyKey;
 
   return (
     <div
@@ -97,38 +108,49 @@ export default function DayLockedCard({
 
       <h3 style={{ fontSize: '1.3rem' }}>{t(titleKey)}</h3>
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', maxWidth: '420px' }}>
-        {t(bodyKey, { date: logDate })}
+        {t(resolvedBodyKey, { date: logDate })}
       </p>
 
-      {completedRules.length > 0 && (
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '0.45rem',
-            justifyContent: 'center',
-            marginTop: '0.5rem',
-          }}
-        >
-          {completedRules.map((rule) => (
-            <span
-              key={rule}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                background: 'var(--chip-bg)',
-                padding: '0.3rem 0.65rem',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '0.8rem',
-                color: 'var(--text-secondary)',
-              }}
-            >
-              <CheckCircle2 size={14} color="var(--accent-green)" />
-              {rule}
-            </span>
-          ))}
-        </div>
+      {scheduledRules.length > 0 && (
+        <>
+          {isPreview && (
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '0.25rem' }}>
+              {t('day.scheduledLabel')}
+            </p>
+          )}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.45rem',
+              justifyContent: 'center',
+              marginTop: isPreview ? 0 : '0.5rem',
+            }}
+          >
+            {scheduledRules.map((rule) => (
+              <span
+                key={rule}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  background: 'var(--chip-bg)',
+                  padding: '0.3rem 0.65rem',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: '0.8rem',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                {isPreview ? (
+                  <Circle size={14} color="var(--text-muted)" />
+                ) : (
+                  <CheckCircle2 size={14} color="var(--accent-green)" />
+                )}
+                {rule}
+              </span>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
